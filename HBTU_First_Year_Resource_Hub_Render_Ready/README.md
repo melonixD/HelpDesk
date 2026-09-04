@@ -50,13 +50,14 @@ This project is about 33 MB and contains one PDF larger than 10 MB. If the brows
 
 ## Unlimited Practice
 
-Practice Mode takes a unit's local `pyqUrl`, finds its extracted real questions in `data/pyq-bank.json`, and asks Gemini for five new questions and answers at a similar level.
+Practice Mode takes a unit's local `pyqUrl`, finds its extracted real questions in `data/pyq-bank.json`, and asks Gemini 3.6 for three new questions and concise answers at a similar level. Gemini thinking is kept minimal and the request is stopped after 22 seconds so it finishes before the deployment timeout. If Gemini is temporarily slow or unreachable, the UI falls back to real questions from that unit instead of failing.
 
 - Browser request: `POST /api/practice/generate`
 - Netlify function: `netlify/functions/practice-generate.js`
 - Server-side shared logic: `netlify/lib/helpdesk-api.js`
 - Secret: `GEMINI_API_KEY` in Netlify environment variables
 - Default model: `gemini-3.6-flash`
+- Optional timeout override: `PRACTICE_API_TIMEOUT_MS` (1,000–25,000 ms; default 22,000)
 - Protection: 20 generation requests per IP per warm function instance per hour
 
 The UI still works without the Gemini key; only question generation shows a setup message. Google API quotas are separate from Netlify traffic limits, so high visitor counts may require a paid Gemini quota.

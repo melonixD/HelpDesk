@@ -105,6 +105,35 @@ test("Netlify practice function returns usable Gemini questions", async () => {
   }
 });
 
+test("Netlify practice function falls back instead of failing when Gemini is unavailable", async () => {
+  const previousKey = process.env.GEMINI_API_KEY;
+  const previousFetch = global.fetch;
+  process.env.GEMINI_API_KEY = "test-only";
+  global.fetch = async () => {
+    const error = new Error("The operation was aborted");
+    error.name = "AbortError";
+    throw error;
+  };
+
+  try {
+    const result = await practice({
+      httpMethod: "POST",
+      body: JSON.stringify({
+        pyqUrl: "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf",
+      }),
+      headers: { "x-forwarded-for": "192.0.2.11" },
+    });
+    assert.equal(result.statusCode, 200);
+    const body = JSON.parse(result.body);
+    assert.equal(body.source, "pyq-fallback");
+    assert.equal(body.questions.length, 3);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousKey) process.env.GEMINI_API_KEY = previousKey;
+    else delete process.env.GEMINI_API_KEY;
+  }
+});
+
 test("both semesters expose PYQ-backed Practice subjects", async () => {
   const result = await resources({ httpMethod: "GET", queryStringParameters: {} });
   const body = JSON.parse(result.body);
