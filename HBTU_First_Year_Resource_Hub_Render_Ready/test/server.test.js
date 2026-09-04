@@ -57,7 +57,7 @@ test("library exposes fourteen branches including Biotechnology", async () => {
   assert.equal(data.branches.length, 14);
   assert.equal(data.unitCollections.length, 21);
   const allSections = data.unitCollections.flatMap((subject) => subject.units);
-  assert.equal(allSections.filter((section) => section.kind !== "lab").length, 108);
+  assert.equal(allSections.filter((section) => section.kind !== "lab").length, 68);
   assert.equal(allSections.filter((section) => section.kind === "lab").length, 1);
   assert.ok(data.branches.some((branch) => branch.name === "Mechanical Engineering"));
   assert.ok(data.branches.some((branch) => branch.name === "Electrical Engineering"));
@@ -253,7 +253,7 @@ test("Central Workshop uses seven shop folders plus a Class Notes section", asyn
     "Welding Shop",
   ]);
   assert.equal(classNotes.title, "Class Notes");
-  assert.equal(classNotes.classNotesUrl, null);
+  assert.equal(classNotes.classNotesUrl, "/resources/workshop/class-notes/Central_Workshop_Class_Notes.pdf");
 
   for (const shop of shops) {
     const file = await fetch(`${baseUrl}${shop.workshopFileUrl}`);
@@ -261,6 +261,22 @@ test("Central Workshop uses seven shop folders plus a Class Notes section", asyn
     assert.equal(file.headers.get("content-type"), "application/pdf");
     assert.ok((await file.arrayBuffer()).byteLength > 1000);
   }
+
+  const notes = await fetch(`${baseUrl}${classNotes.classNotesUrl}`);
+  assert.equal(notes.status, 200);
+  assert.equal(notes.headers.get("content-type"), "application/pdf");
+  assert.ok((await notes.arrayBuffer()).byteLength > 1000);
+});
+
+test("Technology branch cores show Notes, PYQs and Books without unit folders", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  const technologyCoreIds = data.branches
+    .filter((branch) => branch.group === "technology")
+    .map((branch) => branch.semesterSubjectIds["1"].at(-1));
+  const cores = technologyCoreIds.map((id) => data.unitCollections.find((subject) => subject.id === id));
+  assert.ok(cores.every((core) => core.layout === "core-resources"));
+  assert.ok(cores.every((core) => core.units.length === 0));
 });
 
 test("College Study redirects are removed from every resource section", async () => {

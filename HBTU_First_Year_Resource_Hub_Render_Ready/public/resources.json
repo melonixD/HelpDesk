@@ -258,7 +258,7 @@
     {
       "id": "workshop",
       "name": "Central Workshop Practice",
-      "description": "Shop-wise practical files for Central Workshop Practice.",
+      "description": "Shop-wise practical files for Central Workshop Practice. Notes provided by Aarush Shrivastava ❤️",
       "accent": "rose",
       "layout": "shops",
       "lectureUrl": null,
@@ -310,7 +310,8 @@
           "number": "CN",
           "kind": "class-notes",
           "title": "Class Notes",
-          "classNotesUrl": null
+          "credit": "Notes provided by Aarush Shrivastava ❤️",
+          "classNotesUrl": "/resources/workshop/class-notes/Central_Workshop_Class_Notes.pdf"
         }
       ]
     },
@@ -319,120 +320,64 @@
       "name": "Food Technology Core",
       "description": "Faculty material, notes, exam papers and recommended reading.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "biochemical-core",
       "name": "Biochemical Engineering Core",
       "description": "Branch-specific Semester 1 material for Biochemical Engineering.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "biotechnology-core",
       "name": "Biotechnology Core",
       "description": "Branch-specific Semester 1 material for Biotechnology.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "chemical-core",
       "name": "Chemical Engineering Core",
       "description": "Branch-specific Semester 1 material for Chemical Engineering.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "leather-core",
       "name": "Leather Technology Core",
       "description": "Branch-specific Semester 1 material for Leather Technology.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "oil-core",
       "name": "Oil Technology Core",
       "description": "Branch-specific Semester 1 material for Oil Technology.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "paint-core",
       "name": "Paint Technology Core",
       "description": "Branch-specific Semester 1 material for Paint Technology.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "plastic-core",
       "name": "Plastic Technology Core",
       "description": "Branch-specific Semester 1 material for Plastic Technology.",
       "accent": "teal",
-      "lectureUrl": null,
-      "notesUrl": null,
-      "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
-      ]
+      "layout": "core-resources",
+      "units": []
     },
     {
       "id": "maths-1",
@@ -904,7 +849,7 @@
       "shortName": "Workshop Practice",
       "icon": "tools",
       "accent": "rose",
-      "description": "Shop-wise practical files for Central Workshop Practice.",
+      "description": "Shop-wise practical files for Central Workshop Practice. Notes provided by Aarush Shrivastava ❤️",
       "topics": ["Sheet Metal", "Carpentry", "Foundry", "Blacksmithy", "Fitting", "Machine", "Welding"],
       "resources": [
         {

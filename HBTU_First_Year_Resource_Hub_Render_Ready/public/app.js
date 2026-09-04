@@ -281,7 +281,7 @@ function visibleBranches() {
 }
 
 function countPdfs(collection) {
-  return collection.units.filter((unit) =>
+  return (collection.units || []).filter((unit) =>
     Boolean(unit.pyqUrl || unit.workshopFileUrl || unit.classNotesUrl)
   ).length;
 }
@@ -291,6 +291,7 @@ function practiceKeyForUnit(unit) {
 }
 
 function collectionCountLabel(collection) {
+  if (collection.layout === "core-resources") return "3 sections";
   if (collection.layout === "shops") {
     const shops = collection.units.filter((item) => item.kind === "shop").length;
     const hasClassNotes = collection.units.some((item) => item.kind === "class-notes");
@@ -353,7 +354,9 @@ function renderBrowser(changeType) {
   const pdfCount = countPdfs(subject);
   elements["course-status"].textContent = collectionCountLabel(subject) + (pdfCount ? " · " + pdfCount + " PYQ sets" : "");
   renderSubjectSyllabus(branch, subject);
-  elements["unit-list"].innerHTML = subject.units.map((unit, index) => renderUnit(subject, unit, index)).join("");
+  elements["unit-list"].innerHTML = subject.layout === "core-resources"
+    ? renderCoreResources()
+    : subject.units.map((unit, index) => renderUnit(subject, unit, index)).join("");
 
   elements["unit-list"].querySelectorAll(".unit-row").forEach((details) => {
     details.addEventListener("toggle", () => {
@@ -590,6 +593,16 @@ function renderUnit(subject, unit, index) {
     ).join("") + '</div></details>';
 }
 
+function renderCoreResources() {
+  const resources = [
+    { type: "notes", title: "Notes", description: "Coming soon", url: null },
+    { type: "pyq", title: "PYQs", description: "Coming soon", url: null },
+    { type: "book", title: "Books", description: "Coming soon", url: null },
+  ];
+  return '<div class="material-list core-resource-list" aria-label="Technology core resources">' +
+    resources.map(renderMaterial).join("") + '</div>';
+}
+
 function renderWorkshopSection(unit, index) {
   const isClassNotes = unit.kind === "class-notes";
   const url = isClassNotes ? unit.classNotesUrl : unit.workshopFileUrl;
@@ -597,7 +610,7 @@ function renderWorkshopSection(unit, index) {
     type: "notes",
     title: isClassNotes ? "Class Notes PDF" : "Workshop File",
     description: url
-      ? (isClassNotes ? "Central Workshop class notes" : unit.title + " practical file")
+      ? (isClassNotes ? (unit.credit || "Central Workshop class notes") : unit.title + " practical file")
       : "Coming soon",
     url,
   };
@@ -911,7 +924,7 @@ function unitsForSubject(subjectId) {
   const data = state.data || {};
   const subject = (data.unitCollections || []).find((item) => item.id === subjectId);
   if (!subject) return [];
-  return subject.units.filter((unit) => practiceKeyForUnit(unit));
+  return (subject.units || []).filter((unit) => practiceKeyForUnit(unit));
 }
 
 function renderPracticeStep() {

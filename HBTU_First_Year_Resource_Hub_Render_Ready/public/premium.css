@@ -1033,6 +1033,11 @@ body.menu-open {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.core-resource-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 18px 0 0;
+}
+
 .unit-row[open] .material-list {
   animation: materials-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: top center;
