@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HelpDesk — organised first-year lectures, notes, books and unit-wise PYQs for HBTU students." />
+    <meta name="theme-color" content="#f5f5f7" />
+    <title>HelpDesk · HBTU</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/premium.css?v=20260904-3" />
+    <script src="/app.js?v=20260904-3" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#resources">Skip to resources</a>
+
+    <header class="site-header" id="top">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="HelpDesk home">
+          <span class="brand-mark" aria-hidden="true">H</span>
+          <span>HelpDesk</span>
+        </a>
+
+        <div class="nav-links">
+          <a href="#resources">Library</a>
+          <a href="#syllabus">Syllabus</a>
+          <a href="#help">Help</a>
+        </div>
+
+        <div class="nav-actions">
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch theme">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.7-.1-1.4-.2-2A7 7 0 0 1 12 3Z" /></svg>
+          </button>
+          <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+            <span></span><span></span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <div class="menu-backdrop" id="menu-backdrop" aria-hidden="true"></div>
+    <aside class="mobile-menu" id="mobile-menu" aria-hidden="true" aria-label="Study menu">
+      <div class="drawer-heading">
+        <div><span>HELPDESK</span><h2>Study space</h2></div>
+        <span class="drawer-hint">Press Esc to close</span>
+      </div>
+
+      <nav class="drawer-nav" aria-label="Menu links">
+        <a href="#resources">Library <span>↗</span></a>
+        <a href="#syllabus">Syllabus <span>↗</span></a>
+        <button class="drawer-nav-button" id="practice-open" type="button">Unlimited Practice <span>✨</span></button>
+        <button class="drawer-nav-button" id="calc-open" type="button">SGPA &amp; CGPA Calculator <span>Σ</span></button>
+        <a href="#help">Help &amp; contact <span>↗</span></a>
+      </nav>
+
+      <section class="drawer-tool timer-card" aria-labelledby="timer-heading">
+        <div class="card-heading">
+          <div><span>FOCUS TIMER</span><h3 id="timer-heading">Twenty-five minutes</h3></div>
+          <span class="timer-status" id="timer-status">Ready</span>
+        </div>
+        <div class="timer-display" id="timer-ring">
+          <strong id="timer-value">25:00</strong>
+          <span>minutes</span>
+        </div>
+        <div class="timer-actions">
+          <button class="primary-button" id="timer-toggle" type="button">Start</button>
+          <button class="secondary-button" id="timer-reset" type="button">Reset</button>
+        </div>
+      </section>
+
+      <section class="drawer-tool" aria-labelledby="tasks-heading">
+        <div class="card-heading">
+          <div><span>TODAY</span><h3 id="tasks-heading">Focus list</h3></div>
+          <time id="today-label">Today</time>
+        </div>
+        <form class="task-form" id="task-form">
+          <input id="task-input" maxlength="80" placeholder="Add one clear task" aria-label="New study task" required />
+          <button type="submit" aria-label="Add task">Add</button>
+        </form>
+        <div class="task-list" id="task-list"></div>
+        <p class="task-empty" id="task-empty">No tasks yet.</p>
+      </section>
+    </aside>
+
+    <main>
+      <section class="hero shell">
+        <p class="overline">HBTU KANPUR</p>
+        <h1>First year,<br /><span>in one place.</span></h1>
+        <p class="hero-copy">Choose your branch and semester. Find your subject. Open exactly what you need.</p>
+        <p class="hero-credit">Made with love by <strong>Akshat Shukla</strong> and <strong>Priyanshu Dixit</strong>.</p>
+        <div class="hero-meta" aria-label="Library overview">
+          <span><strong>14</strong> branches</span>
+          <span><strong id="subject-count">21</strong> subject libraries</span>
+          <span><strong id="available-count">20</strong> unit PDFs</span>
+        </div>
+      </section>
+
+      <section class="syllabus-section" id="syllabus">
+        <div class="shell">
+          <header class="section-header">
+            <div>
+              <p class="overline">SYLLABUS</p>
+              <h2>Syllabus library</h2>
+            </div>
+            <p>Engineering Semester 1 and Technology Semester 2 now include their shared syllabus set.</p>
+          </header>
+          <div class="syllabus-list" id="syllabus-list"></div>
+        </div>
+      </section>
+
+      <section class="library-section shell" id="resources">
+        <header class="section-header">
+          <div>
+            <p class="overline">LIBRARY</p>
+            <h2>Browse resources</h2>
+          </div>
+          <p>Branch <span>→</span> Semester <span>→</span> Subject <span>→</span> Unit</p>
+        </header>
+
+        <div class="resource-browser">
+          <aside class="browser-pane branch-pane">
+            <div class="pane-title">
+              <h3>Branches</h3>
+              <span id="branch-count">13</span>
+            </div>
+            <label class="branch-search" for="branch-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
+              <input id="branch-search" type="search" placeholder="Search branches" autocomplete="off" />
+            </label>
+            <nav class="branch-list" id="branch-list" aria-label="Choose a branch">
+              <p class="pane-loading">Loading branches…</p>
+            </nav>
+          </aside>
+
+          <aside class="browser-pane semester-pane" id="semester-pane">
+            <div class="pane-context">
+              <span>SEMESTERS IN</span>
+              <strong id="semester-pane-branch">Food Technology</strong>
+            </div>
+            <nav class="semester-list" id="semester-list" aria-label="Choose a semester">
+              <p class="pane-loading">Loading semesters…</p>
+            </nav>
+          </aside>
+
+          <aside class="browser-pane subject-pane" id="subject-pane">
+            <div class="pane-context">
+              <span>SUBJECTS IN</span>
+              <strong id="subject-pane-semester">Semester 1</strong>
+            </div>
+            <nav class="subject-list" id="subject-list" aria-label="Choose a subject">
+              <p class="pane-loading">Loading subjects…</p>
+            </nav>
+          </aside>
+
+          <section class="content-pane" id="content-pane">
+            <div class="browser-path" aria-label="Current location">
+              <span>Library</span><i>/</i><span id="path-branch">Food Technology</span><i>/</i><span id="path-semester">Semester 1</span><i>/</i><strong id="path-subject">Engineering Chemistry</strong>
+            </div>
+
+            <header class="subject-header" id="subject-header">
+              <span class="subject-code" id="subject-code" aria-hidden="true">CH</span>
+              <div>
+                <h3 id="course-name">Engineering Chemistry</h3>
+                <p id="course-description"></p>
+              </div>
+              <div class="subject-actions">
+                <span class="subject-status" id="course-status">5 units</span>
+                <a class="subject-syllabus unavailable" id="subject-syllabus" aria-disabled="true">Syllabus coming soon</a>
+              </div>
+            </header>
+
+            <div class="unit-list" id="unit-list" aria-live="polite">
+              <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="help-section shell" id="help">
+        <header class="section-header help-heading">
+          <div>
+            <p class="overline">HELP &amp; CONTACT</p>
+            <h2>Ask us directly</h2>
+          </div>
+          <p>Tap a profile photo to reveal the WhatsApp contact.</p>
+        </header>
+
+        <div class="contact-grid">
+          <article class="contact-card">
+            <button class="profile-trigger" type="button" data-contact-trigger="akshat" aria-expanded="false" aria-controls="contact-akshat">
+              <img src="/images/akshat-shukla.png" alt="Akshat Shukla" width="92" height="108" loading="lazy" decoding="async" />
+              <span class="profile-copy"><strong>Akshat Shukla</strong><small>Tap to show WhatsApp</small></span>
+              <span class="profile-arrow" aria-hidden="true">＋</span>
+            </button>
+            <div class="contact-reveal" id="contact-akshat" hidden>
+              <span>WhatsApp</span>
+              <a href="https://wa.me/918787016664" target="_blank" rel="noopener noreferrer">+91 87870 16664 <i>↗</i></a>
+            </div>
+          </article>
+
+          <article class="contact-card">
+            <button class="profile-trigger" type="button" data-contact-trigger="priyanshu" aria-expanded="false" aria-controls="contact-priyanshu">
+              <img src="/images/priyanshu-dixit.png" alt="Priyanshu Dixit" width="92" height="108" loading="lazy" decoding="async" />
+              <span class="profile-copy"><strong>Priyanshu Dixit</strong><small>Tap to show WhatsApp</small></span>
+              <span class="profile-arrow" aria-hidden="true">＋</span>
+            </button>
+            <div class="contact-reveal" id="contact-priyanshu" hidden>
+              <span>WhatsApp</span>
+              <a href="https://wa.me/919305819589" target="_blank" rel="noopener noreferrer">+91 93058 19589 <i>↗</i></a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    </main>
+
+    <section class="practice-hub" id="practice-hub" role="dialog" aria-modal="true" aria-labelledby="practice-hub-heading">
+      <header class="practice-hub-header">
+        <button class="practice-back" id="practice-back" type="button" aria-label="Back" hidden>←</button>
+        <div class="practice-hub-title">
+          <p class="overline">UNLIMITED PRACTICE</p>
+          <h2 id="practice-hub-heading">Choose a semester</h2>
+        </div>
+        <button class="practice-close" id="practice-hub-close" type="button" aria-label="Close practice mode">×</button>
+      </header>
+      <div class="practice-hub-body" id="practice-hub-body"></div>
+      <p class="practice-disclaimer">AI-generated — always double-check against your notes.</p>
+    </section>
+
+    <section class="calc-hub" id="calc-hub" role="dialog" aria-modal="true" aria-labelledby="calc-hub-heading">
+      <header class="practice-hub-header">
+        <div class="practice-hub-title">
+          <p class="overline">SGPA &amp; CGPA</p>
+          <h2 id="calc-hub-heading">Grade calculator</h2>
+        </div>
+        <button class="practice-close" id="calc-hub-close" type="button" aria-label="Close calculator">×</button>
+      </header>
+      <div class="calc-tabs" role="tablist">
+        <button class="calc-tab active" id="calc-tab-semester" type="button" data-tab="semester" role="tab" aria-selected="true">This semester</button>
+        <button class="calc-tab" id="calc-tab-cgpa" type="button" data-tab="cgpa" role="tab" aria-selected="false">Overall CGPA</button>
+      </div>
+      <div class="practice-hub-body calc-hub-body" id="calc-hub-body"></div>
+      <p class="practice-disclaimer">Saved on this device only. Not official — always confirm against your result card.</p>
+    </section>
+
+    <footer class="site-footer">
+      <div class="shell">
+        <p>HelpDesk</p>
+        <span>Made with love by Akshat Shukla and Priyanshu Dixit.</span>
+        <a href="#top">Back to top</a>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,812 @@
+{
+  "meta": {
+    "title": "HelpDesk",
+    "institution": "HBTU",
+    "description": "One organised place for first-year syllabi, lectures, notes and previous-year questions.",
+    "creators": ["Akshat Shukla", "Priyanshu Dixit"],
+    "lastUpdated": "2026-09-03"
+  },
+  "branches": [
+    { "id": "civil", "code": "CE", "name": "Civil Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
+    { "id": "cse", "code": "CSE", "name": "Computer Science & Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
+    { "id": "electrical", "code": "EE", "name": "Electrical Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
+    { "id": "electronics", "code": "EN", "name": "Electronics Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
+    { "id": "information-technology", "code": "IT", "name": "Information Technology", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
+    { "id": "mechanical", "code": "ME", "name": "Mechanical Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
+    { "id": "biochemical", "code": "BE", "name": "Biochemical Engineering", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "biochemical-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "biotechnology", "code": "BT", "name": "Biotechnology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "biotechnology-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "chemical", "code": "CH", "name": "Chemical Engineering", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "chemical-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "food-technology", "code": "FT", "name": "Food Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "food-tech"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "leather", "code": "LT", "name": "Leather Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "leather-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "oil", "code": "OT", "name": "Oil Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "oil-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "paint", "code": "PT", "name": "Paint Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "paint-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
+    { "id": "plastic", "code": "PL", "name": "Plastic Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "plastic-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } }
+  ],
+  "unitCollections": [
+    {
+      "id": "chemistry",
+      "name": "Engineering Chemistry",
+      "description": "Five focused units covering the complete Engineering Chemistry PYQ collection.",
+      "accent": "violet",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        {
+          "number": 1,
+          "title": "Bonding & Spectroscopy",
+          "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03ktP4MHmIV87pHZHBEUF6f",
+          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf"
+        },
+        {
+          "number": 2,
+          "title": "Chemical Kinetics & Surface Chemistry",
+          "lectureUrl": "https://www.youtube.com/playlist?list=PLgrPoGl4jGdo1G93jv-pkmw5RCHM9xTc-",
+          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_2_PYQs.pdf"
+        },
+        {
+          "number": 3,
+          "title": "Electrochemistry, Nanochemistry & Environmental Chemistry",
+          "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03pNhe069q3fHouzq64Vvsm",
+          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_3_PYQs.pdf"
+        },
+        {
+          "number": 4,
+          "title": "Stereochemistry & Reaction Mechanism",
+          "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03fWMXEe-8QJNVJ-ySOF0jO",
+          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_4_PYQs.pdf"
+        },
+        {
+          "number": 5,
+          "title": "Polymers, Water Analysis & Solid Waste Management",
+          "lectureUrl": null,
+          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_5_PYQs.pdf"
+        }
+      ]
+    },
+    {
+      "id": "bet",
+      "name": "Basic Electronics Engineering",
+      "description": "Unit-wise Electronics questions from semiconductor devices to electronic instruments.",
+      "accent": "yellow",
+      "lectureUrl": "https://www.youtube.com/watch?v=7jaa1rlW7Ak&list=PLBlnK6fEyqRiw-GZRqfnlVIBz9dxrqHJS",
+      "notesUrl": "https://college-study.netlify.app/first-semester",
+      "units": [
+        { "number": 1, "title": "P-N Junction Diode & Applications", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_1_PYQs.pdf" },
+        { "number": 2, "title": "Transistors, FETs & Operational Amplifiers", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_2_PYQs.pdf" },
+        { "number": 3, "title": "Digital Logic", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_3_PYQs.pdf" },
+        { "number": 4, "title": "Transducers & Measurement Errors", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_4_PYQs.pdf" },
+        { "number": 5, "title": "Display Devices & Electronic Instruments", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_5_PYQs.pdf" }
+      ]
+    },
+    {
+      "id": "bem",
+      "name": "Engineering Mechanics",
+      "description": "Five units of exam-focused Mechanics questions, separated cleanly by topic.",
+      "accent": "orange",
+      "lectureUrl": "https://www.youtube.com/playlist?list=PLDN15nk5uLiAyM7MbRBF1eIFC8y5vMRxI",
+      "notesUrl": "https://college-study.netlify.app/first-semester",
+      "units": [
+        { "number": 1, "title": "Fundamental Concepts & Definitions", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_1_PYQs.pdf" },
+        { "number": 2, "title": "Two-Dimensional Force Systems & Friction", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_2_PYQs.pdf" },
+        { "number": 3, "title": "Beams & Trusses", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_3_PYQs.pdf" },
+        { "number": 4, "title": "Centroid & Moment of Inertia", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_4_PYQs.pdf" },
+        { "number": 5, "title": "Introduction to Strength of Materials", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_5_PYQs.pdf" }
+      ]
+    },
+    {
+      "id": "pc",
+      "name": "Professional Communication",
+      "description": "Unit-wise communication PYQs from fundamentals through value-based reading.",
+      "accent": "sky",
+      "lectureUrl": "https://www.youtube.com/playlist?list=PL3qvHcrYGy1sihJ6-xK8uHoWTN6W6PK9I",
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Fundamentals of Technical Communication", "pyqUrl": "/resources/pyqs/professional-communication/Professional_Communication_Unit_1_PYQs.pdf" },
+        { "number": 2, "title": "Elements of Written Communication", "pyqUrl": "/resources/pyqs/professional-communication/Professional_Communication_Unit_2_PYQs.pdf" },
+        { "number": 3, "title": "Forms of Technical Communication", "pyqUrl": "/resources/pyqs/professional-communication/Professional_Communication_Unit_3_PYQs.pdf" },
+        { "number": 4, "title": "Presentation Strategies", "pyqUrl": "/resources/pyqs/professional-communication/Professional_Communication_Unit_4_PYQs.pdf" },
+        { "number": 5, "title": "Value-based Text Reading", "pyqUrl": "/resources/pyqs/professional-communication/Professional_Communication_Unit_5_PYQs.pdf" }
+      ]
+    },
+    {
+      "id": "ees",
+      "name": "Environment & Ecology Studies",
+      "description": "Environmental foundations, ecology and sustainability.",
+      "accent": "green",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "workshop",
+      "name": "Central Workshop Practice",
+      "description": "Practical material, workshop notes and viva preparation.",
+      "accent": "rose",
+      "lectureUrl": null,
+      "notesUrl": "https://college-study.netlify.app/first-semester",
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "food-tech",
+      "name": "Food Technology Core",
+      "description": "Faculty material, notes, exam papers and recommended reading.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "biochemical-core",
+      "name": "Biochemical Engineering Core",
+      "description": "Branch-specific Semester 1 material for Biochemical Engineering.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "biotechnology-core",
+      "name": "Biotechnology Core",
+      "description": "Branch-specific Semester 1 material for Biotechnology.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "chemical-core",
+      "name": "Chemical Engineering Core",
+      "description": "Branch-specific Semester 1 material for Chemical Engineering.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "leather-core",
+      "name": "Leather Technology Core",
+      "description": "Branch-specific Semester 1 material for Leather Technology.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "oil-core",
+      "name": "Oil Technology Core",
+      "description": "Branch-specific Semester 1 material for Oil Technology.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "paint-core",
+      "name": "Paint Technology Core",
+      "description": "Branch-specific Semester 1 material for Paint Technology.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "plastic-core",
+      "name": "Plastic Technology Core",
+      "description": "Branch-specific Semester 1 material for Plastic Technology.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "maths-1",
+      "name": "Engineering Mathematics 1",
+      "description": "Semester course resources for Engineering Mathematics 1.",
+      "accent": "violet",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "bee",
+      "name": "Basic Electrical Engineering (BEE)",
+      "description": "Semester course resources for Basic Electrical Engineering.",
+      "accent": "yellow",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "engineering-graphics",
+      "name": "Engineering Graphics",
+      "description": "Semester course resources for Engineering Graphics.",
+      "accent": "orange",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "engineering-physics",
+      "name": "Engineering Physics",
+      "description": "Semester course resources for Engineering Physics.",
+      "accent": "sky",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "uhv",
+      "name": "Universal Human Value",
+      "description": "Semester course resources for Universal Human Value.",
+      "accent": "green",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "pps",
+      "name": "Programming and Problem Solving",
+      "description": "Programming fundamentals and introductory computer science resources.",
+      "accent": "rose",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    },
+    {
+      "id": "etw",
+      "name": "English and Technical Writing",
+      "description": "Semester course resources for English and Technical Writing.",
+      "accent": "teal",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
+        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
+        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
+        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
+        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+      ]
+    }
+  ],
+  "syllabusGroups": [
+    {
+      "id": "engineering",
+      "title": "Engineering",
+      "subtitle": "Engineering branches",
+      "semesters": [
+        {
+          "id": "semester-1-engineering",
+          "semester": 1,
+          "title": "Semester 1",
+          "syllabusIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"]
+        },
+        {
+          "id": "semester-2-engineering",
+          "semester": 2,
+          "title": "Semester 2",
+          "syllabusIds": ["chemistry", "pc", "bem", "ees", "bet", "workshop", "food-tech"]
+        }
+      ]
+    },
+    {
+      "id": "technology",
+      "title": "Technology",
+      "subtitle": "Technology branches",
+      "semesters": [
+        {
+          "id": "semester-1-technology",
+          "semester": 1,
+          "title": "Semester 1",
+          "syllabusIds": ["chemistry", "pc", "bem", "ees", "bet", "workshop", "food-tech"]
+        },
+        {
+          "id": "semester-2-technology",
+          "semester": 2,
+          "title": "Semester 2",
+          "syllabusIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"]
+        }
+      ]
+    }
+  ],
+  "syllabi": [
+    {
+      "id": "chemistry",
+      "title": "Engineering Chemistry",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1J7KJZJ98T7iXVrsuY_yDD4bQ1dQECuN7/view?usp=drive_link"
+    },
+    {
+      "id": "pc",
+      "title": "Professional Communication",
+      "available": true,
+      "url": "https://drive.google.com/file/d/12cKKpiNWSj99Muok06Hd5PJWh9a2wAAm/view?usp=drive_link"
+    },
+    {
+      "id": "bem",
+      "title": "Engineering Mechanics",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1PHUIs7BGmtP0LSbmdfCRfIvOLSDMzrPy/view?usp=drive_link"
+    },
+    {
+      "id": "ees",
+      "title": "Environment & Ecology Studies",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "bet",
+      "title": "Basic Electronics Engineering",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1Cog5QS-KKcT9hmxf1f79HJw_VZNjlbk5/view?usp=drivesdk"
+    },
+    {
+      "id": "workshop",
+      "title": "Central Workshop Practice",
+      "available": true,
+      "url": "https://drive.google.com/file/d/17t97wJoAR8HMaVepSvDTkQP_-eTdW4-6/view?usp=drive_link"
+    },
+    {
+      "id": "food-tech",
+      "title": "Food Technology Core",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1BpGbZsCugaMlFYwwagkOjrB5Cuxs1PH-/view?usp=drive_link"
+    },
+    {
+      "id": "maths-1",
+      "title": "Engineering Mathematics 1",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1DFnN8PSDwmEwWx7FvAS2ebgLSC-UxDGC/view"
+    },
+    {
+      "id": "bee",
+      "title": "Basic Electrical Engineering (BEE)",
+      "available": true,
+      "url": "https://drive.google.com/file/d/11PkVQ_YrAA8Gi7o-WvvP50q-Ie3QIL0c/view?usp=drivesdk"
+    },
+    {
+      "id": "engineering-graphics",
+      "title": "Engineering Graphics",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1-_LM9NMBAWI1gGrX-qUQM2Zb6lnVjM7d/view?usp=drivesdk"
+    },
+    {
+      "id": "engineering-physics",
+      "title": "Engineering Physics",
+      "available": true,
+      "url": "https://drive.google.com/file/d/1tAz1VBMc3qmdL8kFam8LRIFkpiJWqzjE/view?usp=drivesdk"
+    },
+    {
+      "id": "uhv",
+      "title": "Universal Human Value",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "pps",
+      "title": "Programming and Problem Solving",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "etw",
+      "title": "English and Technical Writing",
+      "available": false,
+      "url": null
+    }
+  ],
+  "subjects": [
+    {
+      "id": "chemistry",
+      "name": "Chemistry",
+      "shortName": "Chemistry",
+      "icon": "flask",
+      "accent": "violet",
+      "description": "Theory and laboratory foundations, from kinetics to spectroscopy.",
+      "topics": ["Kinetics", "Stereochemistry", "Mechanisms", "Electrochemistry", "Spectroscopy"],
+      "resources": [
+        {
+          "id": "chem-kinetics",
+          "type": "lecture",
+          "title": "Chemical Kinetics",
+          "description": "Complete topic playlist",
+          "url": "https://www.youtube.com/playlist?list=PLgrPoGl4jGdo1G93jv-pkmw5RCHM9xTc-",
+          "available": true
+        },
+        {
+          "id": "chem-stereo",
+          "type": "lecture",
+          "title": "Stereochemistry",
+          "description": "Concept playlist",
+          "url": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03fWMXEe-8QJNVJ-ySOF0jO",
+          "available": true
+        },
+        {
+          "id": "chem-mechanism",
+          "type": "lecture",
+          "title": "Reaction Mechanism",
+          "description": "Complete topic playlist",
+          "url": "https://www.youtube.com/playlist?list=PLgrPoGl4jGdrCd-5rnP6Zz8QwPLt-JMb-",
+          "available": true
+        },
+        {
+          "id": "chem-electro",
+          "type": "lecture",
+          "title": "Electrochemistry",
+          "description": "Concept playlist",
+          "url": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03pNhe069q3fHouzq64Vvsm",
+          "available": true
+        },
+        {
+          "id": "chem-spectroscopy",
+          "type": "lecture",
+          "title": "Spectroscopy",
+          "description": "Concept playlist",
+          "url": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03ktP4MHmIV87pHZHBEUF6f",
+          "available": true
+        },
+        {
+          "id": "chem-notes",
+          "type": "notes",
+          "title": "Chemistry Notes",
+          "description": "Curated notes are being organised",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "chem-pyq",
+          "type": "pyq",
+          "title": "Chemistry Unit-wise PYQs",
+          "description": "Open the five-unit PDF collection",
+          "url": "#unit-vault",
+          "available": true
+        },
+        {
+          "id": "chem-books",
+          "type": "book",
+          "title": "Recommended Chemistry Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "pc",
+      "name": "Professional Communication",
+      "shortName": "PC & Lab",
+      "icon": "message",
+      "accent": "sky",
+      "description": "Communication theory, lab practice and exam-focused material.",
+      "topics": ["Communication", "Language", "Listening", "Presentation"],
+      "resources": [
+        {
+          "id": "pc-lectures",
+          "type": "lecture",
+          "title": "Professional Communication Lectures",
+          "description": "Complete YouTube playlist",
+          "url": "https://www.youtube.com/playlist?list=PL3qvHcrYGy1sihJ6-xK8uHoWTN6W6PK9I",
+          "available": true
+        },
+        {
+          "id": "pc-notes",
+          "type": "notes",
+          "title": "PC Notes",
+          "description": "Curated notes are being organised",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "pc-pyq",
+          "type": "pyq",
+          "title": "PC Unit-wise PYQs",
+          "description": "Open the five-unit PDF collection",
+          "url": "#unit-vault",
+          "available": true
+        },
+        {
+          "id": "pc-books",
+          "type": "book",
+          "title": "Recommended Communication Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "bem",
+      "name": "Engineering Mechanics",
+      "shortName": "BEM & Tutorial",
+      "icon": "gear",
+      "accent": "orange",
+      "description": "Core mechanics concepts, tutorial support and exam practice.",
+      "topics": ["Statics", "Dynamics", "Friction", "Centroid"],
+      "resources": [
+        {
+          "id": "bem-lectures",
+          "type": "lecture",
+          "title": "Engineering Mechanics Lectures",
+          "description": "Full YouTube playlist",
+          "url": "https://www.youtube.com/playlist?list=PLDN15nk5uLiAyM7MbRBF1eIFC8y5vMRxI",
+          "available": true
+        },
+        {
+          "id": "bem-notes",
+          "type": "notes",
+          "title": "BEM Notes",
+          "description": "College Study first-semester notes",
+          "url": "https://college-study.netlify.app/first-semester",
+          "available": true
+        },
+        {
+          "id": "bem-pyq",
+          "type": "pyq",
+          "title": "Mechanics Unit-wise PYQs",
+          "description": "Open the five-unit PDF collection",
+          "url": "#unit-vault",
+          "available": true
+        },
+        {
+          "id": "bem-books",
+          "type": "book",
+          "title": "Recommended Engineering Mechanics Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "ees",
+      "name": "Environment & Ecology Studies",
+      "shortName": "EES",
+      "icon": "leaf",
+      "accent": "green",
+      "description": "Environmental foundations, ecology and sustainability concepts.",
+      "topics": ["Ecology", "Pollution", "Resources", "Sustainability"],
+      "resources": [
+        {
+          "id": "ees-pack",
+          "type": "notes",
+          "title": "EES Resource Pack",
+          "description": "The complete pack will be added shortly",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "ees-books",
+          "type": "book",
+          "title": "Recommended EES Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "bet",
+      "name": "Basic Electronics Engineering",
+      "shortName": "BET & Tutorial",
+      "icon": "bolt",
+      "accent": "yellow",
+      "description": "Electronic devices, circuits and tutorial resources.",
+      "topics": ["Diodes", "Transistors", "Amplifiers", "Digital Basics"],
+      "resources": [
+        {
+          "id": "bet-lectures",
+          "type": "lecture",
+          "title": "Basic Electronics Lectures",
+          "description": "Complete YouTube playlist",
+          "url": "https://www.youtube.com/watch?v=7jaa1rlW7Ak&list=PLBlnK6fEyqRiw-GZRqfnlVIBz9dxrqHJS",
+          "available": true
+        },
+        {
+          "id": "bet-notes",
+          "type": "notes",
+          "title": "BET Notes",
+          "description": "College Study first-semester notes",
+          "url": "https://college-study.netlify.app/first-semester",
+          "available": true
+        },
+        {
+          "id": "bet-pyq",
+          "type": "pyq",
+          "title": "Electronics Unit-wise PYQs",
+          "description": "Open the five-unit PDF collection",
+          "url": "#unit-vault",
+          "available": true
+        },
+        {
+          "id": "bet-books",
+          "type": "book",
+          "title": "Recommended Basic Electronics Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "workshop",
+      "name": "Central Workshop",
+      "shortName": "Workshop Practice",
+      "icon": "tools",
+      "accent": "rose",
+      "description": "Practical guidance, workshop notes and viva preparation.",
+      "topics": ["Fitting", "Carpentry", "Welding", "Viva"],
+      "resources": [
+        {
+          "id": "workshop-manual",
+          "type": "lecture",
+          "title": "Workshop Manuals",
+          "description": "Practical manuals will be added shortly",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "workshop-notes",
+          "type": "notes",
+          "title": "Workshop Notes",
+          "description": "College Study first-semester resources",
+          "url": "https://college-study.netlify.app/first-semester",
+          "available": true
+        },
+        {
+          "id": "workshop-pyq",
+          "type": "pyq",
+          "title": "Workshop Viva Questions",
+          "description": "PYQ and viva preparation resources",
+          "url": "https://college-study.netlify.app/first-semester",
+          "available": true
+        },
+        {
+          "id": "workshop-books",
+          "type": "book",
+          "title": "Recommended Workshop Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "food-tech",
+      "name": "Food Technology Basics",
+      "shortName": "Food Tech Core",
+      "icon": "wheat",
+      "accent": "teal",
+      "description": "Faculty-led foundation material for first-year Food Technology students.",
+      "topics": ["Food Basics", "Processing", "Quality", "Faculty PDFs"],
+      "resources": [
+        {
+          "id": "food-guidance",
+          "type": "lecture",
+          "title": "Study Guidance",
+          "description": "Use the PDFs supplied by faculty; suitable public lectures are limited",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "food-notes",
+          "type": "notes",
+          "title": "Food Technology Notes",
+          "description": "Curated notes are being organised",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "food-pyq",
+          "type": "pyq",
+          "title": "Food Technology PYQs",
+          "description": "Previous-year papers are coming soon",
+          "url": null,
+          "available": false
+        },
+        {
+          "id": "food-books",
+          "type": "book",
+          "title": "Recommended Food Technology Books",
+          "description": "Recommended book PDFs will be added soon",
+          "url": null,
+          "available": false
+        }
+      ]
+    }
+  ]
+}

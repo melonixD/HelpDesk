@@ -1,0 +1,240 @@
+{
+  "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf": {
+    "subject": "Engineering Chemistry",
+    "unitNumber": 1,
+    "unitTitle": "Bonding & Spectroscopy",
+    "questions": [
+      "What is the AXE method? Illustrate and explain the molecular geometry for different steric numbers with suitable examples.",
+      "Describe the basic concepts of Valence Bond Theory (VBT) and explain hybridization with a suitable example.",
+      "Draw the schematic diagram of an FTIR spectrophotometer and derive the expression used to determine the number of vibrational modes of a molecule under infrared radiation.",
+      "Describe Crystal Field Theory (CFT)? Explain the splitting of d-orbitals in an octahedral field. 4",
+      "Calculate the CFSE value of d system in Octahedral (strong and weak field ligand) and tetrahedral geometry.",
+      "Write the Beer-Lambert Law of UV-vis spectroscopy. The solution of compound having concentration 0.0001g/l gave 0.2 absorbance value when measuring using 1.0cm cell. Calculate the molar extinction coefficient.",
+      "How would you identify the following pairs of compounds with the help of IR technique? (i) Ethanol and propanone (ii) Methanol and ethanoic acid (iii) Ethylamine and acetamide.",
+      "Write the postulates of Crystal field Theory for octahedral and tetrahedral complex. Show the 3+ splitting of d-orbitals of [Co(NH ) ] and fill the metal electrons. 3 6",
+      "What is mesophase? Classify the liquid crystal and explain the types of organic molecules working as liquid crystal.",
+      "Draw the Jablonski diagram and explain the terms: Absorbance, fluorescence, phosphorescence, intersystem crossing and internal conversion.",
+      "What is Band Theory? Explain the band gap of conductor, insulator and semiconductor on the basis of band theory of solids.",
+      "Explain the d-d transition in octahedral complex and tetrahedral complex considering different 2+ types of spin. Calculate the CFSE value for the complex [Co(H O) ] . 2 6",
+      "What is chromophore and auxochrome in UV-Vis Spectroscopy? What types of shifts occur in the spectra of UV-Vis spectroscopy and what do they signify?",
+      "What is the working principle of UV-Vis spectroscopy and how can the spectrum be interpreted to identify different types of bonds in a sample?"
+    ]
+  },
+  "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_2_PYQs.pdf": {
+    "subject": "Engineering Chemistry",
+    "unitNumber": 2,
+    "unitTitle": "Chemical Kinetics & Surface Chemistry",
+    "questions": [
+      "Explain the different types of electronic transition of methanol and methyl chloride.",
+      "Write the postulates of VSEPR Theory? Find the steric number, molecular geometry and - shape of ClF , SF , I and BF . 3 4 3 3",
+      "Draw the potential energy plot for orbital overlapping, and discuss the allowed and forbidden interactions according to Valence Bond Theory.",
+      "Draw the splitting pattern of d-orbitals in octahedral and tetrahedral geometry of the complexes.",
+      "Write the working principle of FTIR? Mention and explain the difference of stretching frequency of -OH in the free and H-bonded form.",
+      "What is the role of reference and attenuator in UV-Vis Spectrophotometer? Explain the types of electronic transition possible in C H and HCHO. 2 4",
+      "Give the shape and geometry of XeF . 2 2-",
+      "With the help of VBT explain hybridization, geometry and magnetic property of [NiCl ] . 4",
+      "Find the steric no. and molecular geometry of BrF and SF . Draw the overall geometry of 3 4 the compound predicted by the steric number of system.",
+      "Define molecular spectroscopy. Explain the different types of transition states with the help of suitable energy level diagrams.",
+      "What is Beer-Lambert Law? State its mathematical expression and significance. Draw the block/flow diagram of a UV-visible spectrophotometer.",
+      "Draw the energy level diagram of different transition States and explain.",
+      "What is the working principle of UV-Vis Spectroscopy? Illustrate and explain the double beam UV-Vis Spectrophotometer.",
+      "Derive the rate of reaction for enzyme-catalyzed reaction which proceeds through the following steps: Step I: E + S \u2194 ES and Step II: ES \u2192 P + E.",
+      "In Langmuir adsorption isotherm A is the gas molecule and M is the surface site. A + (g) M \u2194 AM. Calculate the fraction of surface sites occupied by gas molecules (\u03b8). (Surface) -1 4",
+      "A reaction has rate constant of 5000 sec at 25\u00b0C and activation energy of 6 \u00d7 10 J/mol. At -1 what temperature (in K) would rate constant be 10000 sec ?"
+    ]
+  },
+  "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_3_PYQs.pdf": {
+    "subject": "Engineering Chemistry",
+    "unitNumber": 3,
+    "unitTitle": "Electrochemistry, Nanochemistry & Environmental Chemistry",
+    "questions": [
+      "Differentiate between chemisorption and physisorption. (Frequently Asked)",
+      "Discuss Freundlich adsorption isotherm and write its limitations.",
+      "Discuss kinetics of enzyme catalysis and derive Michaelis-Menten equation.",
+      "How many times the rate of reaction increases at 20\u00b0C for a reaction having the activation -1 -1 energies in the presence and absence of a catalyst as 50 KJ mol and 75 KJ mol ?",
+      "Define rate constant. What is the unit of second order rate constant?",
+      "Define adsorption isotherm. Derive Langmuir adsorption isotherm equation for adsorption of gaseous molecule on solid surface.",
+      "Calculate the temperature for a reaction at which its half-life is 2 minutes. Given: A = 5000 \u00d7 10 -1 2 -1 10 sec and E = 10 Jmol . a",
+      "Find out correct rate expression for the following reaction: X \u2194 Y (Fast) ; 2X + Y \u2192 P (Slow).",
+      "Explain the methods to determine V and K in Michaelis-Menten equation for enzyme max m catalysis.",
+      "Differentiate between adsorption and absorption.",
+      "Find correct rate law expression for following reaction: A \u2194 B (fast) ; 2A + B \u2192 P (slow).",
+      "Explain Ostwald's isolation method for determining order of a given reaction.",
+      "Find correct rate law expression for following reaction: A \u2194 B (fast) ; C \u2194 D (fast) ; 2A + B + D \u2192 P (slow).",
+      "Explain differential or graphical method for determining order of a given reaction.",
+      "Derive rate constant for second order reaction when both the reactants are different.",
+      "Explain half life time method for determining order of a given reaction.",
+      "Explain the differential rate expression method to determine the order of reaction (n).",
+      "In a second order reaction the initial concentration of the reactant is 0.2 moles/L. The reaction is found to be 30% complete in 50 min. Calculate the value of rate constant. Chemistry 2+",
+      "Calculate the potential of the following electrochemical cell at 25\u00b0C: Cu / Cu (0.50M) (s) (aq) + || H (0.01M) / H (0.95atm), Pt. (Given E\u00b0 = 0.00V and E\u00b0 = 0.34V). 2 cathode anode"
+    ]
+  },
+  "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_4_PYQs.pdf": {
+    "subject": "Engineering Chemistry",
+    "unitNumber": 4,
+    "unitTitle": "Stereochemistry & Reaction Mechanism",
+    "questions": [
+      "Explain the properties and application of Nano-materials.",
+      "Determine the sources and classification of air pollution.",
+      "What is the greenhouse effect?",
+      "What are the sources, ill-effects and remedies of oxides of nitrogen pollutant?",
+      "Write short note on solar cell.",
+      "What are nanomaterials? Write their classification. + +",
+      "Calculate the pH of the cell: Pt / H || Ag / Ag . (Given: E = 1.2 V at H2(g,1atm) aq(1.0M) (s) 25\u00b0C, E\u00b0 = +0.8 V). Ag+/Ag",
+      "Write short note on electrostatic precipitator used to control particulate matter.",
+      "What is nanomaterial? How are they different from bulk material?",
+      "Explain construction and working of Dry cell.",
+      "What are the sources of water pollution? 2+ 2+ 3+ 2+",
+      "For the cell: Zn / Zn (1M) || Fe (1M) / Fe (0.5M). Given: E\u00b0(Zn /Zn) = (s) (aq) (aq) (aq) 3+ 2+ -0.76 V and E\u00b0(Fe /Fe ) = 0.77 V. Write the cell reaction and calculate the emf of the cell at 25\u00b0C.",
+      "Write a short note on acid rain.",
+      "Explain construction and working of H -O fuel cell. 2 2",
+      "What is the difference between the top down and bottom up approach of synthesis of nanomaterial? Write classification of nanomaterials. 3+ 2+",
+      "What is electromotive force (Emf) of the cell? For the cell: Cr | Cr (0.1M) || Fe (s) (aq) (aq) 3+ 2+ (0.01M) | Fe . Given: E\u00b0(Cr /Cr) = -0.74 V and E\u00b0(Fe /Fe) = -0.44 V. Write the cell (s) reaction and calculate the emf of the cell at 25\u00b0C.",
+      "What are the sources, ill effects and remedies of CO & organic vapours air pollutants?",
+      "Assign the absolute configuration R or S in the given compounds. (Structures provided in exam paper)",
+      "Write the difference between the inductive effect and the mesomeric effect."
+    ]
+  },
+  "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_5_PYQs.pdf": {
+    "subject": "Engineering Chemistry",
+    "unitNumber": 5,
+    "unitTitle": "Polymers, Water Analysis & Solid Waste Management",
+    "questions": [
+      "What are carbenes? Define the types of carbenes depending on their spin state. Which is more stable between singlet and triplet carbene and why?",
+      "Write the general reaction for the Suzuki-Miyaura cross-coupling reaction and explain each step of the mechanism.",
+      "Write reaction of Fries rearrangement and explain its mechanism.",
+      "Arrange the given compounds in decreasing order of stability / acidic strength. (Structures provided in exam paper)",
+      "Write short notes on the following: (i) Electromeric effect (ii) Allenes.",
+      "What is atropisomerism?",
+      "Explain Favorskii rearrangement with its mechanism.",
+      "Write mechanism of Wagner-Meerwein rearrangement.",
+      "Write short notes on the following: (i) Allenes (ii) Spiranes.",
+      "What are spiro compounds (spiranes)? Define with an example.",
+      "Define circular dichroism (CD). Give a schematic diagram of a CD instrument and mention its uses.",
+      "How to differentiate between chiral and achiral molecule? What are the differences?",
+      "Assign the E or Z configuration to the given compounds. (Structures provided in exam paper)",
+      "How to differentiate enantiomers and diastereomers? Explain with examples. How do they differ in terms of physical and chemical properties?",
+      "What are enantiomers? Explain with one example and write the properties of enantiomers.",
+      "What is optical activity? How is it measured, and what does it indicate about a compound?",
+      "Explain the principle of optical activity with the help of a schematic diagram of a polarimeter.",
+      "Define functionality and degree of polymerization (DP).",
+      "Explain classification of polymers based on number of monomers and methods of synthesis (sources and structures) with suitable examples.",
+      "Explain zeolite process of softening of water and also write its advantages.",
+      "Calculate temporary and permanent hardness of a water sample containing Mg(HCO ) = 3 2 146 mg/L, Ca(HCO ) = 324 mg/L, MgCl = 190 mg/L and CaSO = 272 mg/L. 3 2 2 4",
+      "Explain units of hardness of water.",
+      "Calculate temporary, permanent and total hardness of a sample of water containing: Ca(HCO ) = 45.6 mg/L, Mg(HCO ) = 25.5 mg/L, MgCl = 11.5 mg/L, CaSO = 16.5 mg/L, 3 2 3 2 2 4 KCl = 20.0 mg/L and Na SO = 22.5 mg/L. 2 4",
+      "What are the major sources of urban solid wastes?",
+      "Discuss hot lime soda process of softening of water and write advantages and disadvantages of lime soda process.",
+      "Differentiate between thermoplastic and thermosetting polymers with examples.",
+      "Explain Ion exchange process of softening of water and also write its advantages.",
+      "Calculate the temporary and total hardness of a water sample containing Mg(HCO ) = 85 3 2 mg/L, Ca(HCO ) = 170 mg/L, MgCl = 90 mg/L & CaSO = 146 mg/L (Atomic weight of Mg 3 2 2 4 and Ca are 24 and 40 respectively).",
+      "Write advantages and disadvantages of LS process of softening of hard water.",
+      "Calculate temporary and total hardness of water sample containing: Mg(HCO ) = 730 mg/L, 3 2 Ca(HCO ) = 162 mg/L, MgCl = 950 mg/L and CaSO = 136 mg/L. 3 2 2 4",
+      "Explain three 'R's rules for effective solid waste management.",
+      "What is hardness? Explain types of hardness with example. Why do we express hardness in terms of CaCO equivalents? 3",
+      "Explain the composition and reason of hardness. Write various units of hardness expression. Laboratory Concepts & Core Basics",
+      "Define the types of titration.",
+      "Write the example of acidic and basic buffer solution.",
+      "Define the primary and secondary standard reagent with the help of example.",
+      "Why are two indicators used in acid-base titration? / Why do we use two indicators in alkali mixture titration with HCl? Write their pH range.",
+      "Write the Poiseuille's equation.",
+      "Define viscosity. Write the factors affecting viscosity and its unit.",
+      "What is an indicator? Give classification of indicator with suitable examples.",
+      "What is the working pH range of phenolphthalein and methyl orange?",
+      "What is complexometric titration? Write the reaction involved in estimation of hardness of water using EDTA.",
+      "Define normality and molarity of the solution.",
+      "What is buffer? Write an example of acidic & basic buffer.",
+      "What is redox titration? Write the reaction involved in the estimation of iron content using K Cr O as an intermediate and N-phenyl anthranilic acid as an internal indicator. 2 2 7"
+    ]
+  },
+  "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_1_PYQs.pdf": {
+    "subject": "Basic Electronics Engineering",
+    "unitNumber": 1,
+    "unitTitle": "P-N Junction Diode & Applications",
+    "questions": []
+  },
+  "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_2_PYQs.pdf": {
+    "subject": "Basic Electronics Engineering",
+    "unitNumber": 2,
+    "unitTitle": "Transistors, FETs & Operational Amplifiers",
+    "questions": []
+  },
+  "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_3_PYQs.pdf": {
+    "subject": "Basic Electronics Engineering",
+    "unitNumber": 3,
+    "unitTitle": "Digital Logic",
+    "questions": []
+  },
+  "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_4_PYQs.pdf": {
+    "subject": "Basic Electronics Engineering",
+    "unitNumber": 4,
+    "unitTitle": "Transducers & Measurement Errors",
+    "questions": []
+  },
+  "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_5_PYQs.pdf": {
+    "subject": "Basic Electronics Engineering",
+    "unitNumber": 5,
+    "unitTitle": "Display Devices & Electronic Instruments",
+    "questions": []
+  },
+  "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_1_PYQs.pdf": {
+    "subject": "Engineering Mechanics",
+    "unitNumber": 1,
+    "unitTitle": "Fundamental Concepts & Definitions",
+    "questions": []
+  },
+  "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_2_PYQs.pdf": {
+    "subject": "Engineering Mechanics",
+    "unitNumber": 2,
+    "unitTitle": "Two-Dimensional Force Systems & Friction",
+    "questions": []
+  },
+  "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_3_PYQs.pdf": {
+    "subject": "Engineering Mechanics",
+    "unitNumber": 3,
+    "unitTitle": "Beams & Trusses",
+    "questions": []
+  },
+  "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_4_PYQs.pdf": {
+    "subject": "Engineering Mechanics",
+    "unitNumber": 4,
+    "unitTitle": "Centroid & Moment of Inertia",
+    "questions": []
+  },
+  "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_5_PYQs.pdf": {
+    "subject": "Engineering Mechanics",
+    "unitNumber": 5,
+    "unitTitle": "Introduction to Strength of Materials",
+    "questions": []
+  },
+  "/resources/pyqs/professional-communication/Professional_Communication_Unit_1_PYQs.pdf": {
+    "subject": "Professional Communication",
+    "unitNumber": 1,
+    "unitTitle": "Fundamentals of Technical Communication",
+    "questions": []
+  },
+  "/resources/pyqs/professional-communication/Professional_Communication_Unit_2_PYQs.pdf": {
+    "subject": "Professional Communication",
+    "unitNumber": 2,
+    "unitTitle": "Elements of Written Communication",
+    "questions": []
+  },
+  "/resources/pyqs/professional-communication/Professional_Communication_Unit_3_PYQs.pdf": {
+    "subject": "Professional Communication",
+    "unitNumber": 3,
+    "unitTitle": "Forms of Technical Communication",
+    "questions": []
+  },
+  "/resources/pyqs/professional-communication/Professional_Communication_Unit_4_PYQs.pdf": {
+    "subject": "Professional Communication",
+    "unitNumber": 4,
+    "unitTitle": "Presentation Strategies",
+    "questions": []
+  },
+  "/resources/pyqs/professional-communication/Professional_Communication_Unit_5_PYQs.pdf": {
+    "subject": "Professional Communication",
+    "unitNumber": 5,
+    "unitTitle": "Value-based Text Reading",
+    "questions": []
+  }
+}
