@@ -1,5 +1,6 @@
 const resources = require("../../data/resources.json");
 const pyqBank = require("../../data/pyq-bank.json");
+const { readFinal } = require("./admin-uploads");
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -28,6 +29,29 @@ function filterResources(params) {
   const query = String((params && params.q) || "").trim().toLowerCase();
   const type = String((params && params.type) || "all").toLowerCase();
   const subject = String((params && params.subject) || "all").toLowerCase();
+  const branchId = String((params && params.branch) || "all").toLowerCase();
+  const semesterId = String((params && params.semester) || "all").toLowerCase();
+
+  const branches = resources.branches
+    .filter((branch) => branchId === "all" || branch.id === branchId)
+    .map((branch) => ({
+      ...branch,
+      semesters: branch.semesters.filter((semester) => semesterId === "all" || semester.id === semesterId),
+    }));
+  const restrictCollections = branchId !== "all" || semesterId !== "all";
+  const referencedCollections = new Set(branches.flatMap((branch) =>
+    branch.semesters.flatMap((semester) => semester.subjectIds)
+  ));
+  const collectionOrder = new Map(branches.flatMap((branch) =>
+    branch.semesters.flatMap((semester) => semester.subjectIds)
+  ).map((id, index) => [id, index]));
+  const unitCollections = resources.unitCollections.filter((collection) =>
+    (!restrictCollections || referencedCollections.has(collection.id)) &&
+    (subject === "all" || collection.id === subject) &&
+    (!query || `${collection.name} ${collection.description} ${collection.units.map((unit) => unit.title).join(" ")}`.toLowerCase().includes(query))
+  ).sort((left, right) => restrictCollections
+    ? (collectionOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (collectionOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+    : 0);
 
   const subjects = resources.subjects
     .filter((item) => subject === "all" || item.id === subject)
@@ -45,7 +69,7 @@ function filterResources(params) {
       `${item.name} ${item.shortName}`.toLowerCase().includes(query)
     );
 
-  return { ...resources, subjects };
+  return { ...resources, branches, unitCollections, subjects };
 }
 
 function readRequestBody(event) {
@@ -103,6 +127,18 @@ Return only a JSON array in this exact shape:
 [{"question":"...","answer":"..."}]`;
 }
 
+function buildUploadedPracticePrompt(subject, unitTitle) {
+  return `Read the attached previous-year-question PDF for this engineering course.
+
+Subject: ${subject}
+Unit: ${unitTitle}
+
+Generate ${PRACTICE_BATCH_SIZE} NEW exam practice questions based only on concepts and difficulty represented in the PDF. Do not copy or trivially reword its questions. Include concise, correct worked answers and use equations or units where appropriate.
+
+Return only a JSON array in this exact shape:
+[{"question":"...","answer":"..."}]`;
+}
+
 function getGeminiTimeoutMs() {
   const configured = Number(process.env.PRACTICE_API_TIMEOUT_MS);
   if (Number.isFinite(configured) && configured >= 1000 && configured <= 25000) {
@@ -153,8 +189,20 @@ async function generatePractice(event) {
   const pyqUrl = String(body.pyqUrl || "").trim();
   if (!pyqUrl) return json(400, { error: "pyqUrl is required." });
 
-  const unitData = pyqBank[pyqUrl];
-  if (!unitData || !Array.isArray(unitData.questions) || !unitData.questions.length) {
+  let unitData = pyqBank[pyqUrl];
+  let uploadedPdf = null;
+  if ((!unitData || !Array.isArray(unitData.questions) || !unitData.questions.length) && pyqUrl.startsWith("/uploads/")) {
+    uploadedPdf = await readFinal(pyqUrl.slice("/uploads/".length));
+    if (uploadedPdf && uploadedPdf.metadata.contentType === "application/pdf") {
+      unitData = {
+        subject: String(body.subjectTitle || "Uploaded subject").slice(0, 160),
+        unitNumber: String(body.unitNumber || ""),
+        unitTitle: String(body.unitTitle || "Selected unit").slice(0, 250),
+        questions: [],
+      };
+    }
+  }
+  if (!unitData || ((!unitData.questions || !unitData.questions.length) && !uploadedPdf)) {
     return json(404, { error: "No PYQ text is available for this unit yet." });
   }
 
@@ -163,8 +211,10 @@ async function generatePractice(event) {
     return json(429, { error: "Too many practice requests right now. Try again in a bit." });
   }
 
-  const examples = pickSample(unitData.questions, Math.min(8, unitData.questions.length));
-  const prompt = buildPracticePrompt(unitData.subject, unitData.unitTitle, examples);
+  const examples = uploadedPdf ? [] : pickSample(unitData.questions, Math.min(8, unitData.questions.length));
+  const prompt = uploadedPdf
+    ? buildUploadedPracticePrompt(unitData.subject, unitData.unitTitle)
+    : buildPracticePrompt(unitData.subject, unitData.unitTitle, examples);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const startedAt = Date.now();
   const controller = new AbortController();
@@ -177,7 +227,10 @@ async function generatePractice(event) {
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: uploadedPdf ? [
+          { inlineData: { mimeType: "application/pdf", data: uploadedPdf.data.toString("base64") } },
+          { text: prompt },
+        ] : [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.8,
           candidateCount: 1,
@@ -218,6 +271,7 @@ async function generatePractice(event) {
 
     if (!questions.length) {
       console.error("Gemini returned no usable questions:", String(rawText).slice(0, 800));
+      if (uploadedPdf) return json(502, { error: "Gemini could not read this uploaded PYQ yet. Try again." });
       return json(200, {
         subject: unitData.subject,
         unitNumber: unitData.unitNumber,
@@ -241,6 +295,7 @@ async function generatePractice(event) {
       `Practice generation ${timedOut ? "timed out" : "failed"} after ${Date.now() - startedAt} ms:`,
       error && error.message ? error.message : error
     );
+    if (uploadedPdf) return json(502, { error: "Could not generate from this uploaded PYQ right now. Try again." });
     return json(200, {
       subject: unitData.subject,
       unitNumber: unitData.unitNumber,

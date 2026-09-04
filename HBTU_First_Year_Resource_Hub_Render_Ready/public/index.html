@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>HelpDesk · HBTU</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/premium.css?v=20260904-7" />
-    <script src="/app.js?v=20260904-7" defer></script>
+    <link rel="stylesheet" href="/premium.css?v=20260904-8" />
+    <script src="/app.js?v=20260904-8" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#resources">Skip to resources</a>
@@ -17,7 +17,7 @@
       <nav class="nav shell" aria-label="Primary navigation">
         <a class="brand" href="#top" aria-label="HelpDesk home">
           <span class="brand-mark" aria-hidden="true">H</span>
-          <span>HelpDesk</span>
+          <span id="brand-name">HelpDesk</span>
         </a>
 
         <div class="nav-links">
@@ -52,6 +52,8 @@
         <button class="drawer-nav-button" id="placements-open" type="button">Placements <span>↗</span></button>
         <button class="drawer-nav-button" id="notices-open" type="button">Notice Board <span>↗</span></button>
         <a href="#help">Help &amp; contact <span>↗</span></a>
+        <a id="admin-menu-link" href="/admin" hidden>Admin <span>↗</span></a>
+        <button class="drawer-nav-button" id="admin-logout" type="button" hidden>Log out <span>↗</span></button>
       </nav>
 
       <section class="drawer-tool timer-card" aria-labelledby="timer-heading">
@@ -81,14 +83,16 @@
         <div class="task-list" id="task-list"></div>
         <p class="task-empty" id="task-empty">No tasks yet.</p>
       </section>
+
+      <button class="drawer-version" id="admin-reveal-trigger" type="button" aria-label="HelpDesk version">HelpDesk v14</button>
     </aside>
 
     <main>
       <section class="hero shell">
-        <p class="overline">HBTU KANPUR</p>
+        <p class="overline" id="hero-institution">HBTU KANPUR</p>
         <h1>First year,<br /><span>in one place.</span></h1>
-        <p class="hero-copy">Choose your branch and semester. Find your subject. Open exactly what you need.</p>
-        <p class="hero-credit">Made with love by <strong>Akshat Shukla</strong> and <strong>Priyanshu Dixit</strong>.</p>
+        <p class="hero-copy" id="hero-copy">Choose your branch and semester. Find your subject. Open exactly what you need.</p>
+        <p class="hero-credit" id="hero-credit">Made with love by <strong>Akshat Shukla</strong> and <strong>Priyanshu Dixit</strong>.</p>
         <div class="hero-meta" aria-label="Library overview">
           <span><strong>14</strong> branches</span>
           <span><strong id="subject-count">21</strong> subject libraries</span>
@@ -186,7 +190,7 @@
           <p>Tap a profile photo to reveal the WhatsApp contact.</p>
         </header>
 
-        <div class="contact-grid">
+        <div class="contact-grid" id="contact-grid">
           <article class="contact-card">
             <button class="profile-trigger" type="button" data-contact-trigger="akshat" aria-expanded="false" aria-controls="contact-akshat">
               <img src="/images/akshat-shukla.png" alt="Akshat Shukla" width="92" height="108" loading="lazy" decoding="async" />

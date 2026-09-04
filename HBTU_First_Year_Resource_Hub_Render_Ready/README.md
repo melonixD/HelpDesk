@@ -1,4 +1,4 @@
-# HelpDesk · Netlify edition
+# HelpDesk V14 · Netlify edition
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, syllabus library, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API now runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -29,6 +29,11 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Responsive Android/mobile layout, animations, light mode and dark mode
 - Netlify Functions, clean `/api/*` routes, security headers and SPA routing
 - Static resource fallback if the resource API is temporarily unavailable
+- Private responsive admin dashboard for resources, site details, creator cards, placements and notices
+- Dynamic branch → semester → subject → unit management with add, reorder and cascade-delete controls
+- Secure 8-hour signed sessions, CSRF checks, bcrypt login and login rate limiting
+- GitHub-backed content saves that automatically trigger the connected Netlify deployment
+- Chunked Netlify Blob uploads for PDFs (20 MB) and profile images (5 MB)
 
 ## Deploy to Netlify from GitHub (recommended)
 
@@ -50,6 +55,12 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
    | --- | --- |
    | `GEMINI_API_KEY` | Your Google AI Studio API key |
    | `GEMINI_MODEL` | `gemini-3.6-flash` (optional) |
+   | `ADMIN_USERNAME` | `Priyanshu` |
+   | `ADMIN_PASSWORD_HASH` | The bcrypt hash from `.env.example` |
+   | `SESSION_SECRET` | A random secret of at least 32 characters |
+   | `GITHUB_TOKEN` | Fine-grained GitHub token with Contents read/write access to this repository |
+   | `GITHUB_REPO` | `OWNER/REPOSITORY` |
+   | `GITHUB_BRANCH` | `main` |
 
 6. Trigger a new production deploy after saving the key.
 7. Check `https://YOUR-SITE.netlify.app/api/health`. It should return JSON with `"status":"ok"`.
@@ -59,7 +70,40 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 
 You can upload this complete ZIP at [Netlify Drop](https://app.netlify.com/drop) while signed in. Upload the project ZIP—not only the `public` folder—because the Netlify Functions and configuration are outside `public`. Add `GEMINI_API_KEY` in the project environment variables and redeploy once afterward.
 
-This project is about 33 MB and contains one PDF larger than 10 MB. If the browser upload stalls, use the GitHub method above; it is more reliable for this project and makes later updates automatic.
+This project contains several PDFs and may be too large for a reliable browser drop. The GitHub method is recommended and also enables the admin dashboard's automatic saves.
+
+## Private admin dashboard
+
+The admin route is `/admin`. It is also revealed in the hamburger menu after tapping the small version label five times within three seconds, or holding it for about one second. The menu shows Admin and Log out only while a valid session exists.
+
+On the dashboard you can edit:
+
+- branches, any number of semesters, linked subjects and unit resources;
+- the public site title, institution and description;
+- creator names, roles, WhatsApp contacts and profile images;
+- placement records and reports;
+- Notice Board fallback entries.
+
+Choose **Save changes** to validate the entire JSON document on the server and commit it through GitHub. Netlify then deploys that commit. The History link opens the relevant GitHub file history. Saves are serialized by the UI; if GitHub reports a conflict, reload before retrying.
+
+The password itself is never stored in the source or sent to the browser. Generate a replacement hash locally with:
+
+```bash
+node -e "require('bcryptjs').hash(process.argv[1], 12).then(console.log)" 'YOUR_NEW_PASSWORD'
+```
+
+For the initial account requested for this build, copy these values into Netlify (the value below is a one-way bcrypt hash, not the password):
+
+```dotenv
+ADMIN_USERNAME=Priyanshu
+ADMIN_PASSWORD_HASH=$2b$12$9DsaIlwzN45reAa8sSTcgOFl5chG7AV.totGf30xQbWQUZw.bQ/sS
+SESSION_SECRET=replace-with-the-output-of-openssl-rand-hex-32
+GITHUB_TOKEN=your-fine-grained-github-token
+GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
+GITHUB_BRANCH=main
+```
+
+Generate a session secret with `openssl rand -hex 32`. Uploaded assets use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads` for previewing.
 
 ## Unlimited Practice
 
@@ -105,7 +149,7 @@ The build checks that all branches load, every linked PYQ PDF exists, and every 
 
 Edit `data/resources.json`:
 
-- `branches` controls branches and `semesterSubjectIds`.
+- `branches` controls branches and each branch's dynamic `semesters` list.
 - `unitCollections` controls subjects, units, lectures, notes, PYQs and books.
 - `syllabusGroups` controls Engineering/Technology and their semesters.
 - `syllabi` controls the syllabus links shown at the top and inside subjects.
@@ -125,8 +169,11 @@ npm run build
 - `GET /api/health`
 - `GET /api/resources`
 - `GET /api/resources?q=spectroscopy&type=lecture&subject=chemistry`
+- `GET /api/resources?branch=mechanical&semester=semester-2`
 - `POST /api/practice/generate` with body `{ "pyqUrl": "/resources/pyqs/.../Unit_3_PYQs.pdf" }`
 - `GET /api/notices`
+- `POST /api/admin/login`, `GET /api/admin/session`, `POST /api/admin/logout`
+- `GET /api/admin/data`, `POST /api/admin/save`, `POST /api/admin/upload`
 
 ## Structure
 
@@ -143,10 +190,14 @@ helpdesk/
 │   │   ├── health.js
 │   │   ├── resources.js
 │   │   ├── practice-generate.js
-│   │   └── notices.js
+│   │   ├── notices.js
+│   │   └── admin-*.js
 │   └── lib/
 │       ├── helpdesk-api.js
-│       └── hbtu-feed.js
+│       ├── hbtu-feed.js
+│       ├── admin-auth.js
+│       ├── admin-content.js
+│       └── admin-uploads.js
 ├── public/
 │   ├── app.js
 │   ├── index.html
@@ -154,6 +205,7 @@ helpdesk/
 │   ├── resources.json
 │   ├── placements.json
 │   ├── notices-fallback.json
+│   ├── admin/
 │   ├── images/
 │   └── resources/pyqs/
 ├── scripts/

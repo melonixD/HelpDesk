@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>HelpDesk Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin/admin.css?v=14">
+</head>
+<body>
+  <main id="login-view" class="login-shell" hidden>
+    <section class="login-card">
+      <a class="wordmark" href="/">HelpDesk</a>
+      <p class="eyebrow">Private workspace</p>
+      <h1>Welcome back.</h1>
+      <p class="muted">Sign in to manage the resource library.</p>
+      <form id="login-form" autocomplete="on">
+        <label>Username<input id="login-username" name="username" autocomplete="username" required></label>
+        <label>Password<input id="login-password" name="password" type="password" autocomplete="current-password" required></label>
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+        <button class="primary wide" type="submit">Continue</button>
+      </form>
+      <a class="back-link" href="/">← Return to HelpDesk</a>
+    </section>
+  </main>
+
+  <div id="admin-view" class="admin-shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a class="wordmark" href="/">HelpDesk</a>
+        <button class="icon-button mobile-only" id="close-sidebar" aria-label="Close navigation">×</button>
+      </div>
+      <nav id="admin-nav" aria-label="Admin sections">
+        <button data-section="resources" class="active"><span>◇</span>Resources</button>
+        <button data-section="syllabus"><span>▱</span>Syllabus</button>
+        <button data-section="meta"><span>◌</span>Site details</button>
+        <button data-section="creators"><span>♡</span>Creators</button>
+        <button data-section="placements"><span>↗</span>Placements</button>
+        <button data-section="notices"><span>□</span>Notices</button>
+      </nav>
+      <div class="sidebar-foot">
+        <a href="/" target="_blank" rel="noopener">View live site ↗</a>
+        <button id="logout-button">Log out</button>
+      </div>
+    </aside>
+    <button class="sidebar-scrim" id="sidebar-scrim" aria-label="Close navigation" hidden></button>
+
+    <section class="workspace">
+      <header class="topbar">
+        <button class="icon-button mobile-only" id="open-sidebar" aria-label="Open navigation">☰</button>
+        <div>
+          <p class="eyebrow" id="section-eyebrow">Content</p>
+          <h1 id="section-title">Resources</h1>
+        </div>
+        <div class="top-actions">
+          <span id="save-status" class="save-status" aria-live="polite">Saved</span>
+          <a id="history-link" class="quiet-button" target="_blank" rel="noopener" hidden>History ↗</a>
+          <button id="save-button" class="primary" disabled>Save changes</button>
+        </div>
+      </header>
+      <div id="editor" class="editor" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="/admin/admin.js?v=14" defer></script>
+</body>
+</html>

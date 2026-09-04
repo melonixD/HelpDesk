@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { validateNotices, validatePlacements, validateResources } = require("../netlify/lib/admin-content");
 
 const root = path.resolve(__dirname, "..");
 const dataPath = path.join(root, "data", "resources.json");
@@ -14,16 +15,19 @@ const bank = JSON.parse(fs.readFileSync(bankPath, "utf8"));
 const placements = JSON.parse(fs.readFileSync(placementsPath, "utf8"));
 const fallbackNotices = JSON.parse(fs.readFileSync(fallbackNoticesPath, "utf8"));
 const index = fs.readFileSync(indexPath, "utf8");
+validateResources(resources);
+validatePlacements(placements);
+validateNotices(fallbackNotices);
 const units = resources.unitCollections.flatMap((subject) => subject.units);
 const pyqUrls = units.map((unit) => unit.pyqUrl).filter(Boolean);
 const practiceKeys = units.map((unit) => unit.practiceKey || unit.pyqUrl).filter(Boolean);
-const localPracticeSources = practiceKeys.filter((url) => String(url).startsWith("/"));
+const localPracticeSources = practiceKeys.filter((url) => String(url).startsWith("/") && !String(url).startsWith("/uploads/"));
 const noteUrls = units.flatMap((unit) => [unit.handwrittenNotesUrl, unit.masterNotesUrl])
   .filter((url) => url && String(url).startsWith("/"));
 const workshopUrls = units.flatMap((unit) => [unit.workshopFileUrl, unit.classNotesUrl])
   .filter((url) => url && String(url).startsWith("/"));
 const publicPath = (url) => path.join(root, "public", String(url).replace(/^\/+/, ""));
-const missingBankEntries = practiceKeys.filter((url) => !bank[url]);
+const missingBankEntries = practiceKeys.filter((url) => !String(url).startsWith("/uploads/") && !bank[url]);
 const missingPdfs = localPracticeSources.filter((url) => !fs.existsSync(publicPath(url)));
 const missingNotes = noteUrls.filter((url) => !fs.existsSync(publicPath(url)));
 const missingWorkshopFiles = workshopUrls.filter((url) => !fs.existsSync(publicPath(url)));

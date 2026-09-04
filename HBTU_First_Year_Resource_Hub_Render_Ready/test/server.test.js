@@ -28,6 +28,14 @@ test("health endpoint reports ok", async () => {
   assert.equal(health.service, "HelpDesk");
 });
 
+test("private admin route serves the login application and hides data without a session", async () => {
+  const page = await fetch(`${baseUrl}/admin`);
+  assert.equal(page.status, 200);
+  assert.match(await page.text(), /HelpDesk Admin/);
+  const data = await fetch(`${baseUrl}/api/admin/data`);
+  assert.equal(data.status, 401);
+});
+
 test("resource endpoint returns seven subjects", async () => {
   const response = await fetch(`${baseUrl}/api/resources`);
   const data = await response.json();
@@ -73,15 +81,16 @@ test("resource hierarchy is branch, semester, subject and unit", async () => {
   const engineeringBranches = data.branches.filter((branch) => branch.group === "engineering");
   const technologySubjects = ["chemistry", "bem", "bet", "pc", "ees", "workshop"];
   const engineeringSubjects = ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"];
+  const semester = (branch, number) => branch.semesters.find((item) => item.id === `semester-${number}`).subjectIds;
 
-  assert.ok(technologyBranches.every((branch) => branch.semesterSubjectIds["1"].length === 7));
-  assert.ok(technologyBranches.every((branch) => technologySubjects.every((id) => branch.semesterSubjectIds["1"].includes(id))));
-  assert.ok(technologyBranches.every((branch) => branch.semesterSubjectIds["2"].length === 7));
-  assert.ok(technologyBranches.every((branch) => engineeringSubjects.every((id) => branch.semesterSubjectIds["2"].includes(id))));
-  assert.ok(engineeringBranches.every((branch) => branch.semesterSubjectIds["1"].length === 7));
-  assert.ok(engineeringBranches.every((branch) => engineeringSubjects.every((id) => branch.semesterSubjectIds["1"].includes(id))));
-  assert.ok(engineeringBranches.every((branch) => branch.semesterSubjectIds["2"].length === 6));
-  assert.ok(engineeringBranches.every((branch) => technologySubjects.every((id) => branch.semesterSubjectIds["2"].includes(id))));
+  assert.ok(technologyBranches.every((branch) => semester(branch, 1).length === 7));
+  assert.ok(technologyBranches.every((branch) => technologySubjects.every((id) => semester(branch, 1).includes(id))));
+  assert.ok(technologyBranches.every((branch) => semester(branch, 2).length === 7));
+  assert.ok(technologyBranches.every((branch) => engineeringSubjects.every((id) => semester(branch, 2).includes(id))));
+  assert.ok(engineeringBranches.every((branch) => semester(branch, 1).length === 7));
+  assert.ok(engineeringBranches.every((branch) => engineeringSubjects.every((id) => semester(branch, 1).includes(id))));
+  assert.ok(engineeringBranches.every((branch) => semester(branch, 2).length === 6));
+  assert.ok(engineeringBranches.every((branch) => technologySubjects.every((id) => semester(branch, 2).includes(id))));
 
   const engineeringNames = engineeringSubjects.map((id) => data.unitCollections.find((subject) => subject.id === id).name);
   assert.deepEqual(engineeringNames, [
@@ -94,7 +103,7 @@ test("resource hierarchy is branch, semester, subject and unit", async () => {
     "English and Technical Writing",
   ]);
 
-  const coreIds = technologyBranches.map((branch) => branch.semesterSubjectIds["1"][6]);
+  const coreIds = technologyBranches.map((branch) => semester(branch, 1)[6]);
   assert.equal(new Set(coreIds).size, 8);
   assert.ok(coreIds.every((id) => data.unitCollections.some((subject) => subject.id === id)));
 });
@@ -273,7 +282,7 @@ test("Technology branch cores show Notes, PYQs and Books without unit folders", 
   const data = await response.json();
   const technologyCoreIds = data.branches
     .filter((branch) => branch.group === "technology")
-    .map((branch) => branch.semesterSubjectIds["1"].at(-1));
+    .map((branch) => branch.semesters.find((semester) => semester.id === "semester-1").subjectIds.at(-1));
   const cores = technologyCoreIds.map((id) => data.unitCollections.find((subject) => subject.id === id));
   assert.ok(cores.every((core) => core.layout === "core-resources"));
   assert.ok(cores.every((core) => core.units.length === 0));

@@ -35,6 +35,58 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/login"
+  to = "/.netlify/functions/admin-login"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/session"
+  to = "/.netlify/functions/admin-session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/logout"
+  to = "/.netlify/functions/admin-logout"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/data"
+  to = "/.netlify/functions/admin-data"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/save"
+  to = "/.netlify/functions/admin-save"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/upload"
+  to = "/.netlify/functions/admin-upload"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "/.netlify/functions/admin-asset?key=:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/login"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
@@ -52,6 +104,12 @@
   for = "/index.html"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
 
 [[headers]]
   for = "/*.js"

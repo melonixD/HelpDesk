@@ -9,7 +9,7 @@ const STORAGE = {
 const state = {
   data: null,
   branch: "food-technology",
-  semester: "1",
+  semester: "semester-1",
   subject: "chemistry",
   query: "",
   tasks: readStorage(STORAGE.tasks, []),
@@ -94,6 +94,8 @@ function cacheElements() {
     "calc-open", "calc-hub", "calc-hub-close", "calc-hub-body", "calc-tab-semester", "calc-tab-cgpa",
     "placements-open", "notices-open", "placement-hub", "placement-hub-close", "placement-hub-heading", "placement-hub-body",
     "placement-tab-stats", "placement-tab-notices", "notice-tab-count",
+    "contact-grid", "hero-copy", "hero-credit", "hero-institution", "brand-name",
+    "admin-reveal-trigger", "admin-menu-link", "admin-logout",
   ].forEach((id) => { elements[id] = document.getElementById(id); });
 }
 
@@ -101,7 +103,7 @@ async function initialise() {
   cacheElements();
   initialiseTheme();
   initialiseNavigation();
-  initialiseContacts();
+  initialiseAdminDiscovery();
   initialisePlanner();
   initialiseTimer();
   initialisePractice();
@@ -111,6 +113,8 @@ async function initialise() {
 
   try {
     state.data = await ensureResourceData();
+    applySiteMeta();
+    initialiseContacts();
     renderBrowser();
     renderSyllabi();
     updateStats();
@@ -208,16 +212,122 @@ function closeMenu() {
   setMenu(false);
 }
 
+function applySiteMeta() {
+  const meta = state.data.meta || {};
+  const title = meta.title || "HelpDesk";
+  const institution = meta.institution || "HBTU";
+  const creatorNames = Array.isArray(meta.creators) && meta.creators.length
+    ? meta.creators
+    : (state.data.creators || []).map((creator) => creator.name);
+  document.title = title + " · " + institution;
+  if (elements["brand-name"]) elements["brand-name"].textContent = title;
+  if (elements["hero-institution"]) elements["hero-institution"].textContent = institution + " KANPUR";
+  if (elements["hero-copy"] && meta.description) elements["hero-copy"].textContent = meta.description;
+  if (elements["hero-credit"] && creatorNames.length) {
+    elements["hero-credit"].innerHTML = "Made with love by " + creatorNames
+      .map((name) => "<strong>" + escapeHtml(name) + "</strong>")
+      .join(" and ") + ".";
+  }
+  const description = document.querySelector('meta[name="description"]');
+  if (description && meta.description) description.content = meta.description;
+}
+
+function formatWhatsapp(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return "+91 " + digits.slice(2, 7) + " " + digits.slice(7);
+  }
+  return digits ? "+" + digits : "Not added";
+}
+
 function initialiseContacts() {
+  const creators = Array.isArray(state.data.creators) ? state.data.creators : [];
+  if (elements["contact-grid"] && creators.length) {
+    elements["contact-grid"].innerHTML = creators.map((creator) => {
+      const id = String(creator.id || creator.name).replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+      const digits = String(creator.whatsapp || "").replace(/\D/g, "");
+      return '<article class="contact-card"><button class="profile-trigger" type="button" ' +
+        'data-contact-trigger="' + escapeHtml(id) + '" aria-expanded="false" aria-controls="contact-' + escapeHtml(id) + '">' +
+        '<img src="' + escapeHtml(creator.photoUrl || "/favicon.svg") + '" alt="' + escapeHtml(creator.name) +
+        '" width="92" height="108" loading="lazy" decoding="async" />' +
+        '<span class="profile-copy"><strong>' + escapeHtml(creator.name) + '</strong><small>' +
+        escapeHtml(creator.role || "Creator") + ' · tap for WhatsApp</small></span>' +
+        '<span class="profile-arrow" aria-hidden="true">＋</span></button>' +
+        '<div class="contact-reveal" id="contact-' + escapeHtml(id) + '" hidden><span>WhatsApp</span>' +
+        (digits ? '<a href="https://wa.me/' + escapeHtml(digits) + '" target="_blank" rel="noopener noreferrer">' +
+          escapeHtml(formatWhatsapp(digits)) + ' <i>↗</i></a>' : '<span>Not added</span>') + '</div></article>';
+    }).join("");
+  }
+
   document.querySelectorAll("[data-contact-trigger]").forEach((button) => {
     button.addEventListener("click", () => {
       const panel = document.getElementById(button.getAttribute("aria-controls"));
       const open = button.getAttribute("aria-expanded") === "true";
       button.setAttribute("aria-expanded", String(!open));
-      button.querySelector("small").textContent = open ? "Tap to show WhatsApp" : "WhatsApp contact";
+      const role = (state.data.creators || []).find((creator) =>
+        String(creator.id || creator.name).replace(/[^a-z0-9-]/gi, "-").toLowerCase() === button.dataset.contactTrigger
+      );
+      button.querySelector("small").textContent = open
+        ? ((role && role.role) || "Creator") + " · tap for WhatsApp"
+        : "WhatsApp contact";
       button.querySelector(".profile-arrow").textContent = open ? "＋" : "−";
       panel.hidden = open;
     });
+  });
+}
+
+let adminSessionCsrf = "";
+
+function revealAdminMenu(authenticated) {
+  if (!elements["admin-menu-link"]) return;
+  elements["admin-menu-link"].hidden = false;
+  elements["admin-logout"].hidden = !authenticated;
+}
+
+function initialiseAdminDiscovery() {
+  const trigger = elements["admin-reveal-trigger"];
+  if (!trigger) return;
+  let taps = [];
+  let longPressTimer = null;
+  const reveal = () => revealAdminMenu(false);
+
+  trigger.addEventListener("click", () => {
+    const now = Date.now();
+    taps = taps.filter((time) => now - time < 3000);
+    taps.push(now);
+    if (taps.length >= 5) {
+      taps = [];
+      reveal();
+    }
+  });
+  trigger.addEventListener("pointerdown", () => {
+    longPressTimer = window.setTimeout(reveal, 650);
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((name) => {
+    trigger.addEventListener(name, () => window.clearTimeout(longPressTimer));
+  });
+
+  fetch("/api/admin/session", { cache: "no-store" })
+    .then((response) => response.ok ? response.json() : null)
+    .then((session) => {
+      if (!session || !session.authenticated) return;
+      adminSessionCsrf = session.csrfToken || "";
+      revealAdminMenu(true);
+    })
+    .catch(() => {});
+
+  elements["admin-logout"].addEventListener("click", async () => {
+    try {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        headers: { "X-HelpDesk-CSRF": adminSessionCsrf },
+      });
+    } finally {
+      adminSessionCsrf = "";
+      elements["admin-menu-link"].hidden = true;
+      elements["admin-logout"].hidden = true;
+      closeMenu();
+    }
   });
 }
 
@@ -238,7 +348,8 @@ function bindBrowserControls() {
     if (!button) return;
     state.semester = button.dataset.semester;
     const branch = state.data.branches.find((item) => item.id === state.branch);
-    const subjectIds = branch.semesterSubjectIds[state.semester] || [];
+    const semester = orderedSemesters(branch).find((item) => item.id === state.semester);
+    const subjectIds = semester ? semester.subjectIds : [];
     state.subject = subjectIds.length ? subjectIds[0] : null;
     renderBrowser("semester");
   });
@@ -265,11 +376,18 @@ function bindBrowserControls() {
 
 function chooseBranch(branchId) {
   state.branch = branchId;
-  state.semester = "1";
   const branch = state.data.branches.find((item) => item.id === state.branch);
-  const subjectIds = branch.semesterSubjectIds[state.semester] || [];
+  const semester = orderedSemesters(branch)[0];
+  state.semester = semester ? semester.id : null;
+  const subjectIds = semester ? semester.subjectIds : [];
   state.subject = subjectIds.length ? subjectIds[0] : null;
   renderBrowser("branch");
+}
+
+function orderedSemesters(branch) {
+  return [...((branch && branch.semesters) || [])].sort((a, b) =>
+    Number(a.order || 0) - Number(b.order || 0) || String(a.name).localeCompare(String(b.name))
+  );
 }
 
 function visibleBranches() {
@@ -308,8 +426,11 @@ function renderBrowser(changeType) {
   const collections = state.data.unitCollections;
   const branch = branches.find((item) => item.id === state.branch) || branches[0];
   state.branch = branch.id;
-  const semesterName = "Semester " + state.semester;
-  const subjectIds = branch.semesterSubjectIds[state.semester] || [];
+  const semesters = orderedSemesters(branch);
+  let semester = semesters.find((item) => item.id === state.semester) || semesters[0] || null;
+  state.semester = semester ? semester.id : null;
+  const semesterName = semester ? semester.name : "No semester";
+  const subjectIds = semester ? semester.subjectIds : [];
   const subjects = subjectIds
     .map((id) => collections.find((collection) => collection.id === id))
     .filter(Boolean);
@@ -324,11 +445,11 @@ function renderBrowser(changeType) {
     state.subject = null;
     elements["subject-list"].innerHTML = '<p class="no-results">No subjects added yet</p>';
     elements["path-subject"].textContent = "Coming soon";
-    elements["subject-code"].textContent = "S" + state.semester;
+    elements["subject-code"].textContent = semester ? "S" + (semester.order || "") : "—";
     elements["course-name"].textContent = "Resources coming soon";
-    elements["course-description"].textContent = branch.group === "engineering"
-      ? "Engineering branch subjects will be added after their structure is provided."
-      : "Semester 2 subjects will be added when they are provided.";
+    elements["course-description"].textContent = semester
+      ? "Subjects can be added to this semester from the admin dashboard."
+      : "No semester has been added to this branch yet.";
     elements["course-status"].textContent = "Empty";
     renderSubjectSyllabus(branch, null);
     elements["unit-list"].innerHTML = '<div class="empty-state"><h3>Nothing here yet</h3><p>This semester is ready for future subjects.</p></div>';
@@ -371,15 +492,16 @@ function renderBrowser(changeType) {
 }
 
 function renderSemesters(branch) {
-  elements["semester-list"].innerHTML = ["1", "2"].map((semester) => {
-    const subjectIds = branch.semesterSubjectIds[semester] || [];
+  const semesters = orderedSemesters(branch);
+  elements["semester-list"].innerHTML = semesters.map((semester, index) => {
+    const subjectIds = semester.subjectIds || [];
     const count = subjectIds.length;
-    return '<button class="semester-item ' + (semester === state.semester ? "active" : "") +
-      '" data-semester="' + semester + '" type="button">' +
-      '<span class="semester-code">S' + semester + '</span><span><strong>Semester ' + semester +
+    return '<button class="semester-item ' + (semester.id === state.semester ? "active" : "") +
+      '" data-semester="' + escapeHtml(semester.id) + '" type="button">' +
+      '<span class="semester-code">S' + (index + 1) + '</span><span><strong>' + escapeHtml(semester.name) +
       '</strong><small>' + (count ? count + " subjects" : "Coming soon") + '</small></span>' +
       '<i aria-hidden="true">›</i></button>';
-  }).join("");
+  }).join("") || '<p class="no-results">No semesters added yet</p>';
 }
 
 function renderSubjectSyllabus(branch, subject) {
@@ -822,9 +944,11 @@ function updateTimer() {
     twoDigits(minutes) + ":" + twoDigits(seconds);
   const elapsed = 25 * 60 - timerSeconds;
   elements["timer-ring"].style.setProperty("--progress", ((elapsed / (25 * 60)) * 100) + "%");
+  const title = state.data && state.data.meta ? state.data.meta.title || "HelpDesk" : "HelpDesk";
+  const institution = state.data && state.data.meta ? state.data.meta.institution || "HBTU" : "HBTU";
   document.title = timerInterval
-    ? elements["timer-value"].textContent + " · HelpDesk"
-    : "HelpDesk · HBTU";
+    ? elements["timer-value"].textContent + " · " + title
+    : title + " · " + institution;
 }
 
 /* ---------- Unlimited Practice Hub ---------- */
@@ -835,6 +959,7 @@ function updateTimer() {
 let practiceHub = {
   step: "semester", // "semester" | "subject" | "unit" | "quiz"
   semester: null,
+  semesterName: "",
   subjectId: null,
   subjectName: "",
   unit: null, // { number, title, pyqUrl }
@@ -872,6 +997,7 @@ function openPracticeHub(step, seed) {
   practiceHub = {
     step,
     semester: null,
+    semesterName: "",
     subjectId: null,
     subjectName: (seed && seed.subjectName) || "",
     unit: (seed && seed.unit) || null,
@@ -912,12 +1038,22 @@ function subjectsForSemester(semester) {
   const branches = data.branches || [];
   const ids = new Set();
   branches.forEach((branch) => {
-    const semesters = branch.semesterSubjectIds || {};
-    (semesters[String(semester)] || []).forEach((id) => ids.add(id));
+    const match = (branch.semesters || []).find((item) => item.id === semester);
+    ((match && match.subjectIds) || []).forEach((id) => ids.add(id));
   });
   return (data.unitCollections || [])
     .filter((subject) => ids.has(subject.id) && (subject.units || []).some((unit) => practiceKeyForUnit(unit)))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function practiceSemesters() {
+  const found = new Map();
+  (state.data.branches || []).forEach((branch) => {
+    orderedSemesters(branch).forEach((semester) => {
+      if (!found.has(semester.id)) found.set(semester.id, semester);
+    });
+  });
+  return [...found.values()].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 }
 
 function unitsForSubject(subjectId) {
@@ -950,13 +1086,16 @@ function renderPracticeStep() {
 
   if (practiceHub.step === "semester") {
     heading.textContent = "Choose a semester";
-    body.innerHTML = ["1", "2"].map((sem) =>
-      '<button class="practice-option" type="button" data-semester="' + sem + '">' +
-        '<strong>Semester ' + sem + '</strong><span>→</span></button>'
+    const semesters = practiceSemesters();
+    body.innerHTML = semesters.map((semester) =>
+      '<button class="practice-option" type="button" data-semester="' + escapeHtml(semester.id) + '">' +
+        '<strong>' + escapeHtml(semester.name) + '</strong><span>→</span></button>'
     ).join("");
     body.querySelectorAll("[data-semester]").forEach((button) => {
       button.addEventListener("click", () => {
         practiceHub.semester = button.dataset.semester;
+        const semester = semesters.find((item) => item.id === practiceHub.semester);
+        practiceHub.semesterName = semester ? semester.name : "Semester";
         practiceHub.step = "subject";
         renderPracticeStep();
       });
@@ -965,7 +1104,7 @@ function renderPracticeStep() {
   }
 
   if (practiceHub.step === "subject") {
-    heading.textContent = "Semester " + practiceHub.semester + " · choose a subject";
+    heading.textContent = practiceHub.semesterName + " · choose a subject";
     const subjects = subjectsForSemester(practiceHub.semester);
     body.innerHTML = subjects.length
       ? subjects.map((subject) =>
@@ -1026,7 +1165,11 @@ async function fetchMoreQuestions() {
     const response = await fetch("/api/practice/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pyqUrl: practiceHub.unit.pyqUrl }),
+      body: JSON.stringify({
+        pyqUrl: practiceHub.unit.pyqUrl,
+        subjectTitle: practiceHub.subjectName,
+        unitTitle: practiceHub.unit.title,
+      }),
     });
     const raw = await response.text();
     let data;

@@ -6,21 +6,37 @@
     "creators": ["Akshat Shukla", "Priyanshu Dixit"],
     "lastUpdated": "2026-09-04"
   },
+  "creators": [
+    {
+      "id": "akshat",
+      "name": "Akshat Shukla",
+      "role": "Co-creator",
+      "whatsapp": "918787016664",
+      "photoUrl": "/images/akshat-shukla.png"
+    },
+    {
+      "id": "priyanshu",
+      "name": "Priyanshu Dixit",
+      "role": "Co-creator",
+      "whatsapp": "919305819589",
+      "photoUrl": "/images/priyanshu-dixit.png"
+    }
+  ],
   "branches": [
-    { "id": "civil", "code": "CE", "name": "Civil Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
-    { "id": "cse", "code": "CSE", "name": "Computer Science & Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
-    { "id": "electrical", "code": "EE", "name": "Electrical Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
-    { "id": "electronics", "code": "EN", "name": "Electronics Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
-    { "id": "information-technology", "code": "IT", "name": "Information Technology", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
-    { "id": "mechanical", "code": "ME", "name": "Mechanical Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
-    { "id": "biochemical", "code": "BE", "name": "Biochemical Engineering", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "biochemical-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "biotechnology", "code": "BT", "name": "Biotechnology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "biotechnology-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "chemical", "code": "CH", "name": "Chemical Engineering", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "chemical-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "food-technology", "code": "FT", "name": "Food Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "food-tech"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "leather", "code": "LT", "name": "Leather Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "leather-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "oil", "code": "OT", "name": "Oil Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "oil-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "paint", "code": "PT", "name": "Paint Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "paint-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } },
-    { "id": "plastic", "code": "PL", "name": "Plastic Technology", "group": "technology", "semesterSubjectIds": { "1": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "plastic-core"], "2": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] } }
+    { "id": "civil", "code": "CE", "name": "Civil Engineering", "group": "engineering", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] }] },
+    { "id": "cse", "code": "CSE", "name": "Computer Science & Engineering", "group": "engineering", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] }] },
+    { "id": "electrical", "code": "EE", "name": "Electrical Engineering", "group": "engineering", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] }] },
+    { "id": "electronics", "code": "EN", "name": "Electronics Engineering", "group": "engineering", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] }] },
+    { "id": "information-technology", "code": "IT", "name": "Information Technology", "group": "engineering", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] }] },
+    { "id": "mechanical", "code": "ME", "name": "Mechanical Engineering", "group": "engineering", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] }] },
+    { "id": "biochemical", "code": "BE", "name": "Biochemical Engineering", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "biochemical-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "biotechnology", "code": "BT", "name": "Biotechnology", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "biotechnology-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "chemical", "code": "CH", "name": "Chemical Engineering", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "chemical-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "food-technology", "code": "FT", "name": "Food Technology", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "food-tech"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "leather", "code": "LT", "name": "Leather Technology", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "leather-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "oil", "code": "OT", "name": "Oil Technology", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "oil-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "paint", "code": "PT", "name": "Paint Technology", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "paint-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] },
+    { "id": "plastic", "code": "PL", "name": "Plastic Technology", "group": "technology", "semesters": [{ "id": "semester-1", "name": "Semester 1", "order": 1, "subjectIds": ["chemistry", "bem", "bet", "pc", "ees", "workshop", "plastic-core"] }, { "id": "semester-2", "name": "Semester 2", "order": 2, "subjectIds": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"] }] }
   ],
   "unitCollections": [
     {

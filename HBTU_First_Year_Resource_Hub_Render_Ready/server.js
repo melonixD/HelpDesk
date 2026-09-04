@@ -3,10 +3,16 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { filterResources, generatePractice } = require("./netlify/lib/helpdesk-api");
 const { getNoticeFeed } = require("./netlify/lib/hbtu-feed");
+const adminLogin = require("./netlify/functions/admin-login").handler;
+const adminSession = require("./netlify/functions/admin-session").handler;
+const adminLogout = require("./netlify/functions/admin-logout").handler;
+const adminData = require("./netlify/functions/admin-data").handler;
+const adminSave = require("./netlify/functions/admin-save").handler;
+const adminUpload = require("./netlify/functions/admin-upload").handler;
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
-const MAX_BODY_BYTES = 32 * 1024;
+const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -14,8 +20,11 @@ const MIME_TYPES = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".pdf": "application/pdf",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".webp": "image/webp",
   ".txt": "text/plain; charset=utf-8",
 };
 
@@ -156,6 +165,26 @@ async function handleRequest(req, res) {
     });
   }
 
+  const adminRoutes = {
+    "/api/admin/login": adminLogin,
+    "/api/admin/session": adminSession,
+    "/api/admin/logout": adminLogout,
+    "/api/admin/data": adminData,
+    "/api/admin/save": adminSave,
+    "/api/admin/upload": adminUpload,
+  };
+  if (adminRoutes[url.pathname]) {
+    const body = ["POST", "PUT", "PATCH"].includes(req.method) ? await readBody(req) : "";
+    const result = await adminRoutes[url.pathname]({
+      httpMethod: req.method,
+      body,
+      headers: req.headers,
+      isBase64Encoded: false,
+      queryStringParameters: Object.fromEntries(url.searchParams),
+    });
+    return relayFunctionResponse(res, result);
+  }
+
   if (req.method !== "GET" && req.method !== "HEAD") {
     return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET, HEAD" });
   }
@@ -167,6 +196,7 @@ async function handleRequest(req, res) {
     return sendJson(res, 400, { error: "Invalid URL." });
   }
 
+  if (pathname === "/admin" || pathname === "/admin/login") pathname = "/admin/index.html";
   const requestedPath = path.resolve(publicDir, `.${pathname === "/" ? "/index.html" : pathname}`);
   const insidePublic = requestedPath === publicDir || requestedPath.startsWith(`${publicDir}${path.sep}`);
   if (!insidePublic) return sendJson(res, 403, { error: "Forbidden." });

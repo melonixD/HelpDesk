@@ -35,6 +35,10 @@ html[data-theme="dark"] {
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 72px;
@@ -332,6 +336,21 @@ body.menu-open {
 
 .drawer-nav a:hover {
   color: var(--blue);
+}
+
+.drawer-version {
+  align-self: center;
+  margin: 4px auto 0;
+  border: 0;
+  background: transparent;
+  color: var(--tertiary);
+  cursor: default;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0.56;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .drawer-tool {
