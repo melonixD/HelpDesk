@@ -9,6 +9,9 @@ const adminLogout = require("./netlify/functions/admin-logout").handler;
 const adminData = require("./netlify/functions/admin-data").handler;
 const adminSave = require("./netlify/functions/admin-save").handler;
 const adminUpload = require("./netlify/functions/admin-upload").handler;
+const adminRegister = require("./netlify/functions/admin-register").handler;
+const adminManagement = require("./netlify/functions/admin-management").handler;
+const adminChangeRequest = require("./netlify/functions/admin-change-request").handler;
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
@@ -172,6 +175,9 @@ async function handleRequest(req, res) {
     "/api/admin/data": adminData,
     "/api/admin/save": adminSave,
     "/api/admin/upload": adminUpload,
+    "/api/admin/register": adminRegister,
+    "/api/admin/management": adminManagement,
+    "/api/admin/change-request": adminChangeRequest,
   };
   if (adminRoutes[url.pathname]) {
     const body = ["POST", "PUT", "PATCH"].includes(req.method) ? await readBody(req) : "";

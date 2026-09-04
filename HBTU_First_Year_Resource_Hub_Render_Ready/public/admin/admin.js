@@ -14,10 +14,10 @@
   const saveButton = $("#save-button");
   const status = $("#save-status");
   const historyLink = $("#history-link");
-  const state = { csrf: "", data: null, history: {}, section: "resources", dirty: false, saving: false, selection: {} };
+  const state = { csrf: "", data: null, history: {}, section: "resources", dirty: false, saving: false, selection: {}, role: null, user: null, permissions: [], management: null };
   const titles = {
     resources: ["Content", "Resources"], syllabus: ["Academics", "Syllabus"], meta: ["Website", "Site details"], creators: ["People", "Creators"],
-    placements: ["Outcomes", "Placements"], notices: ["Updates", "Notices"],
+    placements: ["Outcomes", "Placements"], notices: ["Updates", "Notices"], management: ["Security", "Access & approvals"],
   };
 
   function escape(value) {
@@ -66,7 +66,12 @@
   async function loadDashboard() {
     const payload = await request("/api/admin/data", { method: "GET" });
     state.data = { resources: payload.resources, placements: payload.placements, notices: payload.notices };
+    state.role = payload.role; state.user = payload.user; state.permissions = payload.permissions || [];
     state.history = payload.history || {}; state.csrf = payload.csrfToken || state.csrf;
+    $$('[data-section]').forEach((button) => { button.hidden = state.role !== "main" && button.dataset.section !== "resources"; });
+    $("#management-nav").hidden = state.role !== "main";
+    $("#admin-identity").textContent = `${state.user.name || state.user.username} · ${state.role === "main" ? "Main admin" : "Regular admin"}`;
+    saveButton.textContent = state.role === "main" ? "Save changes" : "Submit request";
     loginView.hidden = true; adminView.hidden = false;
     ensureSelection(); render();
   }
@@ -82,9 +87,25 @@
     finally { submit.disabled = false; submit.textContent = "Continue"; }
   });
 
+  function selectLoginTab(tab) {
+    const registering = tab === "register";
+    $("#login-form").hidden = registering; $("#registration-form").hidden = !registering;
+    $("#login-tab-signin").classList.toggle("active", !registering); $("#login-tab-register").classList.toggle("active", registering);
+  }
+  $("#login-tab-signin").addEventListener("click", () => selectLoginTab("signin"));
+  $("#login-tab-register").addEventListener("click", () => selectLoginTab("register"));
+  $("#registration-form").addEventListener("submit", async (event) => {
+    event.preventDefault(); const form=event.currentTarget;const button=event.submitter;const message=$("#registration-message");message.hidden=true;message.classList.remove("registration-success");button.disabled=true;button.textContent="Submitting…";
+    try {
+      const body=Object.fromEntries(new FormData(form).entries());const result=await request("/api/admin/register",{method:"POST",body:JSON.stringify(body)});
+      form.reset();message.textContent=`Application sent. Reference: ${result.applicationId}. A main admin must approve it and give you login credentials.`;message.classList.add("registration-success");message.hidden=false;
+    } catch(error){message.textContent=error.message;message.hidden=false;}
+    finally{button.disabled=false;button.textContent="Submit application";}
+  });
+
   $("#logout-button").addEventListener("click", async () => {
     try { await request("/api/admin/logout", { method: "POST", body: "{}" }); } catch {}
-    state.csrf = ""; state.data = null; showLogin();
+    state.csrf = ""; state.data = null; state.role=null; selectLoginTab("signin"); showLogin();
   });
 
   $$("#admin-nav button").forEach((button) => button.addEventListener("click", async () => {
@@ -99,14 +120,16 @@
 
   function markDirty() {
     state.dirty = true; state.revision = (state.revision || 0) + 1;
-    saveButton.disabled = false; status.textContent = "Unsaved";
-    clearTimeout(state.autoSaveTimer); state.autoSaveTimer = setTimeout(saveChanges, 1200);
+    saveButton.disabled = false; status.textContent = state.role === "regular" ? "Draft only" : "Unsaved";
+    clearTimeout(state.autoSaveTimer);
+    if (state.role === "main") state.autoSaveTimer = setTimeout(saveChanges, 1200);
   }
   function target() { return ["meta", "creators", "syllabus"].includes(state.section) ? "resources" : state.section; }
 
   async function saveChanges() {
     clearTimeout(state.autoSaveTimer);
     if (!state.dirty) return;
+    if (state.role === "regular") return submitRegularChange();
     if (state.saving) { state.saveQueued = true; return; }
     state.saving = true; saveButton.disabled = true; saveButton.textContent = "Saving…"; status.textContent = "Validating";
     const key = target(); const revision = state.revision;
@@ -126,26 +149,51 @@
       $$('.field[data-dirty="true"]').forEach((field) => { field.dataset.error = "true"; const note = $(".field-state", field); if (note) note.textContent = "Save failed"; });
       toast(error.message);
     } finally {
-      state.saving = false; saveButton.textContent = "Save changes"; saveButton.disabled = !state.dirty;
+      state.saving = false; saveButton.textContent = state.role === "main" ? "Save changes" : "Submit request"; saveButton.disabled = !state.dirty;
       if (state.saveQueued || state.dirty) { state.saveQueued = false; clearTimeout(state.autoSaveTimer); state.autoSaveTimer = setTimeout(saveChanges, 500); }
     }
   }
   saveButton.addEventListener("click", saveChanges);
 
+  function askChangeSummary() {
+    return new Promise((resolve) => {
+      const modal=document.createElement("div");modal.className="request-modal";
+      modal.innerHTML=`<form class="request-modal-card"><p class="eyebrow">Approval required</p><h2>Describe your requested change</h2><p class="muted">A main admin will review this draft before anything reaches the website.</p><textarea required maxlength="500" placeholder="Example: Replace Unit 2 master notes and add a lecture link."></textarea><div class="management-actions"><button class="primary" type="submit">Send for approval</button><button class="quiet-button" type="button" data-cancel>Keep editing</button></div></form>`;
+      document.body.appendChild(modal);const finish=(value)=>{modal.remove();resolve(value);};
+      $("[data-cancel]",modal).addEventListener("click",()=>finish(null));
+      $("form",modal).addEventListener("submit",(event)=>{event.preventDefault();finish($("textarea",modal).value.trim());});
+    });
+  }
+
+  async function submitRegularChange() {
+    if (state.saving) return; const branch=selectedBranch();const semester=selectedSemester();
+    if(!branch||!semester)return toast("Choose an assigned branch and semester first.");
+    const summary=await askChangeSummary();if(!summary)return;
+    state.saving=true;saveButton.disabled=true;saveButton.textContent="Submitting…";status.textContent="Sending for approval";
+    const subjectIds=new Set(semester.subjectIds);
+    const proposal={semester:{id:semester.id,name:semester.name,order:semester.order,subjectIds:[...semester.subjectIds]},unitCollections:state.data.resources.unitCollections.filter(item=>subjectIds.has(item.id))};
+    try{
+      await request("/api/admin/change-request",{method:"POST",body:JSON.stringify({scope:{branchId:branch.id,semesterId:semester.id},summary,proposal})});
+      state.dirty=false;status.textContent="Pending approval";toast("Change request sent to the main admins.");await loadDashboard();
+    }catch(error){status.textContent="Request failed";toast(error.message);}
+    finally{state.saving=false;saveButton.textContent="Submit request";saveButton.disabled=!state.dirty;}
+  }
+
   function renderHistory() {
-    const url = state.history[target()]; historyLink.hidden = !url;
+    const url = state.history[target()]; historyLink.hidden = state.role !== "main" || !url;
     if (url) historyLink.href = url;
   }
 
   function render() {
     $$("#admin-nav button").forEach((button) => button.classList.toggle("active", button.dataset.section === state.section));
     $("#section-eyebrow").textContent = titles[state.section][0]; $("#section-title").textContent = titles[state.section][1];
-    saveButton.disabled = !state.dirty; status.textContent = state.dirty ? "Unsaved" : "Saved"; renderHistory();
+    saveButton.disabled = !state.dirty; status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : "Unsaved") : (state.role === "regular" ? "No pending draft" : "Saved"); renderHistory();
     if (state.section === "resources") renderResources();
     else if (state.section === "syllabus") renderSyllabus();
     else if (state.section === "meta") renderMeta();
     else if (state.section === "creators") renderCreators();
     else if (state.section === "placements") renderPlacements();
+    else if (state.section === "management") renderManagement();
     else renderNotices();
   }
 
@@ -216,18 +264,19 @@
 
   function renderResources() {
     ensureSelection(); const resources = state.data.resources; const branch = selectedBranch(); const semester = selectedSemester(); const subject = selectedSubject();
+    const main = state.role === "main";
     const branchOptions = resources.branches.map((item) => `<option value="${escape(item.id)}" ${item.id === state.selection.branchId ? "selected" : ""}>${escape(item.name)}</option>`).join("");
     const semesterHtml = branch ? [...branch.semesters].sort((a,b)=>a.order-b.order).map((item, index, list) => {
       const active = item.id === state.selection.semesterId; const names = new Map(resources.unitCollections.map((entry) => [entry.id, entry.name]));
-      return `<div class="semester-block"><div class="semester-row"><button class="semester-name ${active ? "active" : ""}" data-semester="${escape(item.id)}">${escape(item.name)}</button><span class="tree-actions"><button class="mini-button" data-sem-rename="${escape(item.id)}" title="Rename">✎</button><button class="mini-button" data-sem-move="${item.id}:-1" ${index===0?"disabled":""}>↑</button><button class="mini-button" data-sem-move="${item.id}:1" ${index===list.length-1?"disabled":""}>↓</button><button class="mini-button danger" data-sem-delete="${escape(item.id)}">×</button></span></div>${active ? `<div class="subject-list">${item.subjectIds.map((id) => `<div class="subject-row"><button data-subject="${escape(id)}" class="${id===state.selection.subjectId?"active":""}">${escape(names.get(id) || id)}</button><button class="mini-button danger" data-unlink="${escape(id)}" title="Remove from semester">×</button></div>`).join("")}<div class="tree-add"><select id="link-subject"><option value="">Link existing subject…</option>${resources.unitCollections.filter((entry)=>!item.subjectIds.includes(entry.id)).map((entry)=>`<option value="${escape(entry.id)}">${escape(entry.name)}</option>`).join("")}</select><button class="mini-button" id="link-subject-button">+</button></div></div>` : ""}</div>`;
+      return `<div class="semester-block"><div class="semester-row"><button class="semester-name ${active ? "active" : ""}" data-semester="${escape(item.id)}">${escape(item.name)}</button>${main?`<span class="tree-actions"><button class="mini-button" data-sem-rename="${escape(item.id)}" title="Rename">✎</button><button class="mini-button" data-sem-move="${item.id}:-1" ${index===0?"disabled":""}>↑</button><button class="mini-button" data-sem-move="${item.id}:1" ${index===list.length-1?"disabled":""}>↓</button><button class="mini-button danger" data-sem-delete="${escape(item.id)}">×</button></span>`:""}</div>${active ? `<div class="subject-list">${item.subjectIds.map((id) => `<div class="subject-row"><button data-subject="${escape(id)}" class="${id===state.selection.subjectId?"active":""}">${escape(names.get(id) || id)}</button><button class="mini-button danger" data-unlink="${escape(id)}" title="${main?"Remove":"Request removal"}">×</button></div>`).join("")}<div class="tree-add"><select id="link-subject"><option value="">Link existing subject…</option>${resources.unitCollections.filter((entry)=>!item.subjectIds.includes(entry.id)).map((entry)=>`<option value="${escape(entry.id)}">${escape(entry.name)}</option>`).join("")}</select><button class="mini-button" id="link-subject-button">+</button></div></div>` : ""}</div>`;
     }).join("") : "";
-    editor.innerHTML = `<div class="section-intro"><div><h2>Library structure</h2><p class="muted">Branches, semesters, subjects and unit resources.</p></div></div><div class="resource-layout"><aside class="panel tree"><div class="tree-head"><select id="branch-picker">${branchOptions}</select><span class="tree-actions"><button class="mini-button" id="edit-branch" title="Edit branch">Edit</button><button class="mini-button danger" id="delete-branch" title="Delete branch">×</button></span></div>${semesterHtml}<div class="tree-footer"><button class="mini-button" id="add-semester">＋ Add section</button><button class="mini-button" id="add-subject">＋ New subject</button><button class="mini-button" id="add-branch">＋ New branch</button></div></aside><article class="panel document" id="resource-document">${renderSubjectDocument(subject)}</article></div>`;
+    editor.innerHTML = `${main?"":`<div class="regular-banner"><div><strong>Approval-only access</strong><p>You can draft changes only inside your assigned semesters. Nothing goes live until a main admin approves it.</p></div><span class="role-pill">${state.permissions.length} assigned</span></div>`}<div class="section-intro"><div><h2>Library structure</h2><p class="muted">${main?"Branches, semesters, subjects and unit resources.":"Your assigned resource sections."}</p></div></div><div class="resource-layout"><aside class="panel tree"><div class="tree-head"><select id="branch-picker">${branchOptions}</select>${main?`<span class="tree-actions"><button class="mini-button" id="edit-branch" title="Edit branch">Edit</button><button class="mini-button danger" id="delete-branch" title="Delete branch">×</button></span>`:""}</div>${semesterHtml}<div class="tree-footer">${main?`<button class="mini-button" id="add-semester">＋ Add section</button><button class="mini-button" id="add-branch">＋ New branch</button>`:""}<button class="mini-button" id="add-subject">＋ ${main?"New subject":"Request new subject"}</button></div></aside><article class="panel document" id="resource-document">${renderSubjectDocument(subject)}</article></div>`;
     bindResourceTree(); bind($("#resource-document"), subject || {}); bindUnitActions();
   }
 
   function renderSubjectDocument(subject) {
     if (!subject) return `<div class="empty-state">Choose or create a subject to start editing.</div>`;
-    return `<div class="doc-head"><div><p class="eyebrow">Subject</p><h2>${escape(subject.name)}</h2><p>${escape(subject.description || "Add subject details and resources.")}</p></div><button class="danger-button" id="delete-subject">Delete subject</button></div><div class="grid"><label class="field"><span>Subject ID</span><input data-subject-id type="text" value="${escape(subject.id)}"><small>Changing this updates every linked semester.</small><small class="field-state"></small></label>${input("Subject name","name",subject.name,{required:true})}${input("Accent","accent",subject.accent||"")}${input("Description","description",subject.description||"",{type:"textarea",full:true})}${urlInput("Subject lecture URL","lectureUrl",subject.lectureUrl)}${urlInput("Subject notes URL","notesUrl",subject.notesUrl)}</div><div class="unit-list"><div class="data-group-head"><h3>Units & sections</h3><span class="muted">${subject.units.length} items</span></div>${subject.units.map((unit,index)=>renderUnit(unit,index)).join("")}<button class="add-card" id="add-unit">＋ Add unit or section</button></div>`;
+    return `<div class="doc-head"><div><p class="eyebrow">Subject</p><h2>${escape(subject.name)}</h2><p>${escape(subject.description || "Add subject details and resources.")}</p></div><button class="danger-button" id="delete-subject">${state.role==="main"?"Delete subject":"Request removal"}</button></div><div class="grid"><label class="field"><span>Subject ID</span><input data-subject-id type="text" value="${escape(subject.id)}"><small>Changing this updates every linked semester.</small><small class="field-state"></small></label>${input("Subject name","name",subject.name,{required:true})}${input("Accent","accent",subject.accent||"")}${input("Description","description",subject.description||"",{type:"textarea",full:true})}${urlInput("Subject lecture URL","lectureUrl",subject.lectureUrl)}${urlInput("Subject notes URL","notesUrl",subject.notesUrl)}</div><div class="unit-list"><div class="data-group-head"><h3>Units & sections</h3><span class="muted">${subject.units.length} items</span></div>${subject.units.map((unit,index)=>renderUnit(unit,index)).join("")}<button class="add-card" id="add-unit">＋ ${state.role==="main"?"Add":"Request new"} unit or section</button></div>`;
   }
 
   function renderUnit(unit, index) {
@@ -307,6 +356,50 @@
     $$('[data-notice-new]').forEach(node=>node.addEventListener("change",()=>{data.notices[Number(node.dataset.noticeNew)].isNew=node.value==="true";markDirty();}));
     $("#add-notice").addEventListener("click",()=>{data.notices.unshift({id:uniqueId("notice",data.notices),title:"New notice",url:"https://hbtu.ac.in/",category:"General",isNew:true});markDirty();renderNotices();});
     $$('[data-delete-notice]').forEach(node=>node.addEventListener("click",()=>{const index=Number(node.dataset.deleteNotice);if(requireDelete(data.notices[index].title)){data.notices.splice(index,1);markDirty();renderNotices();}}));
+  }
+
+  function permissionChoices(selected, owner) {
+    const active=new Set((selected||[]).map(item=>`${item.branchId}:${item.semesterId}`));
+    return (state.management.permissionOptions||[]).map(branch=>`<div><strong>${escape(branch.name)}</strong><div class="permission-grid">${branch.semesters.map(semester=>{const key=`${branch.id}:${semester.id}`;return `<label class="permission-option"><input type="checkbox" data-permission-owner="${escape(owner)}" value="${escape(key)}" ${active.has(key)?"checked":""}><span>${escape(semester.name)}</span></label>`;}).join("")}</div></div>`).join("");
+  }
+
+  function selectedPermissions(owner) {
+    return $$(`[data-permission-owner="${CSS.escape(owner)}"]:checked`).map(node=>{const [branchId,semesterId]=node.value.split(":");return {branchId,semesterId};});
+  }
+
+  async function loadManagement() {
+    editor.innerHTML='<div class="empty-state">Loading access and approvals…</div>';
+    try{state.management=await request("/api/admin/management",{method:"GET"});renderManagement();}
+    catch(error){editor.innerHTML=`<div class="empty-state"><strong>Could not load access controls</strong><p>${escape(error.message)}</p></div>`;}
+  }
+
+  async function runManagementAction(body, button) {
+    const old=button&&button.textContent;if(button){button.disabled=true;button.textContent="Working…";}
+    try{const result=await request("/api/admin/management",{method:"POST",body:JSON.stringify(body)});toast(result.deploying?"Approved. The website update is deploying.":"Access settings updated.");state.management=await request("/api/admin/management",{method:"GET"});renderManagement();}
+    catch(error){toast(error.message);if(button){button.disabled=false;button.textContent=old;}}
+  }
+
+  function renderManagement() {
+    if(state.role!=="main")return; if(!state.management)return loadManagement();
+    const data=state.management;
+    const pendingRegistrations=data.registrations.filter(item=>item.status==="pending");
+    const pendingChanges=data.changeRequests.filter(item=>item.status==="pending"||item.status==="processing");
+    const branchNames=new Map(data.permissionOptions.map(branch=>[branch.id,branch]));
+    const scopeName=(scope)=>{const branch=branchNames.get(scope.branchId);const semester=branch&&branch.semesters.find(item=>item.id===scope.semesterId);return `${branch?branch.name:scope.branchId} · ${semester?semester.name:scope.semesterId}`;};
+    editor.innerHTML=`<div class="section-intro"><div><h2>Access & approvals</h2><p class="muted">Control regular admins and approve every requested website change.</p></div><span class="role-pill">Main admins only</span></div><div class="access-grid">
+      <section class="panel data-group"><div class="data-group-head"><h2>Main admins</h2><span class="status-pill active">Full access</span></div>${data.mainAdmins.map(admin=>`<div class="entry-card"><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>Everything</span></div></div>`).join("")}</section>
+      <section class="panel data-group"><div class="data-group-head"><h2>Pending registrations</h2><span class="status-pill ${pendingRegistrations.length?"pending":"active"}">${pendingRegistrations.length}</span></div>${pendingRegistrations.length?pendingRegistrations.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.name)}</strong><div class="person-meta"><span>${escape(item.branch)}</span><span>${escape(item.rollNumber)}</span><span>${escape(item.email)}</span></div></div><span class="status-pill pending">Pending</span></div><details><summary class="mini-button">Choose permissions</summary>${permissionChoices([],`registration:${item.id}`)}</details><div class="management-actions"><button class="primary" data-approve-registration="${escape(item.id)}">Approve account</button><button class="danger-button" data-reject-registration="${escape(item.id)}">Reject</button></div></div>`).join(""):'<p class="muted">No registration requests waiting.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Regular admins</h2><span class="role-pill">${data.regularAdmins.length} accounts</span></div>${data.regularAdmins.length?data.regularAdmins.map(admin=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>${escape(admin.branch)}</span><span>${escape(admin.rollNumber)}</span><span>${escape(admin.email)}</span></div></div><span class="status-pill ${admin.active!==false?"active":"disabled"}">${admin.active!==false?"Active":"Disabled"}</span></div><details><summary class="mini-button">Manage assigned semesters (${(admin.permissions||[]).length})</summary>${permissionChoices(admin.permissions,`regular:${admin.id}`)}<button class="primary" data-save-permissions="${escape(admin.id)}">Save permissions</button></details><div class="management-actions"><button class="quiet-button" data-reset-password="${escape(admin.id)}">Reset password</button><button class="${admin.active!==false?"danger-button":"quiet-button"}" data-toggle-admin="${escape(admin.id)}" data-active="${admin.active===false}">${admin.active!==false?"Disable account":"Enable account"}</button></div></div>`).join(""):'<p class="muted">Approved regular admins will appear here.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Change requests</h2><span class="status-pill ${pendingChanges.length?"pending":"active"}">${pendingChanges.length} pending</span></div>${pendingChanges.length?pendingChanges.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${escape(new Date(item.createdAt).toLocaleString())}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div><div class="proposal-preview">Subjects affected: ${escape((item.proposal.unitCollections||[]).map(subject=>`${subject.name} (${(subject.units||[]).length} items)`).join(", ")||"None")}</div>${item.status==="pending"?`<div class="management-actions"><button class="primary" data-approve-change="${escape(item.id)}">Approve & deploy</button><button class="danger-button" data-reject-change="${escape(item.id)}">Reject</button></div>`:""}</div>`).join(""):'<p class="muted">No resource changes are waiting for approval.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Recent decisions</h2></div>${data.changeRequests.filter(item=>["approved","rejected"].includes(item.status)).slice(0,10).map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>Reviewed by ${escape(item.reviewedBy||"main admin")}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div></div>`).join("")||'<p class="muted">No completed decisions yet.</p>'}</section>
+    </div>`;
+    $$('[data-approve-registration]').forEach(button=>button.addEventListener("click",()=>{const item=data.registrations.find(entry=>entry.id===button.dataset.approveRegistration);const username=prompt("Choose a username for this regular admin",slug(`${item.name}-${item.rollNumber}`));if(!username)return;const password=prompt("Set a temporary password (minimum 8 characters). Share it with the applicant privately.");if(!password)return;runManagementAction({action:"approve-registration",registrationId:item.id,username,password,permissions:selectedPermissions(`registration:${item.id}`)},button);}));
+    $$('[data-reject-registration]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Reject this registration request?"))runManagementAction({action:"reject-registration",registrationId:button.dataset.rejectRegistration},button);}));
+    $$('[data-save-permissions]').forEach(button=>button.addEventListener("click",()=>runManagementAction({action:"update-permissions",adminId:button.dataset.savePermissions,permissions:selectedPermissions(`regular:${button.dataset.savePermissions}`)},button)));
+    $$('[data-toggle-admin]').forEach(button=>button.addEventListener("click",()=>runManagementAction({action:"set-regular-status",adminId:button.dataset.toggleAdmin,active:button.dataset.active==="true"},button)));
+    $$('[data-reset-password]').forEach(button=>button.addEventListener("click",()=>{const password=prompt("Enter a new temporary password (minimum 8 characters)");if(password)runManagementAction({action:"reset-password",adminId:button.dataset.resetPassword,password},button);}));
+    $$('[data-approve-change]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Approve this request and deploy it to the public website?"))runManagementAction({action:"approve-change",requestId:button.dataset.approveChange},button);}));
+    $$('[data-reject-change]').forEach(button=>button.addEventListener("click",()=>{const note=prompt("Optional reason for rejection","");if(note!==null)runManagementAction({action:"reject-change",requestId:button.dataset.rejectChange,note},button);}));
   }
 
   window.addEventListener("beforeunload",(event)=>{if(state.dirty){event.preventDefault();event.returnValue="";}});

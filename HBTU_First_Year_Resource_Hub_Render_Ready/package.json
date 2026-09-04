@@ -1,6 +1,6 @@
 {
   "name": "helpdesk-hbtu",
-  "version": "14.0.0",
+  "version": "15.0.0",
   "private": true,
   "description": "HelpDesk — a premium, Netlify-ready resource library for HBTU students.",
   "main": "server.js",
@@ -11,7 +11,7 @@
     "test": "node --test"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "@netlify/blobs": "^11.0.3",

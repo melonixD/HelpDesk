@@ -3,7 +3,7 @@ const { commitJson, ValidationError } = require("../lib/admin-content");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed." }, { Allow: "POST" });
-  const auth = authorize(event, { csrf: true });
+  const auth = authorize(event, { csrf: true, role: "main" });
   if (!auth.ok) return auth.response;
   const body = parseBody(event);
   if (!body || typeof body.target !== "string" || !body.data) {

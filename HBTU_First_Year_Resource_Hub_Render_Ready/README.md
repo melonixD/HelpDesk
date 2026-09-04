@@ -1,4 +1,4 @@
-# HelpDesk V14 · Netlify edition
+# HelpDesk V15 · Netlify edition
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, syllabus library, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API now runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -34,6 +34,11 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Secure 8-hour signed sessions, CSRF checks, bcrypt login and login rate limiting
 - GitHub-backed content saves that automatically trigger the connected Netlify deployment
 - Chunked Netlify Blob uploads for PDFs (20 MB) and profile images (5 MB)
+- Three full-access main-admin accounts configured with bcrypt hashes
+- Public regular-admin applications with main-admin approval
+- Branch + semester permission controls for every regular admin
+- Approval-only resource drafts: regular admins cannot publish directly
+- Private Netlify Blob storage for applications, accounts, permissions and change requests
 
 ## Deploy to Netlify from GitHub (recommended)
 
@@ -47,7 +52,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
    | Build command | `npm run build` |
    | Publish directory | `public` |
    | Functions directory | `netlify/functions` |
-   | Node | `20` |
+   | Node | `22.12.0` |
 
 5. Before or after the first deploy, open **Project configuration → Environment variables** and add:
 
@@ -55,8 +60,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
    | --- | --- |
    | `GEMINI_API_KEY` | Your Google AI Studio API key |
    | `GEMINI_MODEL` | `gemini-3.6-flash` (optional) |
-   | `ADMIN_USERNAME` | `Priyanshu` |
-   | `ADMIN_PASSWORD_HASH` | The bcrypt hash from `.env.example` |
+   | `MAIN_ADMINS_JSON` | The complete one-line JSON value from `.env.example` |
    | `SESSION_SECRET` | A random secret of at least 32 characters |
    | `GITHUB_TOKEN` | Fine-grained GitHub token with Contents read/write access to this repository |
    | `GITHUB_REPO` | `OWNER/REPOSITORY` |
@@ -76,7 +80,14 @@ This project contains several PDFs and may be too large for a reliable browser d
 
 The admin route is `/admin`. It is also revealed in the hamburger menu after tapping the small version label five times within three seconds, or holding it for about one second. The menu shows Admin and Log out only while a valid session exists.
 
-On the dashboard you can edit:
+There are two roles:
+
+- **Main admin:** can edit and publish every website section, approve applicants, assign or remove regular-admin permissions, reset regular-admin passwords, disable accounts, and approve or reject change requests.
+- **Regular admin:** sees only assigned branch + semester combinations. They can prepare a resource draft and submit it for approval, but cannot save directly to GitHub or publish anything.
+
+The configured main-admin usernames are `Priyanshu`, `Akshat` and `racoon67`. Passwords are never stored in source code; only their one-way bcrypt hashes are configured through `MAIN_ADMINS_JSON`.
+
+Main admins can edit:
 
 - branches, any number of semesters, linked subjects and unit resources;
 - the public site title, institution and description;
@@ -92,18 +103,31 @@ The password itself is never stored in the source or sent to the browser. Genera
 node -e "require('bcryptjs').hash(process.argv[1], 12).then(console.log)" 'YOUR_NEW_PASSWORD'
 ```
 
-For the initial account requested for this build, copy these values into Netlify (the value below is a one-way bcrypt hash, not the password):
+Copy these values into Netlify. Keep `MAIN_ADMINS_JSON` on one line exactly as shown (the values inside it are one-way bcrypt hashes, not passwords):
 
 ```dotenv
-ADMIN_USERNAME=Priyanshu
-ADMIN_PASSWORD_HASH=$2b$12$9DsaIlwzN45reAa8sSTcgOFl5chG7AV.totGf30xQbWQUZw.bQ/sS
+MAIN_ADMINS_JSON=[{"username":"Priyanshu","name":"Priyanshu Dixit","passwordHash":"$2b$12$9DsaIlwzN45reAa8sSTcgOFl5chG7AV.totGf30xQbWQUZw.bQ/sS"},{"username":"Akshat","name":"Akshat Shukla","passwordHash":"$2b$12$KwyCWEvO24hKoQhTTwR0XeeSd4XxxpGJZ8zJVX1pWcxNjzgdcE5R."},{"username":"racoon67","name":"Shreyansh","passwordHash":"$2b$12$2qpnFwrJr6M0q1xxm2uHwuKZEFzqYscTGJxbdBY/ESSsdqsbnUP3O"}]
 SESSION_SECRET=replace-with-the-output-of-openssl-rand-hex-32
 GITHUB_TOKEN=your-fine-grained-github-token
 GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
 GITHUB_BRANCH=main
 ```
 
-Generate a session secret with `openssl rand -hex 32`. Uploaded assets use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads` for previewing.
+Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the three main accounts in V15.
+
+Uploaded assets and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local registration and approval data is placed in the ignored `data/admin-state.local.json` file.
+
+### Regular-admin workflow
+
+1. The applicant opens `/admin`, chooses **Admin registration**, and submits name, branch, roll number and email.
+2. A main admin signs in and opens **Access & approvals**.
+3. The main admin chooses one or more branch + semester permissions, approves the application, and creates a username and temporary password.
+4. The main admin shares those credentials privately with the applicant. This build does not email credentials automatically.
+5. The regular admin signs in and sees only the resource sections assigned to them.
+6. They edit an assigned section and choose **Submit request** with a short summary.
+7. A main admin reviews the request in **Access & approvals**. Only **Approve & deploy** commits the validated resource data to GitHub and triggers Netlify.
+
+Main admins can change permissions later, disable or re-enable an account, and set a replacement temporary password. Regular admins never receive access to site details, syllabus administration, creators, placements, notices, access management or direct GitHub saves.
 
 ## Unlimited Practice
 
@@ -174,6 +198,9 @@ npm run build
 - `GET /api/notices`
 - `POST /api/admin/login`, `GET /api/admin/session`, `POST /api/admin/logout`
 - `GET /api/admin/data`, `POST /api/admin/save`, `POST /api/admin/upload`
+- `POST /api/admin/register` (public application form)
+- `GET|POST /api/admin/management` (main admins only)
+- `POST /api/admin/change-request` (regular admins only)
 
 ## Structure
 
@@ -196,6 +223,8 @@ helpdesk/
 │       ├── helpdesk-api.js
 │       ├── hbtu-feed.js
 │       ├── admin-auth.js
+│       ├── admin-state.js
+│       ├── admin-control.js
 │       ├── admin-content.js
 │       └── admin-uploads.js
 ├── public/

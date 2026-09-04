@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
+const { findRegularAdmin } = require("./admin-state");
 
 const COOKIE_NAME = "helpdesk_admin";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -61,12 +62,15 @@ function constantTimeEqual(left, right) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function issueSession(username) {
+function issueSession(identity) {
   const signingSecret = secret();
   if (!signingSecret) throw new Error("Admin session is not configured.");
   const now = Math.floor(Date.now() / 1000);
   const payload = {
-    sub: username,
+    sub: identity.username,
+    name: identity.name || identity.username,
+    role: identity.role,
+    adminId: identity.id || null,
     iat: now,
     exp: now + SESSION_TTL_SECONDS,
     csrf: crypto.randomBytes(24).toString("base64url"),
@@ -98,7 +102,7 @@ function verifySession(event) {
   if (!constantTimeEqual(signature, sign(encoded, signingSecret))) return null;
   try {
     const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
-    if (!payload || payload.exp <= Math.floor(Date.now() / 1000) || !payload.sub || !payload.csrf) return null;
+    if (!payload || payload.exp <= Math.floor(Date.now() / 1000) || !payload.sub || !payload.csrf || !["main", "regular"].includes(payload.role)) return null;
     return payload;
   } catch {
     return null;
@@ -148,6 +152,9 @@ function sameOrigin(event) {
 function authorize(event, options) {
   const session = verifySession(event);
   if (!session) return { ok: false, response: json(401, { error: "Authentication required." }) };
+  if (options && options.role && session.role !== options.role) {
+    return { ok: false, response: json(403, { error: "Main admin permission is required." }) };
+  }
   if (options && options.csrf) {
     if (!sameOrigin(event)) return { ok: false, response: json(403, { error: "Origin check failed." }) };
     const csrf = header(event, "x-helpdesk-csrf");
@@ -183,29 +190,73 @@ async function authenticate(event) {
   if (limited(ip)) {
     return json(429, { error: "Too many login attempts. Try again in 15 minutes." }, { "Retry-After": "900" });
   }
-  const username = String(process.env.ADMIN_USERNAME || "");
-  const passwordHash = String(process.env.ADMIN_PASSWORD_HASH || "");
-  if (!username || !passwordHash || !secret()) {
+  let mainAdmins;
+  try { mainAdmins = configuredMainAdmins(); }
+  catch (error) { return json(503, { error: error.message }); }
+  if (!mainAdmins.length || !secret()) {
     return json(503, { error: "Admin access is not configured yet." });
   }
   const body = parseBody(event);
   if (!body || typeof body.username !== "string" || typeof body.password !== "string") {
     return json(400, { error: "Username and password are required." });
   }
-  const usernameMatches = constantTimeEqual(body.username, username);
-  const passwordMatches = await bcrypt.compare(body.password, passwordHash).catch(() => false);
-  if (!usernameMatches || !passwordMatches) {
+  const requestedUsername = body.username.trim();
+  const mainAdmin = mainAdmins.find((admin) => constantTimeEqual(requestedUsername.toLowerCase(), admin.username.toLowerCase()));
+  let identity = null;
+  if (mainAdmin && await bcrypt.compare(body.password, mainAdmin.passwordHash).catch(() => false)) {
+    identity = { id: `main:${mainAdmin.username}`, username: mainAdmin.username, name: mainAdmin.name, role: "main" };
+  } else {
+    const regular = await findRegularAdmin(requestedUsername);
+    if (regular && await bcrypt.compare(body.password, regular.passwordHash).catch(() => false)) {
+      identity = { id: regular.id, username: regular.username, name: regular.name, role: "regular" };
+    } else if (!mainAdmin && mainAdmins[0]) {
+      await bcrypt.compare(body.password, mainAdmins[0].passwordHash).catch(() => false);
+    }
+  }
+  if (!identity) {
     recordFailure(ip);
     return json(401, { error: "Invalid username or password." });
   }
   loginAttempts.delete(ip);
-  const session = issueSession(username);
+  const session = issueSession(identity);
   return json(200, {
     authenticated: true,
-    username,
+    username: identity.username,
+    name: identity.name,
+    role: identity.role,
     csrfToken: session.payload.csrf,
     expiresAt: session.payload.exp,
   }, { "Set-Cookie": sessionCookie(session.token, event) });
+}
+
+function configuredMainAdmins() {
+  const admins = [];
+  const raw = String(process.env.MAIN_ADMINS_JSON || "").trim();
+  if (raw) {
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch { throw new Error("MAIN_ADMINS_JSON is not valid JSON."); }
+    if (!Array.isArray(parsed)) throw new Error("MAIN_ADMINS_JSON must be an array.");
+    parsed.forEach((admin) => {
+      if (!admin || typeof admin.username !== "string" || typeof admin.passwordHash !== "string" || !admin.username.trim() || !admin.passwordHash.startsWith("$2")) {
+        throw new Error("Every main admin needs a username and bcrypt passwordHash.");
+      }
+      admins.push({ username: admin.username.trim(), name: String(admin.name || admin.username).trim(), passwordHash: admin.passwordHash });
+    });
+    if (new Set(admins.map((admin) => admin.username.toLowerCase())).size !== admins.length) {
+      throw new Error("MAIN_ADMINS_JSON contains a duplicate username.");
+    }
+  }
+  const legacyUsername = String(process.env.ADMIN_USERNAME || "").trim();
+  const legacyHash = String(process.env.ADMIN_PASSWORD_HASH || "").trim();
+  if (legacyUsername && legacyHash && !admins.some((admin) => admin.username.toLowerCase() === legacyUsername.toLowerCase())) {
+    admins.push({ username: legacyUsername, name: legacyUsername, passwordHash: legacyHash });
+  }
+  return admins;
+}
+
+function mainAdminDirectory() {
+  return configuredMainAdmins().map((admin) => ({ username: admin.username, name: admin.name, role: "main" }));
 }
 
 module.exports = {
@@ -213,7 +264,9 @@ module.exports = {
   authenticate,
   authorize,
   clearCookie,
+  configuredMainAdmins,
   json,
+  mainAdminDirectory,
   parseBody,
   sessionCookie,
   verifySession,

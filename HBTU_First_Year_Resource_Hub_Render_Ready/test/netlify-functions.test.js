@@ -1,5 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs/promises");
+const os = require("node:os");
+const path = require("node:path");
+
+const adminStatePath = path.join(os.tmpdir(), `helpdesk-admin-state-${process.pid}-${Date.now()}.json`);
+process.env.ADMIN_STATE_PATH = adminStatePath;
+test.after(async () => { await fs.unlink(adminStatePath).catch(() => {}); });
 
 const health = require("../netlify/functions/health").handler;
 const resources = require("../netlify/functions/resources").handler;
@@ -318,6 +325,158 @@ test("admin login creates a valid session and a GitHub-backed save", async () =>
     const restore = (key, value) => value === undefined ? delete process.env[key] : process.env[key] = value;
     restore("ADMIN_USERNAME", prior.username); restore("ADMIN_PASSWORD_HASH", prior.hash); restore("SESSION_SECRET", prior.secret);
     restore("GITHUB_TOKEN", prior.token); restore("GITHUB_REPO", prior.repo); restore("GITHUB_BRANCH", prior.branch);
+  }
+});
+
+test("main admins approve scoped regular admins and deploy their reviewed requests", async () => {
+  const bcrypt = require("bcryptjs");
+  const register = require("../netlify/functions/admin-register").handler;
+  const login = require("../netlify/functions/admin-login").handler;
+  const dataEndpoint = require("../netlify/functions/admin-data").handler;
+  const management = require("../netlify/functions/admin-management").handler;
+  const changeRequest = require("../netlify/functions/admin-change-request").handler;
+  const directSave = require("../netlify/functions/admin-save").handler;
+  const previousFetch = global.fetch;
+  const prior = Object.fromEntries([
+    "MAIN_ADMINS_JSON", "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "SESSION_SECRET",
+    "GITHUB_TOKEN", "GITHUB_REPO", "GITHUB_BRANCH",
+  ].map((key) => [key, process.env[key]]));
+  const restore = (key) => prior[key] === undefined ? delete process.env[key] : process.env[key] = prior[key];
+  await fs.unlink(adminStatePath).catch(() => {});
+  process.env.MAIN_ADMINS_JSON = JSON.stringify([{
+    username: "main-test",
+    name: "Main Test",
+    passwordHash: bcrypt.hashSync("main-test-password", 4),
+  }]);
+  delete process.env.ADMIN_USERNAME;
+  delete process.env.ADMIN_PASSWORD_HASH;
+  process.env.SESSION_SECRET = "0123456789abcdef0123456789abcdef";
+  process.env.GITHUB_TOKEN = "test-token";
+  process.env.GITHUB_REPO = "owner/repository";
+  process.env.GITHUB_BRANCH = "main";
+
+  const authHeaders = (cookie, csrf) => ({
+    cookie,
+    host: "localhost:3000",
+    origin: "http://localhost:3000",
+    "x-helpdesk-csrf": csrf,
+  });
+
+  try {
+    const applicationResult = await register({
+      httpMethod: "POST",
+      headers: { "x-forwarded-for": "192.0.2.120" },
+      body: JSON.stringify({
+        name: "Regular Student",
+        branch: "Mechanical Engineering",
+        rollNumber: "240001",
+        email: "regular.student@example.com",
+      }),
+    });
+    assert.equal(applicationResult.statusCode, 201);
+    const applicationId = JSON.parse(applicationResult.body).applicationId;
+
+    const mainLoginResult = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.121" },
+      body: JSON.stringify({ username: "main-test", password: "main-test-password" }),
+    });
+    assert.equal(mainLoginResult.statusCode, 200);
+    const mainSession = JSON.parse(mainLoginResult.body);
+    assert.equal(mainSession.role, "main");
+    const mainCookie = mainLoginResult.headers["Set-Cookie"].split(";")[0];
+
+    const approvalResult = await management({
+      httpMethod: "POST",
+      headers: authHeaders(mainCookie, mainSession.csrfToken),
+      body: JSON.stringify({
+        action: "approve-registration",
+        registrationId: applicationId,
+        username: "regular-test",
+        password: "temporary-password",
+        permissions: [{ branchId: "mechanical", semesterId: "semester-2" }],
+      }),
+    });
+    assert.equal(approvalResult.statusCode, 200);
+
+    const regularLoginResult = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.122" },
+      body: JSON.stringify({ username: "regular-test", password: "temporary-password" }),
+    });
+    assert.equal(regularLoginResult.statusCode, 200);
+    const regularSession = JSON.parse(regularLoginResult.body);
+    assert.equal(regularSession.role, "regular");
+    const regularCookie = regularLoginResult.headers["Set-Cookie"].split(";")[0];
+
+    const scopedResult = await dataEndpoint({ httpMethod: "GET", headers: { cookie: regularCookie } });
+    assert.equal(scopedResult.statusCode, 200);
+    const scoped = JSON.parse(scopedResult.body);
+    assert.equal(scoped.resources.branches.length, 1);
+    assert.equal(scoped.resources.branches[0].id, "mechanical");
+    assert.deepEqual(scoped.resources.branches[0].semesters.map((item) => item.id), ["semester-2"]);
+    assert.equal(scoped.placements, null);
+    assert.equal(scoped.notices, null);
+
+    const forbiddenSave = await directSave({
+      httpMethod: "POST",
+      headers: authHeaders(regularCookie, regularSession.csrfToken),
+      body: JSON.stringify({ target: "resources", data: scoped.resources }),
+    });
+    assert.equal(forbiddenSave.statusCode, 403);
+
+    const branch = scoped.resources.branches[0];
+    const semester = branch.semesters[0];
+    const collections = scoped.resources.unitCollections.filter((item) => semester.subjectIds.includes(item.id));
+    collections[0].description = `${collections[0].description} (reviewed test draft)`;
+    const requestResult = await changeRequest({
+      httpMethod: "POST",
+      headers: authHeaders(regularCookie, regularSession.csrfToken),
+      body: JSON.stringify({
+        scope: { branchId: branch.id, semesterId: semester.id },
+        summary: "Update one assigned subject description",
+        proposal: { semester, unitCollections: collections },
+      }),
+    });
+    assert.equal(requestResult.statusCode, 201);
+    const requestId = JSON.parse(requestResult.body).requestId;
+
+    const forbiddenScope = await changeRequest({
+      httpMethod: "POST",
+      headers: authHeaders(regularCookie, regularSession.csrfToken),
+      body: JSON.stringify({
+        scope: { branchId: "food-technology", semesterId: "semester-1" },
+        summary: "Try an unassigned scope",
+        proposal: { semester, unitCollections: collections },
+      }),
+    });
+    assert.equal(forbiddenScope.statusCode, 403);
+
+    global.fetch = async (_url, options) => {
+      if (!options || !options.method) {
+        return new Response(JSON.stringify({ sha: "current-sha" }), { status: 200 });
+      }
+      return new Response(JSON.stringify({
+        commit: { html_url: "https://github.com/owner/repository/commit/reviewed" },
+      }), { status: 200 });
+    };
+    const deployResult = await management({
+      httpMethod: "POST",
+      headers: authHeaders(mainCookie, mainSession.csrfToken),
+      body: JSON.stringify({ action: "approve-change", requestId }),
+    });
+    assert.equal(deployResult.statusCode, 200);
+    assert.equal(JSON.parse(deployResult.body).deploying, true);
+
+    const snapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
+    assert.equal(snapshotResult.statusCode, 200);
+    const snapshot = JSON.parse(snapshotResult.body);
+    assert.equal(snapshot.regularAdmins[0].passwordHash, undefined);
+    assert.equal(snapshot.changeRequests.find((item) => item.id === requestId).status, "approved");
+  } finally {
+    global.fetch = previousFetch;
+    Object.keys(prior).forEach(restore);
+    await fs.unlink(adminStatePath).catch(() => {});
   }
 });
 

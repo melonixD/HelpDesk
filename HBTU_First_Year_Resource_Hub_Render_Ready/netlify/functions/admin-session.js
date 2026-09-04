@@ -7,6 +7,8 @@ exports.handler = async (event) => {
   return json(200, {
     authenticated: true,
     username: session.sub,
+    name: session.name,
+    role: session.role,
     csrfToken: session.csrf,
     expiresAt: session.exp,
   });

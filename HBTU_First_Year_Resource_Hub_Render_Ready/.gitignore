@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 npm-debug.log*
 *.zip
+data/admin-state.local.json
+data/admin-state.local.json.*.tmp

@@ -4,7 +4,7 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22.12.0"
 
 [functions]
   node_bundler = "esbuild"
@@ -67,6 +67,24 @@
 [[redirects]]
   from = "/api/admin/upload"
   to = "/.netlify/functions/admin-upload"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/register"
+  to = "/.netlify/functions/admin-register"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/management"
+  to = "/.netlify/functions/admin-management"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/change-request"
+  to = "/.netlify/functions/admin-change-request"
   status = 200
   force = true
 

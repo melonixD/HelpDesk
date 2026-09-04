@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/admin.css?v=14">
+  <link rel="stylesheet" href="/admin/admin.css?v=15">
 </head>
 <body>
   <main id="login-view" class="login-shell" hidden>
@@ -16,12 +16,25 @@
       <a class="wordmark" href="/">HelpDesk</a>
       <p class="eyebrow">Private workspace</p>
       <h1>Welcome back.</h1>
-      <p class="muted">Sign in to manage the resource library.</p>
+      <p class="muted">Sign in, or apply for scoped contributor access.</p>
+      <div class="login-tabs" role="tablist">
+        <button id="login-tab-signin" class="active" type="button">Sign in</button>
+        <button id="login-tab-register" type="button">Admin registration</button>
+      </div>
       <form id="login-form" autocomplete="on">
         <label>Username<input id="login-username" name="username" autocomplete="username" required></label>
         <label>Password<input id="login-password" name="password" type="password" autocomplete="current-password" required></label>
         <p id="login-error" class="form-error" role="alert" hidden></p>
         <button class="primary wide" type="submit">Continue</button>
+      </form>
+      <form id="registration-form" autocomplete="on" hidden>
+        <label>Name<input name="name" autocomplete="name" required maxlength="120"></label>
+        <label>Branch<input name="branch" required maxlength="160" placeholder="e.g. Mechanical Engineering"></label>
+        <label>Roll number<input name="rollNumber" required maxlength="60"></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+        <label class="trap-field" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+        <p id="registration-message" class="form-error" role="status" hidden></p>
+        <button class="primary wide" type="submit">Submit application</button>
       </form>
       <a class="back-link" href="/">← Return to HelpDesk</a>
     </section>
@@ -40,8 +53,10 @@
         <button data-section="creators"><span>♡</span>Creators</button>
         <button data-section="placements"><span>↗</span>Placements</button>
         <button data-section="notices"><span>□</span>Notices</button>
+        <button data-section="management" id="management-nav" hidden><span>⌘</span>Access &amp; approvals</button>
       </nav>
       <div class="sidebar-foot">
+        <span id="admin-identity" class="admin-identity"></span>
         <a href="/" target="_blank" rel="noopener">View live site ↗</a>
         <button id="logout-button">Log out</button>
       </div>
@@ -66,6 +81,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" hidden></div>
-  <script src="/admin/admin.js?v=14" defer></script>
+  <script src="/admin/admin.js?v=15" defer></script>
 </body>
 </html>
