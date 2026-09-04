@@ -10,11 +10,16 @@ const indexPath = path.join(root, "public", "index.html");
 const resources = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 const bank = JSON.parse(fs.readFileSync(bankPath, "utf8"));
 const index = fs.readFileSync(indexPath, "utf8");
-const pyqUrls = resources.unitCollections.flatMap((subject) =>
-  subject.units.map((unit) => unit.pyqUrl).filter(Boolean)
-);
-const missingBankEntries = pyqUrls.filter((url) => !bank[url]);
-const missingPdfs = pyqUrls.filter((url) => !fs.existsSync(path.join(root, "public", url)));
+const units = resources.unitCollections.flatMap((subject) => subject.units);
+const pyqUrls = units.map((unit) => unit.pyqUrl).filter(Boolean);
+const practiceKeys = units.map((unit) => unit.practiceKey || unit.pyqUrl).filter(Boolean);
+const localPracticeSources = practiceKeys.filter((url) => String(url).startsWith("/"));
+const noteUrls = units.flatMap((unit) => [unit.handwrittenNotesUrl, unit.masterNotesUrl])
+  .filter((url) => url && String(url).startsWith("/"));
+const publicPath = (url) => path.join(root, "public", String(url).replace(/^\/+/, ""));
+const missingBankEntries = practiceKeys.filter((url) => !bank[url]);
+const missingPdfs = localPracticeSources.filter((url) => !fs.existsSync(publicPath(url)));
+const missingNotes = noteUrls.filter((url) => !fs.existsSync(publicPath(url)));
 
 if (!index.includes("<title>HelpDesk · HBTU</title>")) {
   throw new Error("public/index.html is missing the HelpDesk page title.");
@@ -28,6 +33,13 @@ if (missingBankEntries.length) {
 if (missingPdfs.length) {
   throw new Error(`PYQ PDF files are missing for: ${missingPdfs.join(", ")}`);
 }
+if (missingNotes.length) {
+  throw new Error(`Notes files are missing for: ${missingNotes.join(", ")}`);
+}
 
 fs.copyFileSync(dataPath, publicDataPath);
-console.log(`HelpDesk Netlify build ready: ${resources.branches.length} branches, ${pyqUrls.length} PYQ PDFs.`);
+const externalPyqCount = pyqUrls.filter((url) => /^https?:\/\//.test(url)).length;
+console.log(
+  `HelpDesk Netlify build ready: ${resources.branches.length} branches, ` +
+  `${practiceKeys.length} practice units, ${externalPyqCount} external PYQ links.`
+);

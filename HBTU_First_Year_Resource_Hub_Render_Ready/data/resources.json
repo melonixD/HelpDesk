@@ -4,7 +4,7 @@
     "institution": "HBTU",
     "description": "One organised place for first-year syllabi, lectures, notes and previous-year questions.",
     "creators": ["Akshat Shukla", "Priyanshu Dixit"],
-    "lastUpdated": "2026-09-03"
+    "lastUpdated": "2026-09-04"
   },
   "branches": [
     { "id": "civil", "code": "CE", "name": "Civil Engineering", "group": "engineering", "semesterSubjectIds": { "1": ["maths-1", "bee", "engineering-graphics", "engineering-physics", "uhv", "pps", "etw"], "2": ["chemistry", "bem", "bet", "pc", "ees", "workshop"] } },
@@ -30,36 +30,62 @@
       "accent": "violet",
       "lectureUrl": null,
       "notesUrl": null,
+      "splitNotes": true,
       "units": [
         {
           "number": 1,
           "title": "Bonding & Spectroscopy",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03ktP4MHmIV87pHZHBEUF6f",
-          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf"
+          "handwrittenNotesUrl": null,
+          "masterNotesUrl": "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_1_Master_Notes.pdf",
+          "pyqUrl": "https://drive.google.com/file/d/1Sxj3QgQ3aq53YWYkXhQcl2qzjrMe46Sg/view?usp=drivesdk",
+          "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf"
         },
         {
           "number": 2,
           "title": "Chemical Kinetics & Surface Chemistry",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLgrPoGl4jGdo1G93jv-pkmw5RCHM9xTc-",
-          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_2_PYQs.pdf"
+          "handwrittenNotesUrl": null,
+          "masterNotesUrl": null,
+          "pyqUrl": "https://drive.google.com/file/d/1QUbzAI54IugzF3WsbCGUBxjpQtMEDdH4/view",
+          "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_2_PYQs.pdf"
         },
         {
           "number": 3,
           "title": "Electrochemistry, Nanochemistry & Environmental Chemistry",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03pNhe069q3fHouzq64Vvsm",
-          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_3_PYQs.pdf"
+          "handwrittenNotesUrl": null,
+          "masterNotesUrl": null,
+          "pyqUrl": "https://drive.google.com/file/d/1ka_oF1TesvR9c2bgdPUgxhpk8z4a1ZNR/view",
+          "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_3_PYQs.pdf"
         },
         {
           "number": 4,
           "title": "Stereochemistry & Reaction Mechanism",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03fWMXEe-8QJNVJ-ySOF0jO",
-          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_4_PYQs.pdf"
+          "handwrittenNotesUrl": null,
+          "masterNotesUrl": null,
+          "pyqUrl": "https://drive.google.com/file/d/1kqVpRXgZZc7KFfGKSpOSJ9EeOvh8tlRK/view",
+          "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_4_PYQs.pdf"
         },
         {
           "number": 5,
           "title": "Polymers, Water Analysis & Solid Waste Management",
           "lectureUrl": null,
-          "pyqUrl": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_5_PYQs.pdf"
+          "handwrittenNotesUrl": null,
+          "masterNotesUrl": null,
+          "pyqUrl": "https://drive.google.com/file/d/1NxFkltxL0VLzoF52aSuzQ1JasCuJozpt/view",
+          "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_5_PYQs.pdf"
+        },
+        {
+          "number": "LAB",
+          "kind": "lab",
+          "title": "Practical experiments, lab manual and viva preparation",
+          "labManualUrl": null,
+          "experimentVideosUrl": null,
+          "vivaQuestionsUrl": null,
+          "bookUrl": null,
+          "pyqUrl": null
         }
       ]
     },

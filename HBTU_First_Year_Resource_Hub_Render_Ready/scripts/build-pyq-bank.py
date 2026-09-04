@@ -39,8 +39,11 @@ bank = {}
 total_q = 0
 for collection in RESOURCES["unitCollections"]:
     for unit in collection["units"]:
-        pyq_url = unit.get("pyqUrl")
+        pyq_url = unit.get("practiceKey") or unit.get("pyqUrl")
         if not pyq_url:
+            continue
+        if not pyq_url.startswith("/"):
+            print("SKIPPING EXTERNAL PYQ:", pyq_url)
             continue
         pdf_path = ROOT / "public" / pyq_url.lstrip("/")
         if not pdf_path.exists():

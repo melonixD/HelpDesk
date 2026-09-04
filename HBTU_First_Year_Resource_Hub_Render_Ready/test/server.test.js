@@ -56,7 +56,9 @@ test("library exposes fourteen branches including Biotechnology", async () => {
   const data = await response.json();
   assert.equal(data.branches.length, 14);
   assert.equal(data.unitCollections.length, 21);
-  assert.equal(data.unitCollections.reduce((total, subject) => total + subject.units.length, 0), 105);
+  const allSections = data.unitCollections.flatMap((subject) => subject.units);
+  assert.equal(allSections.filter((section) => section.kind !== "lab").length, 105);
+  assert.equal(allSections.filter((section) => section.kind === "lab").length, 1);
   assert.ok(data.branches.some((branch) => branch.name === "Mechanical Engineering"));
   assert.ok(data.branches.some((branch) => branch.name === "Electrical Engineering"));
   assert.ok(data.branches.some((branch) => branch.name === "Biotechnology" && branch.group === "technology"));
@@ -122,21 +124,42 @@ test("syllabus is grouped into Engineering and Technology with nested semesters"
   );
 });
 
-test("twenty separated unit PDFs remain linked", async () => {
+test("all PYQ sets remain linked and Chemistry uses the five replacement files", async () => {
   const response = await fetch(`${baseUrl}/api/resources`);
   const data = await response.json();
-  const pdfUrls = data.unitCollections.flatMap((subject) =>
+  const pyqUrls = data.unitCollections.flatMap((subject) =>
     subject.units.map((unit) => unit.pyqUrl).filter(Boolean)
   );
-  assert.equal(pdfUrls.length, 20);
-  assert.ok(pdfUrls.every((url) => url.startsWith("/resources/pyqs/") && url.endsWith(".pdf")));
+  assert.equal(pyqUrls.length, 20);
+  const chemistry = data.unitCollections.find((subject) => subject.id === "chemistry");
+  assert.deepEqual(
+    chemistry.units.filter((unit) => unit.kind !== "lab").map((unit) => unit.pyqUrl),
+    [
+      "https://drive.google.com/file/d/1Sxj3QgQ3aq53YWYkXhQcl2qzjrMe46Sg/view?usp=drivesdk",
+      "https://drive.google.com/file/d/1QUbzAI54IugzF3WsbCGUBxjpQtMEDdH4/view",
+      "https://drive.google.com/file/d/1ka_oF1TesvR9c2bgdPUgxhpk8z4a1ZNR/view",
+      "https://drive.google.com/file/d/1kqVpRXgZZc7KFfGKSpOSJ9EeOvh8tlRK/view",
+      "https://drive.google.com/file/d/1NxFkltxL0VLzoF52aSuzQ1JasCuJozpt/view",
+    ]
+  );
+  assert.ok(chemistry.units.slice(0, 5).every((unit) => unit.practiceKey.startsWith("/resources/pyqs/")));
 });
 
-test("unit PDF opens inline from the website", async () => {
-  const response = await fetch(`${baseUrl}/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf`);
+test("Chemistry Unit 1 Master Notes open inline from the website", async () => {
+  const response = await fetch(`${baseUrl}/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_1_Master_Notes.pdf`);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "application/pdf");
   assert.ok((await response.arrayBuffer()).byteLength > 1000);
+});
+
+test("Engineering Chemistry includes split notes folders and Chemistry Lab", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  const chemistry = data.unitCollections.find((subject) => subject.id === "chemistry");
+  assert.equal(chemistry.splitNotes, true);
+  assert.equal(chemistry.units[0].masterNotesUrl, "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_1_Master_Notes.pdf");
+  assert.equal(chemistry.units[0].handwrittenNotesUrl, null);
+  assert.equal(chemistry.units.at(-1).kind, "lab");
 });
 
 test("spa fallback serves the website", async () => {
@@ -188,6 +211,10 @@ test("static resource fallback works and application assets cannot go stale", as
   assert.match(scriptText, /renderSemesters\(branch\)/);
   assert.match(scriptText, /prefersReducedMotion\(\)/);
   assert.match(scriptText, /renderSubjectSyllabus\(branch, subject\)/);
+  assert.match(scriptText, /renderMaterialFolder\(material\)/);
+  assert.match(scriptText, /practiceKeyForUnit\(unit\)/);
+  assert.match(styleText, /\.material-folder-list/);
+  assert.match(styleText, /\.unit-row > summary/);
   assert.match(scriptText, /syllabusGroups/);
   assert.match(scriptText, /syllabus-group/);
   assert.match(styleText, /\.syllabus-section \.overline[\s\S]*font-size: 16px/);

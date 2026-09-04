@@ -9,6 +9,9 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Technology and Engineering semester mappings
 - Lectures, Notes, PYQs, Books and Practice inside units
 - 20 browser-viewable unit-wise PYQ PDFs
+- Updated Engineering Chemistry PYQ links for Units 1-5
+- Engineering Chemistry Notes folders split into Handwritten Notes and Master Notes
+- Unit 1 Engineering Chemistry Master Notes PDF and a Chemistry Lab section
 - Engineering and Technology syllabus folders, initially collapsed
 - Unlimited Practice powered by real PYQ text and Gemini
 - SGPA/CGPA calculator, focus timer and study list
@@ -50,7 +53,7 @@ This project is about 33 MB and contains one PDF larger than 10 MB. If the brows
 
 ## Unlimited Practice
 
-Practice Mode takes a unit's local `pyqUrl`, finds its extracted real questions in `data/pyq-bank.json`, and asks Gemini 3.6 for three new questions and concise answers at a similar level. Gemini thinking is kept minimal and the request is stopped after 22 seconds so it finishes before the deployment timeout. If Gemini is temporarily slow or unreachable, the UI falls back to real questions from that unit instead of failing.
+Practice Mode takes a unit's internal `practiceKey`, finds its extracted real questions in `data/pyq-bank.json`, and asks Gemini 3.6 for three new questions and concise answers at a similar level. The visible `pyqUrl` may be a newer Google Drive file without breaking the existing question bank. Gemini thinking is kept minimal and the request is stopped after 22 seconds so it finishes before the deployment timeout. If Gemini is temporarily slow or unreachable, the UI falls back to real questions from that unit instead of failing.
 
 - Browser request: `POST /api/practice/generate`
 - Netlify function: `netlify/functions/practice-generate.js`

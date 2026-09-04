@@ -278,6 +278,16 @@ function countPdfs(collection) {
   return collection.units.filter((unit) => Boolean(unit.pyqUrl)).length;
 }
 
+function practiceKeyForUnit(unit) {
+  return unit.practiceKey || unit.pyqUrl;
+}
+
+function collectionCountLabel(collection) {
+  const units = collection.units.filter((item) => item.kind !== "lab").length;
+  const labs = collection.units.filter((item) => item.kind === "lab").length;
+  return units + " units" + (labs ? " · " + labs + " lab" : "");
+}
+
 function renderBrowser(changeType) {
   renderBranches();
   const branches = state.data.branches;
@@ -319,7 +329,7 @@ function renderBrowser(changeType) {
     return '<button class="subject-item ' + (item.id === subject.id ? "active" : "") +
       '" data-subject="' + item.id + '" type="button">' +
       '<span class="subject-monogram">' + escapeHtml(subjectCodes[item.id] || item.name.slice(0, 2)) + '</span>' +
-      '<span><strong>' + escapeHtml(item.name) + '</strong><small>' + item.units.length + ' units</small></span>' +
+      '<span><strong>' + escapeHtml(item.name) + '</strong><small>' + collectionCountLabel(item) + '</small></span>' +
       '<i aria-hidden="true">›</i></button>';
   }).join("");
 
@@ -328,14 +338,14 @@ function renderBrowser(changeType) {
   elements["course-name"].textContent = subject.name;
   elements["course-description"].textContent = subject.description;
   const pdfCount = countPdfs(subject);
-  elements["course-status"].textContent = subject.units.length + " units" + (pdfCount ? " · " + pdfCount + " PDFs" : "");
+  elements["course-status"].textContent = collectionCountLabel(subject) + (pdfCount ? " · " + pdfCount + " PYQ sets" : "");
   renderSubjectSyllabus(branch, subject);
   elements["unit-list"].innerHTML = subject.units.map((unit, index) => renderUnit(subject, unit, index)).join("");
 
-  elements["unit-list"].querySelectorAll("details").forEach((details) => {
+  elements["unit-list"].querySelectorAll(".unit-row").forEach((details) => {
     details.addEventListener("toggle", () => {
       if (!details.open) return;
-      elements["unit-list"].querySelectorAll("details[open]").forEach((other) => {
+      elements["unit-list"].querySelectorAll(".unit-row[open]").forEach((other) => {
         if (other !== details) other.open = false;
       });
     });
@@ -444,6 +454,59 @@ function renderBranches() {
 }
 
 function renderUnit(subject, unit, index) {
+  const isLab = unit.kind === "lab";
+  const practiceKey = practiceKeyForUnit(unit);
+  const notesChildren = subject.splitNotes && !isLab ? [
+    {
+      type: "notes",
+      title: "Handwritten Notes",
+      description: unit.handwrittenNotesUrl ? "Student-friendly handwritten notes" : "Coming soon",
+      url: unit.handwrittenNotesUrl,
+    },
+    {
+      type: "notes",
+      title: "Master Notes",
+      description: unit.masterNotesUrl ? "Complete exam-ready unit notes" : "Coming soon",
+      url: unit.masterNotesUrl,
+    },
+  ] : null;
+
+  if (isLab) {
+    const labMaterials = [
+      {
+        type: "notes",
+        title: "Lab Manual",
+        description: unit.labManualUrl ? "Chemistry practical manual" : "Coming soon",
+        url: unit.labManualUrl,
+      },
+      {
+        type: "lecture",
+        title: "Experiment Videos",
+        description: unit.experimentVideosUrl ? "Practical demonstrations" : "Coming soon",
+        url: unit.experimentVideosUrl,
+      },
+      {
+        type: "pyq",
+        title: "Viva Questions",
+        description: unit.vivaQuestionsUrl ? "Experiment-wise viva preparation" : "Coming soon",
+        url: unit.vivaQuestionsUrl,
+      },
+      {
+        type: "book",
+        title: "Reference Book",
+        description: unit.bookUrl ? "Recommended laboratory reading" : "Coming soon",
+        url: unit.bookUrl,
+      },
+    ];
+    const ready = labMaterials.filter((material) => material.url).length;
+    return '<details class="unit-row lab-row">' +
+      '<summary><span class="unit-index">LAB</span>' +
+      '<span class="unit-title"><strong>Chemistry Lab</strong><small>' + escapeHtml(unit.title) + '</small></span>' +
+      '<span class="unit-count">' + (ready ? ready + ' available' : 'Coming soon') + '</span>' +
+      '<span class="chevron" aria-hidden="true"></span></summary>' +
+      '<div class="material-list">' + labMaterials.map(renderMaterial).join("") + '</div></details>';
+  }
+
   const materials = [
     {
       type: "lecture",
@@ -454,8 +517,11 @@ function renderUnit(subject, unit, index) {
     {
       type: "notes",
       title: "Notes",
-      description: unit.notesUrl || subject.notesUrl ? "Study notes" : "Not added yet",
+      description: notesChildren
+        ? notesChildren.filter((note) => note.url).length + " of 2 folders available"
+        : (unit.notesUrl || subject.notesUrl ? "Study notes" : "Not added yet"),
       url: unit.notesUrl || subject.notesUrl,
+      children: notesChildren,
     },
     {
       type: "pyq",
@@ -472,18 +538,36 @@ function renderUnit(subject, unit, index) {
     {
       type: "practice",
       title: "Practice Mode",
-      description: unit.pyqUrl ? "AI-generated questions from this unit's PYQs" : "Needs PYQs first",
-      url: unit.pyqUrl,
+      description: practiceKey ? "AI-generated questions from this unit's PYQs" : "Needs PYQs first",
+      url: practiceKey,
       subject: subject.name,
       unitTitle: unit.title,
     },
   ];
-  const ready = materials.filter((material) => material.url).length;
+  const ready = materials.filter((material) =>
+    material.url || (material.children && material.children.some((child) => child.url))
+  ).length;
   return '<details class="unit-row" ' + (index === 0 ? "open" : "") + '>' +
     '<summary><span class="unit-index">' + twoDigits(unit.number) + '</span>' +
     '<span class="unit-title"><strong>Unit ' + unit.number + '</strong><small>' + escapeHtml(unit.title) + '</small></span>' +
     '<span class="unit-count">' + ready + ' available</span><span class="chevron" aria-hidden="true"></span></summary>' +
-    '<div class="material-list">' + materials.map(renderMaterial).join("") + '</div></details>';
+    '<div class="material-list">' + materials.map((material) =>
+      material.children ? renderMaterialFolder(material) : renderMaterial(material)
+    ).join("") + '</div></details>';
+}
+
+function renderMaterialFolder(material) {
+  const available = material.children.filter((item) => item.url).length;
+  const content = '<span class="material-icon">' + materialIcons[material.type] + '</span>' +
+    '<span class="material-copy"><strong>' + escapeHtml(material.title) + '</strong><small>' +
+    escapeHtml(material.description) + '</small></span>' +
+    '<span class="material-action">Browse <i class="material-folder-chevron" aria-hidden="true">⌄</i></span>';
+
+  return '<details class="material-folder">' +
+    '<summary class="material-item">' + content + '</summary>' +
+    '<div class="material-folder-list" aria-label="' + escapeHtml(material.title) + '">' +
+    material.children.map(renderMaterial).join("") +
+    '</div><span class="sr-only">' + available + ' folders available</span></details>';
 }
 
 function renderMaterial(material) {
@@ -762,7 +846,7 @@ function subjectsForSemester(semester) {
     (semesters[String(semester)] || []).forEach((id) => ids.add(id));
   });
   return (data.unitCollections || [])
-    .filter((subject) => ids.has(subject.id) && (subject.units || []).some((unit) => unit.pyqUrl))
+    .filter((subject) => ids.has(subject.id) && (subject.units || []).some((unit) => practiceKeyForUnit(unit)))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -770,7 +854,7 @@ function unitsForSubject(subjectId) {
   const data = state.data || {};
   const subject = (data.unitCollections || []).find((item) => item.id === subjectId);
   if (!subject) return [];
-  return subject.units.filter((unit) => unit.pyqUrl);
+  return subject.units.filter((unit) => practiceKeyForUnit(unit));
 }
 
 function renderPracticeStep() {
@@ -836,7 +920,7 @@ function renderPracticeStep() {
     const units = unitsForSubject(practiceHub.subjectId);
     body.innerHTML = units.length
       ? units.map((unit) =>
-          '<button class="practice-option" type="button" data-pyq-url="' + escapeHtml(unit.pyqUrl) +
+          '<button class="practice-option" type="button" data-pyq-url="' + escapeHtml(practiceKeyForUnit(unit)) +
             '" data-unit-title="' + escapeHtml(unit.title) + '">' +
             '<strong>Unit ' + unit.number + '</strong><span class="practice-option-sub">' + escapeHtml(unit.title) + '</span></button>'
         ).join("")
