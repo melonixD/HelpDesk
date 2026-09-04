@@ -1,123 +1,137 @@
-# HelpDesk
+# HelpDesk · Netlify edition
 
-HelpDesk is a clean, branch-first resource library for HBTU juniors. It uses a lightweight Node.js backend and dependency-free JavaScript frontend, and is ready to deploy on Render.
+HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, syllabus library, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API now runs as Netlify Functions, so the API key never reaches the browser.
 
-## What is included
+## Included
 
-- 14 branches—including Biotechnology—in a focused three-pane browser
-- Branch → Semester → Subject → Unit resource navigation
-- Engineering Semester 1 contains seven shared subjects: Mathematics 1, Basic Electrical Engineering (BEE), Engineering Graphics, Engineering Physics, Universal Human Value, Programming and Problem Solving, and English and Technical Writing
-- Technology Semester 1 keeps six shared subjects plus one branch-specific Core subject
-- Technology Semester 2 uses the Engineering Semester 1 subject set; Engineering Semester 2 uses the six shared Technology Semester 1 subjects
-- Lectures, Notes, PYQs and Books inside every unit
-- 20 separated unit-wise PYQ PDFs that open in the browser
-- Two large syllabus groups—Engineering and Technology—with Semester 1 and Semester 2 inside each
-- Technology Semester 1 syllabi reused for Engineering Semester 2 and linked both at the top and inside relevant subjects
-- Engineering Semester 1 syllabi reused for Technology Semester 2; four supplied files are ready and the remaining three are marked Coming soon
-- Mobile-friendly vertical branch and subject lists with no sideways scrolling
-- Static resource fallback and cache-safe application updates
-- Android Chrome and WebView-compatible rendering and touch controls
-- Lightweight branch, semester, subject, unit and resource reveal animations
-- Local study list and 25-minute focus timer inside the hamburger panel
-- Help and contact section with profile photos and revealable WhatsApp details
-- Responsive light and dark themes
-- Render Blueprint configuration and health endpoint
-- **Practice Mode** — AI-generated practice questions per unit, built from your real PYQs (see below)
+- 14 branches, including Biotechnology
+- Branch → Semester → Subject → Unit navigation
+- Technology and Engineering semester mappings
+- Lectures, Notes, PYQs, Books and Practice inside units
+- 20 browser-viewable unit-wise PYQ PDFs
+- Engineering and Technology syllabus folders, initially collapsed
+- Unlimited Practice powered by real PYQ text and Gemini
+- SGPA/CGPA calculator, focus timer and study list
+- Akshat Shukla and Priyanshu Dixit help cards and WhatsApp contacts
+- Responsive Android/mobile layout, animations, light mode and dark mode
+- Netlify Functions, clean `/api/*` routes, security headers and SPA routing
+- Static resource fallback if the resource API is temporarily unavailable
+
+## Deploy to Netlify from GitHub (recommended)
+
+1. Extract this ZIP.
+2. Upload **the contents** to the root of your GitHub repository. `netlify.toml`, `package.json`, `public`, `data` and `netlify` must be visible at the repository root.
+3. In Netlify, choose **Add new project → Import an existing project → GitHub**.
+4. Choose the repository. Netlify reads these settings from `netlify.toml`:
+
+   | Setting | Value |
+   | --- | --- |
+   | Build command | `npm run build` |
+   | Publish directory | `public` |
+   | Functions directory | `netlify/functions` |
+   | Node | `20` |
+
+5. Before or after the first deploy, open **Project configuration → Environment variables** and add:
+
+   | Name | Value |
+   | --- | --- |
+   | `GEMINI_API_KEY` | Your Google AI Studio API key |
+   | `GEMINI_MODEL` | `gemini-3.6-flash` (optional) |
+
+6. Trigger a new production deploy after saving the key.
+7. Check `https://YOUR-SITE.netlify.app/api/health`. It should return JSON with `"status":"ok"`.
+8. Open **Unlimited Practice**, choose a semester, subject and unit, then generate a question set.
+
+## Direct ZIP upload
+
+You can upload this complete ZIP at [Netlify Drop](https://app.netlify.com/drop) while signed in. Upload the project ZIP—not only the `public` folder—because the Netlify Functions and configuration are outside `public`. Add `GEMINI_API_KEY` in the project environment variables and redeploy once afterward.
+
+This project is about 33 MB and contains one PDF larger than 10 MB. If the browser upload stalls, use the GitHub method above; it is more reliable for this project and makes later updates automatic.
+
+## Unlimited Practice
+
+Practice Mode takes a unit's local `pyqUrl`, finds its extracted real questions in `data/pyq-bank.json`, and asks Gemini for five new questions and answers at a similar level.
+
+- Browser request: `POST /api/practice/generate`
+- Netlify function: `netlify/functions/practice-generate.js`
+- Server-side shared logic: `netlify/lib/helpdesk-api.js`
+- Secret: `GEMINI_API_KEY` in Netlify environment variables
+- Default model: `gemini-3.6-flash`
+- Protection: 20 generation requests per IP per warm function instance per hour
+
+The UI still works without the Gemini key; only question generation shows a setup message. Google API quotas are separate from Netlify traffic limits, so high visitor counts may require a paid Gemini quota.
 
 ## Run locally
-
-1. Install [Node.js 20 or newer](https://nodejs.org/).
-2. Open a terminal in this project folder.
-3. Run:
 
 ```bash
 npm install
 npm start
 ```
 
-4. Open `http://localhost:3000`.
+Open `http://localhost:3000`.
 
-To also test Practice Mode locally, copy `.env.example` to `.env`, add a free `GEMINI_API_KEY` (see below), then run `npm start`.
+For local Practice Mode, set `GEMINI_API_KEY` and optionally `GEMINI_MODEL` in your shell before running `npm start`. To emulate Netlify routing and Functions, install the Netlify CLI and run `netlify dev`.
 
-## Practice Mode (AI-generated questions)
+## Validate before deploying
 
-Every unit that has a PYQ PDF now shows a "Practice Mode" option. It sends a handful of real questions from that unit as examples to Google's Gemini API and asks for 5 new, similar questions with answers — so students get unlimited fresh practice instead of just the same fixed PYQ set.
-
-**How it works**
-- `scripts/build-pyq-bank.py` extracts individual questions from every PYQ PDF and writes `data/pyq-bank.json` (already generated and committed — you don't need to re-run this unless you add new PYQ PDFs).
-- `server.js` exposes `POST /api/practice/generate` — it takes a `pyqUrl`, looks up real questions for that unit, and calls the Gemini API server-side (your key is never exposed to the browser).
-- `public/app.js` renders the "Practice Mode" button and a modal to display generated questions.
-
-**Setup (free)**
-1. Get a free API key at [aistudio.google.com](https://aistudio.google.com) → API Keys.
-2. Set it as an environment variable named `GEMINI_API_KEY` (locally via `.env`, or in Render's dashboard — `render.yaml` already declares this variable so Render will prompt for it on deploy).
-3. That's it — the free tier (Gemini Flash) covers normal traffic for a small student site. If it's ever unset, Practice Mode shows a friendly "not configured" message instead of breaking the rest of the site.
-
-**Re-generating the question bank**
-If you add new PYQ PDFs later, update `data/resources.json` as usual, then re-run:
 ```bash
-pip install pdfplumber
-python3 scripts/build-pyq-bank.py
+npm run build
+npm test
 ```
-This regenerates `data/pyq-bank.json` from every PDF referenced in `unitCollections`.
 
-## Deploy on Render
-
-### Blueprint
-
-1. Upload the **contents of this folder** to the root of your GitHub repository.
-2. Confirm `render.yaml`, `package.json`, `server.js`, `public`, and `data` are visible on the `main` branch—not inside another folder.
-3. In Render, choose **New + → Blueprint** and connect the repository.
-4. Render will detect `render.yaml`; approve the `helpdesk-hbtu` service and deploy.
-
-### Web Service
-
-Use these settings if you prefer to create a Web Service manually:
-
-| Setting | Value |
-| --- | --- |
-| Runtime | Node |
-| Build command | `npm install` |
-| Start command | `npm start` |
-| Health check path | `/api/health` |
-
-No database is required. Practice Mode needs one environment variable — see the section above.
+The build checks that all branches load, every linked PYQ PDF exists, and every Practice-ready PDF has a matching question-bank entry.
 
 ## Update resources
 
-The navigation and resource links live in `data/resources.json`:
+Edit `data/resources.json`:
 
-- `branches` controls the branch list and each branch's `semesterSubjectIds`.
-- `unitCollections` controls each subject's five units and its lecture, notes, PYQ, and book links.
-- `syllabusGroups` controls the two branch groups and the Semester 1 and Semester 2 folders nested inside each.
-- `syllabi` controls the individual syllabus links available inside those folders and subjects.
+- `branches` controls branches and `semesterSubjectIds`.
+- `unitCollections` controls subjects, units, lectures, notes, PYQs and books.
+- `syllabusGroups` controls Engineering/Technology and their semesters.
+- `syllabi` controls the syllabus links shown at the top and inside subjects.
 
-Add a resource URL to an individual unit when it is unit-specific, or to the subject collection when one link should appear in every unit. Use `null` for material that is not available yet.
+Then run `npm run build`. This copies the validated resource data to `public/resources.json`, which is the frontend's static fallback.
 
-## Project structure
+After adding or changing PYQ PDFs, regenerate the question bank:
 
-```text
-first-year-resource-hub/
-├── data/resources.json
-├── data/pyq-bank.json      # extracted PYQ text used to seed Practice Mode
-├── scripts/build-pyq-bank.py
-├── public/
-│   ├── app.js
-│   ├── index.html
-│   ├── premium.css
-│   ├── resources.json      # Static fallback for the library
-│   └── resources/pyqs/   # 20 browser-viewable PDFs
-├── test/server.test.js
-├── package.json
-├── render.yaml
-└── server.js
+```bash
+pip install pdfplumber
+python3 scripts/build-pyq-bank.py
+npm run build
 ```
 
 ## API
 
-- `GET /api/health` — deployment health check
-- `GET /api/resources` — complete HelpDesk content
-- `GET /api/resources?q=spectroscopy&type=lecture&subject=chemistry` — optional filtered legacy resource response
-- `POST /api/practice/generate` — body `{ "pyqUrl": "/resources/pyqs/.../Unit_3_PYQs.pdf" }`, returns 5 AI-generated practice questions with answers for that unit
+- `GET /api/health`
+- `GET /api/resources`
+- `GET /api/resources?q=spectroscopy&type=lecture&subject=chemistry`
+- `POST /api/practice/generate` with body `{ "pyqUrl": "/resources/pyqs/.../Unit_3_PYQs.pdf" }`
+
+## Structure
+
+```text
+helpdesk/
+├── data/
+│   ├── resources.json
+│   └── pyq-bank.json
+├── netlify/
+│   ├── functions/
+│   │   ├── health.js
+│   │   ├── resources.js
+│   │   └── practice-generate.js
+│   └── lib/helpdesk-api.js
+├── public/
+│   ├── app.js
+│   ├── index.html
+│   ├── premium.css
+│   ├── resources.json
+│   ├── images/
+│   └── resources/pyqs/
+├── scripts/
+├── test/
+├── netlify.toml
+├── package.json
+└── server.js
+```
 
 Made for HBTU juniors by **Akshat Shukla** and **Priyanshu Dixit**. Licensed under MIT.

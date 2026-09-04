@@ -50,6 +50,7 @@ const materialIcons = {
 const elements = {};
 let timerSeconds = 25 * 60;
 let timerInterval = null;
+let resourceDataPromise = null;
 
 function readStorage(key, fallback) {
   try {
@@ -103,7 +104,7 @@ async function initialise() {
   bindBrowserControls();
 
   try {
-    state.data = await loadResourceData();
+    state.data = await ensureResourceData();
     renderBrowser();
     renderSyllabi();
     updateStats();
@@ -117,8 +118,25 @@ async function initialise() {
   }
 }
 
+function ensureResourceData() {
+  if (state.data) return Promise.resolve(state.data);
+  if (!resourceDataPromise) {
+    resourceDataPromise = loadResourceData()
+      .then((data) => {
+        state.data = data;
+        return data;
+      })
+      .finally(() => {
+        resourceDataPromise = null;
+      });
+  }
+  return resourceDataPromise;
+}
+
 async function loadResourceData() {
-  const sources = ["/api/resources", "/resources.json"];
+  // The same validated data is served from Netlify's CDN first, avoiding a
+  // function invocation on every page view. The API remains the fallback.
+  const sources = ["/resources.json", "/api/resources"];
   let lastError;
 
   for (const source of sources) {
@@ -510,6 +528,12 @@ function renderSyllabi() {
       countLabel + '</span><span class="group-chevron" aria-hidden="true"></span></summary>' +
       '<div class="group-contents">' + semesters + '</div></details>';
   }).join("");
+
+  // Always start with both groups and their semester folders closed. This
+  // also defeats browser form-state restoration that can reopen <details>.
+  elements["syllabus-list"].querySelectorAll("details").forEach((details) => {
+    details.open = false;
+  });
 }
 
 function renderSyllabusSemester(folder, groupTitle, folderIndex) {
@@ -730,18 +754,21 @@ function practiceGoBack() {
 }
 
 function subjectsForSemester(semester) {
-  const branches = state.data.branches || [];
+  const data = state.data || {};
+  const branches = data.branches || [];
   const ids = new Set();
   branches.forEach((branch) => {
-    (branch.semesterSubjectIds[semester] || []).forEach((id) => ids.add(id));
+    const semesters = branch.semesterSubjectIds || {};
+    (semesters[String(semester)] || []).forEach((id) => ids.add(id));
   });
-  return (state.data.unitCollections || [])
-    .filter((subject) => ids.has(subject.id) && subject.units.some((unit) => unit.pyqUrl))
+  return (data.unitCollections || [])
+    .filter((subject) => ids.has(subject.id) && (subject.units || []).some((unit) => unit.pyqUrl))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function unitsForSubject(subjectId) {
-  const subject = (state.data.unitCollections || []).find((item) => item.id === subjectId);
+  const data = state.data || {};
+  const subject = (data.unitCollections || []).find((item) => item.id === subjectId);
   if (!subject) return [];
   return subject.units.filter((unit) => unit.pyqUrl);
 }
@@ -751,6 +778,21 @@ function renderPracticeStep() {
   const back = elements["practice-back"];
   const body = elements["practice-hub-body"];
   back.hidden = practiceHub.step === "semester";
+
+  if (!state.data) {
+    heading.textContent = "Loading practice library";
+    body.innerHTML = '<div class="practice-loading"><div class="skeleton"></div>' +
+      '<div class="skeleton"></div><div class="skeleton"></div></div>';
+    ensureResourceData()
+      .then(() => {
+        if (elements["practice-hub"].classList.contains("open")) renderPracticeStep();
+      })
+      .catch((error) => {
+        console.error(error);
+        renderQuizError("The practice library could not load. Refresh the page and try again.");
+      });
+    return;
+  }
 
   if (practiceHub.step === "semester") {
     heading.textContent = "Choose a semester";
@@ -832,7 +874,15 @@ async function fetchMoreQuestions() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pyqUrl: practiceHub.unit.pyqUrl }),
     });
-    const data = await response.json();
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (parseError) {
+      console.error("Practice API returned non-JSON:", raw.slice(0, 300));
+      renderQuizError("Practice API is not available on this deployment yet.");
+      return false;
+    }
     if (!response.ok) {
       renderQuizError(data.error || "Something went wrong.");
       return false;

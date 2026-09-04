@@ -1,0 +1,127 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+
+const health = require("../netlify/functions/health").handler;
+const resources = require("../netlify/functions/resources").handler;
+const practice = require("../netlify/functions/practice-generate").handler;
+
+test("Netlify health function is ready", async () => {
+  const result = await health({ httpMethod: "GET" });
+  assert.equal(result.statusCode, 200);
+  assert.deepEqual(JSON.parse(result.body), {
+    status: "ok",
+    service: "HelpDesk",
+    platform: "Netlify",
+  });
+});
+
+test("Netlify resources function preserves API filtering", async () => {
+  const result = await resources({
+    httpMethod: "GET",
+    queryStringParameters: { subject: "chemistry", type: "lecture", q: "spectroscopy" },
+  });
+  assert.equal(result.statusCode, 200);
+  const body = JSON.parse(result.body);
+  assert.equal(body.subjects.length, 1);
+  assert.equal(body.subjects[0].resources.length, 1);
+  assert.equal(body.subjects[0].resources[0].id, "chem-spectroscopy");
+  assert.equal(body.branches.length, 14);
+});
+
+test("Netlify practice function reports missing configuration clearly", async () => {
+  const previous = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  const result = await practice({
+    httpMethod: "POST",
+    body: JSON.stringify({
+      pyqUrl: "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf",
+    }),
+    headers: {},
+  });
+  if (previous) process.env.GEMINI_API_KEY = previous;
+  assert.equal(result.statusCode, 503);
+  assert.match(JSON.parse(result.body).error, /GEMINI_API_KEY/);
+});
+
+test("Netlify practice function verifies the PYQ bank before calling Gemini", async () => {
+  const previous = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = "test-only";
+  const result = await practice({
+    httpMethod: "POST",
+    body: JSON.stringify({ pyqUrl: "/resources/pyqs/not-present.pdf" }),
+    headers: {},
+  });
+  if (previous) process.env.GEMINI_API_KEY = previous;
+  else delete process.env.GEMINI_API_KEY;
+  assert.equal(result.statusCode, 404);
+  assert.match(JSON.parse(result.body).error, /No PYQ text/);
+});
+
+test("Netlify practice function returns usable Gemini questions", async () => {
+  const previousKey = process.env.GEMINI_API_KEY;
+  const previousModel = process.env.GEMINI_MODEL;
+  const previousFetch = global.fetch;
+  process.env.GEMINI_API_KEY = "test-only";
+  delete process.env.GEMINI_MODEL;
+  let requestedUrl = "";
+  global.fetch = async (url) => {
+    requestedUrl = String(url);
+    return new Response(JSON.stringify({
+    candidates: [{
+      content: {
+        parts: [{
+          text: JSON.stringify([
+            { question: "Practice question 1", answer: "Answer 1" },
+            { question: "Practice question 2", answer: "Answer 2" },
+            { question: "Practice question 3", answer: "Answer 3" },
+            { question: "Practice question 4", answer: "Answer 4" },
+            { question: "Practice question 5", answer: "Answer 5" },
+          ]),
+        }],
+      },
+    }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+
+  try {
+    const result = await practice({
+      httpMethod: "POST",
+      body: JSON.stringify({
+        pyqUrl: "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_1_PYQs.pdf",
+      }),
+      headers: { "x-forwarded-for": "192.0.2.10" },
+    });
+    assert.equal(result.statusCode, 200);
+    const body = JSON.parse(result.body);
+    assert.equal(body.questions.length, 5);
+    assert.equal(body.questions[0].question, "Practice question 1");
+    assert.match(requestedUrl, /models\/gemini-3\.6-flash:generateContent/);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousKey) process.env.GEMINI_API_KEY = previousKey;
+    else delete process.env.GEMINI_API_KEY;
+    if (previousModel) process.env.GEMINI_MODEL = previousModel;
+    else delete process.env.GEMINI_MODEL;
+  }
+});
+
+test("both semesters expose PYQ-backed Practice subjects", async () => {
+  const result = await resources({ httpMethod: "GET", queryStringParameters: {} });
+  const body = JSON.parse(result.body);
+  for (const semester of ["1", "2"]) {
+    const subjectIds = new Set(body.branches.flatMap((branch) => branch.semesterSubjectIds[semester] || []));
+    const practiceSubjects = body.unitCollections.filter((subject) =>
+      subjectIds.has(subject.id) && subject.units.some((unit) => unit.pyqUrl)
+    );
+    assert.deepEqual(
+      practiceSubjects.map((subject) => subject.id).sort(),
+      ["bem", "bet", "chemistry", "pc"]
+    );
+  }
+});
+
+test("Netlify functions reject unsupported methods", async () => {
+  const result = await resources({ httpMethod: "POST", queryStringParameters: {} });
+  assert.equal(result.statusCode, 405);
+  assert.equal(result.headers.Allow, "GET");
+});
