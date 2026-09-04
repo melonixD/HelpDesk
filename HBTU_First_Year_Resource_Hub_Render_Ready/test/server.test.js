@@ -176,6 +176,27 @@ test("spa fallback serves the website", async () => {
   assert.doesNotMatch(html, /resource-grid|30 resources across all subjects/);
 });
 
+test("hamburger menu has separate Placements and Notice Board entries", async () => {
+  const response = await fetch(`${baseUrl}/`);
+  const html = await response.text();
+  assert.match(html, /id="placements-open"/);
+  assert.match(html, /id="notices-open"/);
+  assert.match(html, /id="placements-open"[^>]*>Placements /);
+  assert.match(html, /id="notices-open"[^>]*>Notice Board /);
+  assert.doesNotMatch(html, /id="placements-open"[^>]*>Placements &amp; Notices/);
+  assert.match(html, /id="placement-hub"/);
+  assert.match(html, /id="placement-tab-stats"/);
+  assert.match(html, /id="placement-tab-notices"/);
+
+  const placementResponse = await fetch(`${baseUrl}/placements.json`);
+  const placementData = await placementResponse.json();
+  assert.equal(placementData.latest[0].session, "2025–26");
+  assert.equal(placementData.latest[0].offers, 715);
+  assert.equal(placementData.latest[0].studentsPlaced, 600);
+  assert.equal(placementData.latest[1].offers, 708);
+  assert.ok(placementData.reports.length >= 8);
+});
+
 test("mobile navigation keeps branch and subject lists available", async () => {
   const response = await fetch(`${baseUrl}/`);
   const html = await response.text();
@@ -218,6 +239,10 @@ test("static resource fallback works and application assets cannot go stale", as
   assert.match(scriptText, /syllabusGroups/);
   assert.match(scriptText, /syllabus-group/);
   assert.match(styleText, /\.syllabus-section \.overline[\s\S]*font-size: 16px/);
+  assert.match(scriptText, /loadNoticeData\(\)/);
+  assert.match(scriptText, /renderPlacementStats\(data\)/);
+  assert.match(styleText, /\.placement-feature-grid/);
+  assert.match(styleText, /\.notice-list/);
 });
 
 test("help section includes both supplied profiles and revealable WhatsApp contacts", async () => {

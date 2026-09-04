@@ -51,6 +51,9 @@ const elements = {};
 let timerSeconds = 25 * 60;
 let timerInterval = null;
 let resourceDataPromise = null;
+let placementDataPromise = null;
+let noticeDataPromise = null;
+const placementHubState = { tab: "stats" };
 
 function readStorage(key, fallback) {
   try {
@@ -89,6 +92,8 @@ function cacheElements() {
     "practice-open", "practice-hub", "practice-hub-close", "practice-back", "practice-hub-heading",
     "practice-hub-body",
     "calc-open", "calc-hub", "calc-hub-close", "calc-hub-body", "calc-tab-semester", "calc-tab-cgpa",
+    "placements-open", "notices-open", "placement-hub", "placement-hub-close", "placement-hub-heading", "placement-hub-body",
+    "placement-tab-stats", "placement-tab-notices", "notice-tab-count",
   ].forEach((id) => { elements[id] = document.getElementById(id); });
 }
 
@@ -101,6 +106,7 @@ async function initialise() {
   initialiseTimer();
   initialisePractice();
   initialiseCalculator();
+  initialisePlacements();
   bindBrowserControls();
 
   try {
@@ -1035,6 +1041,229 @@ async function practiceNext() {
     practiceHub.index = nextIndex;
     renderQuizQuestion();
   }
+}
+
+/* ---------- Placements & official HBTU notices ---------- */
+
+function initialisePlacements() {
+  elements["placements-open"].addEventListener("click", () => {
+    closeMenu();
+    openPlacementHub("stats");
+  });
+  elements["notices-open"].addEventListener("click", () => {
+    closeMenu();
+    openPlacementHub("notices");
+  });
+  elements["placement-hub-close"].addEventListener("click", closePlacementHub);
+  elements["placement-tab-stats"].addEventListener("click", () => switchPlacementTab("stats"));
+  elements["placement-tab-notices"].addEventListener("click", () => switchPlacementTab("notices"));
+  elements["placement-hub-body"].addEventListener("click", (event) => {
+    const refresh = event.target.closest("[data-refresh-notices]");
+    if (!refresh) return;
+    noticeDataPromise = null;
+    renderPlacementHub();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && elements["placement-hub"].classList.contains("open")) {
+      closePlacementHub();
+    }
+  });
+}
+
+function openPlacementHub(tab) {
+  elements["placement-hub"].classList.add("open");
+  document.body.classList.add("no-scroll");
+  switchPlacementTab(tab || "stats");
+}
+
+function closePlacementHub() {
+  elements["placement-hub"].classList.remove("open");
+  document.body.classList.remove("no-scroll");
+}
+
+function switchPlacementTab(tab) {
+  placementHubState.tab = tab;
+  const statsActive = tab === "stats";
+  elements["placement-tab-stats"].classList.toggle("active", statsActive);
+  elements["placement-tab-notices"].classList.toggle("active", !statsActive);
+  elements["placement-tab-stats"].setAttribute("aria-selected", statsActive ? "true" : "false");
+  elements["placement-tab-notices"].setAttribute("aria-selected", statsActive ? "false" : "true");
+  elements["placement-hub-heading"].textContent = statsActive ? "Placement intelligence" : "Campus notices";
+  renderPlacementHub();
+}
+
+function placementLoadingHtml() {
+  return '<div class="placement-loading" aria-label="Loading">' +
+    '<div class="placement-loading-block"></div><div class="placement-loading-block"></div>' +
+    '<div class="placement-loading-line"></div><div class="placement-loading-line"></div></div>';
+}
+
+async function loadPlacementData() {
+  if (!placementDataPromise) {
+    placementDataPromise = fetch("/placements.json", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Placement data returned " + response.status);
+        return response.json();
+      })
+      .then((data) => {
+        if (!Array.isArray(data.latest) || !Array.isArray(data.history) || !Array.isArray(data.reports)) {
+          throw new Error("Placement data is incomplete");
+        }
+        return data;
+      })
+      .catch((error) => {
+        placementDataPromise = null;
+        throw error;
+      });
+  }
+  return placementDataPromise;
+}
+
+async function loadNoticeData() {
+  if (!noticeDataPromise) {
+    noticeDataPromise = (async () => {
+      const sources = ["/api/notices", "/notices-fallback.json"];
+      let lastError;
+      for (const source of sources) {
+        try {
+          const response = await fetch(source, { cache: "no-store" });
+          if (!response.ok) throw new Error(source + " returned " + response.status);
+          const data = await response.json();
+          if (!Array.isArray(data.notices) || !data.notices.length) throw new Error("Notice feed is empty");
+          return data;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Notices could not load");
+    })().catch((error) => {
+      noticeDataPromise = null;
+      throw error;
+    });
+  }
+  return noticeDataPromise;
+}
+
+function metricHtml(value, label) {
+  return '<div class="placement-metric"><strong>' + escapeHtml(value) + '</strong><span>' + escapeHtml(label) + '</span></div>';
+}
+
+function formatLpa(value) {
+  return Number(value).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " LPA";
+}
+
+function renderLatestPlacement(year) {
+  const rate = typeof year.placementRate === "number"
+    ? metricHtml(year.placementRate.toFixed(2) + "%", "Students placed")
+    : metricHtml(year.studentsPlaced, "Students placed");
+  return '<article class="placement-year-card">' +
+    '<div class="placement-year-heading"><div><p>' + escapeHtml(year.status) + '</p><h4>' + escapeHtml(year.session) + '</h4></div>' +
+      '<a href="' + escapeHtml(year.reportUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Open ' + escapeHtml(year.session) + ' official placement report">Report ↗</a></div>' +
+    '<div class="placement-metrics">' +
+      metricHtml(formatLpa(year.highestLpa), year.highestLabel || "Highest package") +
+      metricHtml(formatLpa(year.averageLpa), year.averageLabel || "Average package") +
+      metricHtml(year.offers, "Job offers") + rate +
+    '</div></article>';
+}
+
+function renderHistoryRow(year) {
+  const extra = [];
+  if (typeof year.companies === "number") extra.push(year.companies + " companies");
+  if (typeof year.internships === "number") extra.push(year.internships + " paid internships");
+  const label = extra.length ? extra.join(" · ") : "Official historical statistic";
+  const tag = year.reportUrl ? "a" : "div";
+  const linkAttributes = year.reportUrl
+    ? ' href="' + escapeHtml(year.reportUrl) + '" target="_blank" rel="noopener noreferrer"'
+    : "";
+  return '<' + tag + ' class="placement-history-row"' + linkAttributes + '>' +
+    '<div><strong>' + escapeHtml(year.session) + '</strong><span>' + escapeHtml(label) + '</span></div>' +
+    '<div class="placement-history-values"><span><b>' + escapeHtml(formatLpa(year.highestLpa)) + '</b> highest</span>' +
+      '<span><b>' + escapeHtml(formatLpa(year.averageLpa)) + '</b> average</span>' +
+      (year.reportUrl ? '<i aria-hidden="true">↗</i>' : "") + '</div></' + tag + '>';
+}
+
+function renderReportLink(report) {
+  return '<a class="placement-report" href="' + escapeHtml(report.url) + '" target="_blank" rel="noopener noreferrer">' +
+    '<span><strong>' + escapeHtml(report.title) + '</strong><small>' + escapeHtml(report.meta) + '</small></span><i aria-hidden="true">↗</i></a>';
+}
+
+function renderPlacementStats(data) {
+  const source = data.source || {};
+  elements["placement-hub-body"].innerHTML =
+    '<section class="placement-intro"><div><p class="placement-kicker">OFFICIAL NUMBERS</p>' +
+      '<h3>A clearer view of campus placements.</h3><p>Recent totals and historical package trends, collected from published HBTU reports.</p></div>' +
+      '<a class="placement-source-link" href="' + escapeHtml(source.url) + '" target="_blank" rel="noopener noreferrer">HBTU source ↗</a></section>' +
+    '<div class="placement-feature-grid">' + data.latest.map(renderLatestPlacement).join("") + '</div>' +
+    '<section class="placement-section"><div class="placement-section-heading"><div><p>HISTORY</p><h3>Five-year snapshot</h3></div><span>Packages in LPA</span></div>' +
+      '<div class="placement-history">' + data.history.map(renderHistoryRow).join("") + '</div></section>' +
+    '<section class="placement-section"><div class="placement-section-heading"><div><p>REPORTS</p><h3>Open the source documents</h3></div><span>Published by HBTU</span></div>' +
+      '<div class="placement-report-grid">' + data.reports.map(renderReportLink).join("") + '</div></section>' +
+    '<p class="placement-footnote">Package figures vary by programme and report scope. Use the linked official PDFs for branch-wise details.</p>';
+}
+
+function noticeTimeLabel(value) {
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch (error) {
+    return "recently";
+  }
+}
+
+function renderNoticeItem(notice) {
+  return '<a class="notice-item" href="' + escapeHtml(notice.url) + '" target="_blank" rel="noopener noreferrer">' +
+    '<span class="notice-number" aria-hidden="true">' + escapeHtml(notice.category || "Notice").slice(0, 2).toUpperCase() + '</span>' +
+    '<span class="notice-copy"><span class="notice-meta">' + escapeHtml(notice.category || "General") +
+      (notice.isNew ? '<b>NEW</b>' : "") + '</span><strong>' + escapeHtml(notice.title) + '</strong></span>' +
+    '<span class="notice-arrow" aria-hidden="true">↗</span></a>';
+}
+
+function renderNotices(data) {
+  const live = data.source === "live";
+  const count = Number(data.newCount) || data.notices.filter((notice) => notice.isNew).length;
+  elements["notice-tab-count"].textContent = count ? String(count) : "";
+  elements["notice-tab-count"].hidden = !count;
+  elements["placement-hub-body"].innerHTML =
+    '<section class="notice-status"><div class="notice-status-copy"><span class="notice-live-dot ' + (live ? "live" : "") + '"></span><div>' +
+      '<strong>' + (live ? "Live from HBTU" : "Latest saved copy") + '</strong><small>Checked ' + escapeHtml(noticeTimeLabel(data.fetchedAt)) + '</small></div></div>' +
+      '<div class="notice-status-actions"><button type="button" data-refresh-notices>Refresh</button>' +
+      '<a href="' + escapeHtml(data.sourceUrl || "https://hbtu.ac.in/") + '" target="_blank" rel="noopener noreferrer">Official page ↗</a></div></section>' +
+    '<section class="notice-list" aria-label="Latest HBTU notices">' + data.notices.map(renderNoticeItem).join("") + '</section>' +
+    '<p class="placement-footnote">Links open the original HBTU notice or PDF. Always verify deadlines on the official university website.</p>';
+}
+
+function renderPlacementError(message) {
+  elements["placement-hub-body"].innerHTML = '<div class="placement-error"><p>' + escapeHtml(message) + '</p>' +
+    '<button class="secondary-button" type="button" data-refresh-notices>Try again</button></div>';
+}
+
+function renderPlacementHub() {
+  const tab = placementHubState.tab;
+  elements["placement-hub-body"].innerHTML = placementLoadingHtml();
+  if (tab === "stats") {
+    loadPlacementData()
+      .then((data) => {
+        if (placementHubState.tab === "stats" && elements["placement-hub"].classList.contains("open")) renderPlacementStats(data);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (placementHubState.tab === "stats") renderPlacementError("Placement statistics could not load. Please try again.");
+      });
+    return;
+  }
+  loadNoticeData()
+    .then((data) => {
+      if (placementHubState.tab === "notices" && elements["placement-hub"].classList.contains("open")) renderNotices(data);
+    })
+    .catch((error) => {
+      console.error(error);
+      if (placementHubState.tab === "notices") renderPlacementError("HBTU notices could not load. Check your connection and try again.");
+    });
 }
 
 /* ---------- SGPA / CGPA Calculator ---------- */

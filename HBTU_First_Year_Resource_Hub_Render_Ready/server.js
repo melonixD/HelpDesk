@@ -2,6 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { filterResources, generatePractice } = require("./netlify/lib/helpdesk-api");
+const { getNoticeFeed } = require("./netlify/lib/hbtu-feed");
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
@@ -145,6 +146,14 @@ async function handleRequest(req, res) {
       isBase64Encoded: false,
     });
     return relayFunctionResponse(res, result);
+  }
+
+  if (url.pathname === "/api/notices") {
+    if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET" });
+    const feed = await getNoticeFeed();
+    return sendJson(res, 200, feed, {
+      "Cache-Control": "public, max-age=60",
+    });
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {

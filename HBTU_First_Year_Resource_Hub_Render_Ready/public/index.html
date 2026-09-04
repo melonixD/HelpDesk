@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>HelpDesk · HBTU</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/premium.css?v=20260904-4" />
-    <script src="/app.js?v=20260904-4" defer></script>
+    <link rel="stylesheet" href="/premium.css?v=20260904-6" />
+    <script src="/app.js?v=20260904-6" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#resources">Skip to resources</a>
@@ -49,6 +49,8 @@
         <a href="#syllabus">Syllabus <span>↗</span></a>
         <button class="drawer-nav-button" id="practice-open" type="button">Unlimited Practice <span>✨</span></button>
         <button class="drawer-nav-button" id="calc-open" type="button">SGPA &amp; CGPA Calculator <span>Σ</span></button>
+        <button class="drawer-nav-button" id="placements-open" type="button">Placements <span>↗</span></button>
+        <button class="drawer-nav-button" id="notices-open" type="button">Notice Board <span>↗</span></button>
         <a href="#help">Help &amp; contact <span>↗</span></a>
       </nav>
 
@@ -240,6 +242,22 @@
       </div>
       <div class="practice-hub-body calc-hub-body" id="calc-hub-body"></div>
       <p class="practice-disclaimer">Saved on this device only. Not official — always confirm against your result card.</p>
+    </section>
+
+    <section class="placement-hub" id="placement-hub" role="dialog" aria-modal="true" aria-labelledby="placement-hub-heading">
+      <header class="practice-hub-header">
+        <div class="practice-hub-title">
+          <p class="overline">PLACEMENTS &amp; CAMPUS</p>
+          <h2 id="placement-hub-heading">Placement intelligence</h2>
+        </div>
+        <button class="practice-close" id="placement-hub-close" type="button" aria-label="Close placements and notices">×</button>
+      </header>
+      <div class="placement-tabs" role="tablist" aria-label="Placement and notice sections">
+        <button class="placement-tab active" id="placement-tab-stats" type="button" data-placement-tab="stats" role="tab" aria-selected="true">Placement stats</button>
+        <button class="placement-tab" id="placement-tab-notices" type="button" data-placement-tab="notices" role="tab" aria-selected="false">Latest notices <span class="notice-tab-count" id="notice-tab-count" hidden></span></button>
+      </div>
+      <div class="placement-hub-body" id="placement-hub-body"></div>
+      <p class="practice-disclaimer">Official HBTU sources. HelpDesk is not the university’s official notice portal.</p>
     </section>
 
     <footer class="site-footer">

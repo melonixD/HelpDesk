@@ -15,6 +15,9 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Engineering and Technology syllabus folders, initially collapsed
 - Unlimited Practice powered by real PYQ text and Gemini
 - SGPA/CGPA calculator, focus timer and study list
+- Separate Placements and Notice Board entries in the hamburger menu
+- Official year-wise placement figures and source reports
+- Automatically refreshed HBTU announcements with a resilient saved fallback
 - Akshat Shukla and Priyanshu Dixit help cards and WhatsApp contacts
 - Responsive Android/mobile layout, animations, light mode and dark mode
 - Netlify Functions, clean `/api/*` routes, security headers and SPA routing
@@ -65,6 +68,12 @@ Practice Mode takes a unit's internal `practiceKey`, finds its extracted real qu
 
 The UI still works without the Gemini key; only question generation shows a setup message. Google API quotas are separate from Netlify traffic limits, so high visitor counts may require a paid Gemini quota.
 
+## Placements and Notice Board
+
+The hamburger menu has separate **Placements** and **Notice Board** entries. Placements opens directly to figures and report links published by HBTU. Notice Board opens directly to the latest announcements and calls `GET /api/notices`, which reads the Circulars & Announcements section of the official HBTU homepage.
+
+Netlify's durable CDN cache holds the notice response for 30 minutes and may serve a stale copy for up to six hours while refreshing. That avoids contacting HBTU once per visitor. If HBTU is unavailable or changes its page structure, the function returns the bundled saved feed instead of leaving the section empty. No extra API key or environment variable is required.
+
 ## Run locally
 
 ```bash
@@ -110,6 +119,7 @@ npm run build
 - `GET /api/resources`
 - `GET /api/resources?q=spectroscopy&type=lecture&subject=chemistry`
 - `POST /api/practice/generate` with body `{ "pyqUrl": "/resources/pyqs/.../Unit_3_PYQs.pdf" }`
+- `GET /api/notices`
 
 ## Structure
 
@@ -117,18 +127,25 @@ npm run build
 helpdesk/
 ├── data/
 │   ├── resources.json
-│   └── pyq-bank.json
+│   ├── pyq-bank.json
+│   ├── placements.json
+│   └── notices-fallback.json
 ├── netlify/
 │   ├── functions/
 │   │   ├── health.js
 │   │   ├── resources.js
-│   │   └── practice-generate.js
-│   └── lib/helpdesk-api.js
+│   │   ├── practice-generate.js
+│   │   └── notices.js
+│   └── lib/
+│       ├── helpdesk-api.js
+│       └── hbtu-feed.js
 ├── public/
 │   ├── app.js
 │   ├── index.html
 │   ├── premium.css
 │   ├── resources.json
+│   ├── placements.json
+│   ├── notices-fallback.json
 │   ├── images/
 │   └── resources/pyqs/
 ├── scripts/

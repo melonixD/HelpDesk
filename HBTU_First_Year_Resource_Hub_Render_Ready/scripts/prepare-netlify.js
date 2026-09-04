@@ -5,10 +5,14 @@ const root = path.resolve(__dirname, "..");
 const dataPath = path.join(root, "data", "resources.json");
 const publicDataPath = path.join(root, "public", "resources.json");
 const bankPath = path.join(root, "data", "pyq-bank.json");
+const placementsPath = path.join(root, "data", "placements.json");
+const fallbackNoticesPath = path.join(root, "data", "notices-fallback.json");
 const indexPath = path.join(root, "public", "index.html");
 
 const resources = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 const bank = JSON.parse(fs.readFileSync(bankPath, "utf8"));
+const placements = JSON.parse(fs.readFileSync(placementsPath, "utf8"));
+const fallbackNotices = JSON.parse(fs.readFileSync(fallbackNoticesPath, "utf8"));
 const index = fs.readFileSync(indexPath, "utf8");
 const units = resources.unitCollections.flatMap((subject) => subject.units);
 const pyqUrls = units.map((unit) => unit.pyqUrl).filter(Boolean);
@@ -36,8 +40,16 @@ if (missingPdfs.length) {
 if (missingNotes.length) {
   throw new Error(`Notes files are missing for: ${missingNotes.join(", ")}`);
 }
+if (!Array.isArray(placements.latest) || !placements.latest.length || !Array.isArray(placements.reports)) {
+  throw new Error("data/placements.json is incomplete.");
+}
+if (!Array.isArray(fallbackNotices.notices) || !fallbackNotices.notices.length) {
+  throw new Error("data/notices-fallback.json has no notices.");
+}
 
 fs.copyFileSync(dataPath, publicDataPath);
+fs.copyFileSync(placementsPath, path.join(root, "public", "placements.json"));
+fs.copyFileSync(fallbackNoticesPath, path.join(root, "public", "notices-fallback.json"));
 const externalPyqCount = pyqUrls.filter((url) => /^https?:\/\//.test(url)).length;
 console.log(
   `HelpDesk Netlify build ready: ${resources.branches.length} branches, ` +
