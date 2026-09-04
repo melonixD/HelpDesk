@@ -173,6 +173,36 @@ test("Engineering Chemistry includes split notes folders and Chemistry Lab", asy
     chemistry.units.at(-1).vivaQuestionsUrl,
     "https://drive.google.com/file/d/1pDN8Id0uViXtk5GeV6DRP52NnOB_zGfn/view?usp=drivesdk"
   );
+  assert.equal(
+    chemistry.units.at(-1).endSemesterQuestionsUrl,
+    "https://drive.google.com/file/d/1spOjaCJT5v2S8kgO0A8_8jOBx6inLC6L/view"
+  );
+  assert.deepEqual(
+    chemistry.units[4].lectureItems.map((lecture) => lecture.title),
+    ["Water Analysis", "Polymers", "Solid Waste Management"]
+  );
+});
+
+test("Engineering Mechanics includes five Master Notes and topic lecture folders", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  const mechanics = data.unitCollections.find((subject) => subject.id === "bem");
+  assert.equal(mechanics.splitNotes, true);
+  assert.equal(mechanics.units[0].disableSubjectLecture, true);
+  assert.equal(mechanics.units[0].lectureMessage, "Study from notes");
+  assert.ok(mechanics.units.every((unit, index) =>
+    unit.masterNotesUrl === `/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_${index + 1}_Master_Notes.pdf`
+  ));
+  assert.deepEqual(mechanics.units[2].lectureItems.map((lecture) => lecture.title), ["Trusses", "Beams"]);
+  assert.deepEqual(mechanics.units[3].lectureItems.map((lecture) => lecture.title), ["Centroid", "Moment of Inertia"]);
+  assert.deepEqual(mechanics.units[4].lectureItems.map((lecture) => lecture.title), ["Strength of Materials"]);
+
+  for (const unit of [1, 2, 3, 4, 5]) {
+    const notes = await fetch(`${baseUrl}/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_${unit}_Master_Notes.pdf`);
+    assert.equal(notes.status, 200);
+    assert.equal(notes.headers.get("content-type"), "application/pdf");
+    assert.ok((await notes.arrayBuffer()).byteLength > 1000);
+  }
 });
 
 test("spa fallback serves the website", async () => {
@@ -246,6 +276,8 @@ test("static resource fallback works and application assets cannot go stale", as
   assert.match(scriptText, /prefersReducedMotion\(\)/);
   assert.match(scriptText, /renderSubjectSyllabus\(branch, subject\)/);
   assert.match(scriptText, /renderMaterialFolder\(material\)/);
+  assert.match(scriptText, /lectureChildren/);
+  assert.match(scriptText, /End-Semester Lab Questions/);
   assert.match(scriptText, /practiceKeyForUnit\(unit\)/);
   assert.match(styleText, /\.material-folder-list/);
   assert.match(styleText, /\.unit-row > summary/);

@@ -462,12 +462,22 @@ function renderBranches() {
 function renderUnit(subject, unit, index) {
   const isLab = unit.kind === "lab";
   const practiceKey = practiceKeyForUnit(unit);
+  const handwrittenNotesUrl = unit.handwrittenNotesUrl || subject.handwrittenNotesUrl || subject.notesUrl;
+  const lectureUrl = unit.disableSubjectLecture ? unit.lectureUrl : (unit.lectureUrl || subject.lectureUrl);
+  const lectureChildren = Array.isArray(unit.lectureItems) && unit.lectureItems.length
+    ? unit.lectureItems.map((item) => ({
+        type: "lecture",
+        title: item.title,
+        description: item.description || "Video lesson",
+        url: item.url,
+      }))
+    : null;
   const notesChildren = subject.splitNotes && !isLab ? [
     {
       type: "notes",
       title: "Handwritten Notes",
-      description: unit.handwrittenNotesUrl ? "Student-friendly handwritten notes" : "Coming soon",
-      url: unit.handwrittenNotesUrl,
+      description: handwrittenNotesUrl ? "Student-friendly study notes" : "Coming soon",
+      url: handwrittenNotesUrl,
     },
     {
       type: "notes",
@@ -498,6 +508,12 @@ function renderUnit(subject, unit, index) {
         url: unit.vivaQuestionsUrl,
       },
       {
+        type: "pyq",
+        title: "End-Semester Lab Questions",
+        description: unit.endSemesterQuestionsUrl ? "Lab-related end-semester questions" : "Coming soon",
+        url: unit.endSemesterQuestionsUrl,
+      },
+      {
         type: "book",
         title: "Reference Book",
         description: unit.bookUrl ? "Recommended laboratory reading" : "Coming soon",
@@ -517,8 +533,11 @@ function renderUnit(subject, unit, index) {
     {
       type: "lecture",
       title: "Lectures",
-      description: unit.lectureUrl || subject.lectureUrl ? "Video playlist" : "Not added yet",
-      url: unit.lectureUrl || subject.lectureUrl,
+      description: lectureChildren
+        ? lectureChildren.filter((lecture) => lecture.url).length + " topics available"
+        : (lectureUrl ? "Video playlist" : (unit.lectureMessage || "Not added yet")),
+      url: lectureUrl,
+      children: lectureChildren,
     },
     {
       type: "notes",

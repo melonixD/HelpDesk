@@ -12,7 +12,10 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Updated Engineering Chemistry PYQ links for Units 1-5
 - Engineering Chemistry Notes folders split into Handwritten Notes and Master Notes
 - Engineering Chemistry Master Notes PDFs for Units 1–5
-- Chemistry Lab section with Lab Manual and Viva Questions links
+- Chemistry Unit 5 topic lectures for Water Analysis, Polymers and Solid Waste Management
+- Chemistry Lab section with Lab Manual, Viva Questions and End-Semester Lab Questions
+- Engineering Mechanics Master Notes PDFs for Units 1–5
+- Mechanics lecture folders for Trusses, Beams, Centroid, Moment of Inertia and Strength of Materials
 - Engineering and Technology syllabus folders, initially collapsed
 - Unlimited Practice powered by real PYQ text and Gemini
 - SGPA/CGPA calculator, focus timer and study list

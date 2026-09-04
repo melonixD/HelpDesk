@@ -72,6 +72,23 @@
           "number": 5,
           "title": "Polymers, Water Analysis & Solid Waste Management",
           "lectureUrl": null,
+          "lectureItems": [
+            {
+              "title": "Water Analysis",
+              "description": "Unit 5 water analysis lecture",
+              "url": "https://youtu.be/Gs8lDD-ilBY?si=okNK609HmpKZbc1G"
+            },
+            {
+              "title": "Polymers",
+              "description": "Unit 5 polymers lecture",
+              "url": "https://youtu.be/ERBLElhvPJg?si=0_QGfrxTDw3sUXwY"
+            },
+            {
+              "title": "Solid Waste Management",
+              "description": "Unit 5 solid waste management lecture",
+              "url": "https://youtu.be/9wD7RQ7Sago?si=cJEpoeivkDHVYfzX"
+            }
+          ],
           "handwrittenNotesUrl": null,
           "masterNotesUrl": "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_5_Master_Notes.pdf",
           "pyqUrl": "https://drive.google.com/file/d/1NxFkltxL0VLzoF52aSuzQ1JasCuJozpt/view",
@@ -84,6 +101,7 @@
           "labManualUrl": "https://drive.google.com/file/d/1ovxq8fHzhGVIYnYwS3L3hYRnqpjCYTqa/view?usp=drivesdk",
           "experimentVideosUrl": null,
           "vivaQuestionsUrl": "https://drive.google.com/file/d/1pDN8Id0uViXtk5GeV6DRP52NnOB_zGfn/view?usp=drivesdk",
+          "endSemesterQuestionsUrl": "https://drive.google.com/file/d/1spOjaCJT5v2S8kgO0A8_8jOBx6inLC6L/view",
           "bookUrl": null,
           "pyqUrl": null
         }
@@ -111,12 +129,71 @@
       "accent": "orange",
       "lectureUrl": "https://www.youtube.com/playlist?list=PLDN15nk5uLiAyM7MbRBF1eIFC8y5vMRxI",
       "notesUrl": "https://college-study.netlify.app/first-semester",
+      "splitNotes": true,
       "units": [
-        { "number": 1, "title": "Fundamental Concepts & Definitions", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_1_PYQs.pdf" },
-        { "number": 2, "title": "Two-Dimensional Force Systems & Friction", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_2_PYQs.pdf" },
-        { "number": 3, "title": "Beams & Trusses", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_3_PYQs.pdf" },
-        { "number": 4, "title": "Centroid & Moment of Inertia", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_4_PYQs.pdf" },
-        { "number": 5, "title": "Introduction to Strength of Materials", "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_5_PYQs.pdf" }
+        {
+          "number": 1,
+          "title": "Fundamental Concepts & Definitions",
+          "disableSubjectLecture": true,
+          "lectureMessage": "Study from notes",
+          "masterNotesUrl": "/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_1_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_1_PYQs.pdf"
+        },
+        {
+          "number": 2,
+          "title": "Two-Dimensional Force Systems & Friction",
+          "masterNotesUrl": "/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_2_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_2_PYQs.pdf"
+        },
+        {
+          "number": 3,
+          "title": "Beams & Trusses",
+          "lectureItems": [
+            {
+              "title": "Trusses",
+              "description": "Complete truss playlist",
+              "url": "https://youtube.com/playlist?list=PLDN15nk5uLiBwwGZKmNzKJIRh4E0G9cfx&si=VeF563ZhgqN0ubpE"
+            },
+            {
+              "title": "Beams",
+              "description": "Complete beam playlist",
+              "url": "https://youtube.com/playlist?list=PL1arN9lyR4q3NqBxFS5CzLycpP5zq7JLH&si=rKPBaITLBMeFduBL"
+            }
+          ],
+          "masterNotesUrl": "/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_3_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_3_PYQs.pdf"
+        },
+        {
+          "number": 4,
+          "title": "Centroid & Moment of Inertia",
+          "lectureItems": [
+            {
+              "title": "Centroid",
+              "description": "Centroid lecture playlist",
+              "url": "https://youtube.com/playlist?list=PLvbKJaHKFw3Ym655a5UMx-loNf-aNPt5f&si=BPLmUY8JBXY50vlG"
+            },
+            {
+              "title": "Moment of Inertia",
+              "description": "Moment of inertia lecture",
+              "url": "https://youtu.be/A7NA-FzRQg8?si=dJHDuIo_gEFy_jTS"
+            }
+          ],
+          "masterNotesUrl": "/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_4_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_4_PYQs.pdf"
+        },
+        {
+          "number": 5,
+          "title": "Introduction to Strength of Materials",
+          "lectureItems": [
+            {
+              "title": "Strength of Materials",
+              "description": "Complete strength of materials playlist",
+              "url": "https://youtube.com/playlist?list=PLg2LVpcRrOF79DV3mVc1YdM-luUDZgNo5&si=JHtXVroT_ECmgOiz"
+            }
+          ],
+          "masterNotesUrl": "/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_5_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_5_PYQs.pdf"
+        }
       ]
     },
     {
