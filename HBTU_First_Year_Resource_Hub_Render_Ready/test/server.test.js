@@ -145,11 +145,13 @@ test("all PYQ sets remain linked and Chemistry uses the five replacement files",
   assert.ok(chemistry.units.slice(0, 5).every((unit) => unit.practiceKey.startsWith("/resources/pyqs/")));
 });
 
-test("Chemistry Unit 1 Master Notes open inline from the website", async () => {
-  const response = await fetch(`${baseUrl}/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_1_Master_Notes.pdf`);
-  assert.equal(response.status, 200);
-  assert.equal(response.headers.get("content-type"), "application/pdf");
-  assert.ok((await response.arrayBuffer()).byteLength > 1000);
+test("Chemistry Units 1–5 Master Notes open inline from the website", async () => {
+  for (const unit of [1, 2, 3, 4, 5]) {
+    const response = await fetch(`${baseUrl}/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_${unit}_Master_Notes.pdf`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("content-type"), "application/pdf");
+    assert.ok((await response.arrayBuffer()).byteLength > 1000);
+  }
 });
 
 test("Engineering Chemistry includes split notes folders and Chemistry Lab", async () => {
@@ -159,7 +161,18 @@ test("Engineering Chemistry includes split notes folders and Chemistry Lab", asy
   assert.equal(chemistry.splitNotes, true);
   assert.equal(chemistry.units[0].masterNotesUrl, "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_1_Master_Notes.pdf");
   assert.equal(chemistry.units[0].handwrittenNotesUrl, null);
+  assert.ok(chemistry.units.slice(0, 5).every((unit, index) =>
+    unit.masterNotesUrl === `/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_${index + 1}_Master_Notes.pdf`
+  ));
   assert.equal(chemistry.units.at(-1).kind, "lab");
+  assert.equal(
+    chemistry.units.at(-1).labManualUrl,
+    "https://drive.google.com/file/d/1ovxq8fHzhGVIYnYwS3L3hYRnqpjCYTqa/view?usp=drivesdk"
+  );
+  assert.equal(
+    chemistry.units.at(-1).vivaQuestionsUrl,
+    "https://drive.google.com/file/d/1pDN8Id0uViXtk5GeV6DRP52NnOB_zGfn/view?usp=drivesdk"
+  );
 });
 
 test("spa fallback serves the website", async () => {

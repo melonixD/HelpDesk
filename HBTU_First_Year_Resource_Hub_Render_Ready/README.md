@@ -11,7 +11,8 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - 20 browser-viewable unit-wise PYQ PDFs
 - Updated Engineering Chemistry PYQ links for Units 1-5
 - Engineering Chemistry Notes folders split into Handwritten Notes and Master Notes
-- Unit 1 Engineering Chemistry Master Notes PDF and a Chemistry Lab section
+- Engineering Chemistry Master Notes PDFs for Units 1–5
+- Chemistry Lab section with Lab Manual and Viva Questions links
 - Engineering and Technology syllabus folders, initially collapsed
 - Unlimited Practice powered by real PYQ text and Gemini
 - SGPA/CGPA calculator, focus timer and study list

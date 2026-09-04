@@ -46,7 +46,7 @@
           "title": "Chemical Kinetics & Surface Chemistry",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLgrPoGl4jGdo1G93jv-pkmw5RCHM9xTc-",
           "handwrittenNotesUrl": null,
-          "masterNotesUrl": null,
+          "masterNotesUrl": "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_2_Master_Notes.pdf",
           "pyqUrl": "https://drive.google.com/file/d/1QUbzAI54IugzF3WsbCGUBxjpQtMEDdH4/view",
           "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_2_PYQs.pdf"
         },
@@ -55,7 +55,7 @@
           "title": "Electrochemistry, Nanochemistry & Environmental Chemistry",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03pNhe069q3fHouzq64Vvsm",
           "handwrittenNotesUrl": null,
-          "masterNotesUrl": null,
+          "masterNotesUrl": "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_3_Master_Notes.pdf",
           "pyqUrl": "https://drive.google.com/file/d/1ka_oF1TesvR9c2bgdPUgxhpk8z4a1ZNR/view",
           "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_3_PYQs.pdf"
         },
@@ -64,7 +64,7 @@
           "title": "Stereochemistry & Reaction Mechanism",
           "lectureUrl": "https://www.youtube.com/playlist?list=PLLf6O8XdGj03fWMXEe-8QJNVJ-ySOF0jO",
           "handwrittenNotesUrl": null,
-          "masterNotesUrl": null,
+          "masterNotesUrl": "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_4_Master_Notes.pdf",
           "pyqUrl": "https://drive.google.com/file/d/1kqVpRXgZZc7KFfGKSpOSJ9EeOvh8tlRK/view",
           "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_4_PYQs.pdf"
         },
@@ -73,7 +73,7 @@
           "title": "Polymers, Water Analysis & Solid Waste Management",
           "lectureUrl": null,
           "handwrittenNotesUrl": null,
-          "masterNotesUrl": null,
+          "masterNotesUrl": "/resources/notes/engineering-chemistry/Engineering_Chemistry_Unit_5_Master_Notes.pdf",
           "pyqUrl": "https://drive.google.com/file/d/1NxFkltxL0VLzoF52aSuzQ1JasCuJozpt/view",
           "practiceKey": "/resources/pyqs/engineering-chemistry/Engineering_Chemistry_Unit_5_PYQs.pdf"
         },
@@ -81,9 +81,9 @@
           "number": "LAB",
           "kind": "lab",
           "title": "Practical experiments, lab manual and viva preparation",
-          "labManualUrl": null,
+          "labManualUrl": "https://drive.google.com/file/d/1ovxq8fHzhGVIYnYwS3L3hYRnqpjCYTqa/view?usp=drivesdk",
           "experimentVideosUrl": null,
-          "vivaQuestionsUrl": null,
+          "vivaQuestionsUrl": "https://drive.google.com/file/d/1pDN8Id0uViXtk5GeV6DRP52NnOB_zGfn/view?usp=drivesdk",
           "bookUrl": null,
           "pyqUrl": null
         }
