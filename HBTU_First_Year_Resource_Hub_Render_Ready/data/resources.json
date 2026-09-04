@@ -113,7 +113,7 @@
       "description": "Unit-wise Electronics questions from semiconductor devices to electronic instruments.",
       "accent": "yellow",
       "lectureUrl": "https://www.youtube.com/watch?v=7jaa1rlW7Ak&list=PLBlnK6fEyqRiw-GZRqfnlVIBz9dxrqHJS",
-      "notesUrl": "https://college-study.netlify.app/first-semester",
+      "notesUrl": null,
       "splitNotes": true,
       "units": [
         {
@@ -157,7 +157,7 @@
       "description": "Five units of exam-focused Mechanics questions, separated cleanly by topic.",
       "accent": "orange",
       "lectureUrl": "https://www.youtube.com/playlist?list=PLDN15nk5uLiAyM7MbRBF1eIFC8y5vMRxI",
-      "notesUrl": "https://college-study.netlify.app/first-semester",
+      "notesUrl": null,
       "splitNotes": true,
       "units": [
         {
@@ -258,16 +258,60 @@
     {
       "id": "workshop",
       "name": "Central Workshop Practice",
-      "description": "Practical material, workshop notes and viva preparation.",
+      "description": "Shop-wise practical files for Central Workshop Practice.",
       "accent": "rose",
+      "layout": "shops",
       "lectureUrl": null,
-      "notesUrl": "https://college-study.netlify.app/first-semester",
+      "notesUrl": null,
       "units": [
-        { "number": 1, "title": "Unit 1 Resources", "pyqUrl": null },
-        { "number": 2, "title": "Unit 2 Resources", "pyqUrl": null },
-        { "number": 3, "title": "Unit 3 Resources", "pyqUrl": null },
-        { "number": 4, "title": "Unit 4 Resources", "pyqUrl": null },
-        { "number": 5, "title": "Unit 5 Resources", "pyqUrl": null }
+        {
+          "number": 1,
+          "kind": "shop",
+          "title": "Sheet Metal",
+          "workshopFileUrl": "/resources/workshop/sheet-metal/Sheet_Metal_Workshop_File.pdf"
+        },
+        {
+          "number": 2,
+          "kind": "shop",
+          "title": "Carpentry",
+          "workshopFileUrl": "/resources/workshop/carpentry/Carpentry_Workshop_File.pdf"
+        },
+        {
+          "number": 3,
+          "kind": "shop",
+          "title": "Foundry",
+          "workshopFileUrl": "/resources/workshop/foundry/Foundry_Workshop_File.pdf"
+        },
+        {
+          "number": 4,
+          "kind": "shop",
+          "title": "Blacksmithy",
+          "workshopFileUrl": "/resources/workshop/blacksmithy/Blacksmithy_Workshop_File.pdf"
+        },
+        {
+          "number": 5,
+          "kind": "shop",
+          "title": "Fitting",
+          "workshopFileUrl": "/resources/workshop/fitting/Fitting_Workshop_File.pdf"
+        },
+        {
+          "number": 6,
+          "kind": "shop",
+          "title": "Machine Shop",
+          "workshopFileUrl": "/resources/workshop/machine-shop/Machine_Shop_Workshop_File.pdf"
+        },
+        {
+          "number": 7,
+          "kind": "shop",
+          "title": "Welding Shop",
+          "workshopFileUrl": "/resources/workshop/welding/Welding_Shop_Workshop_File.pdf"
+        },
+        {
+          "number": "CN",
+          "kind": "class-notes",
+          "title": "Class Notes",
+          "classNotesUrl": null
+        }
       ]
     },
     {
@@ -762,9 +806,9 @@
           "id": "bem-notes",
           "type": "notes",
           "title": "BEM Notes",
-          "description": "College Study first-semester notes",
-          "url": "https://college-study.netlify.app/first-semester",
-          "available": true
+          "description": "Curated notes are being organised",
+          "url": null,
+          "available": false
         },
         {
           "id": "bem-pyq",
@@ -832,9 +876,9 @@
           "id": "bet-notes",
           "type": "notes",
           "title": "BET Notes",
-          "description": "College Study first-semester notes",
-          "url": "https://college-study.netlify.app/first-semester",
-          "available": true
+          "description": "Curated notes are being organised",
+          "url": null,
+          "available": false
         },
         {
           "id": "bet-pyq",
@@ -860,32 +904,32 @@
       "shortName": "Workshop Practice",
       "icon": "tools",
       "accent": "rose",
-      "description": "Practical guidance, workshop notes and viva preparation.",
-      "topics": ["Fitting", "Carpentry", "Welding", "Viva"],
+      "description": "Shop-wise practical files for Central Workshop Practice.",
+      "topics": ["Sheet Metal", "Carpentry", "Foundry", "Blacksmithy", "Fitting", "Machine", "Welding"],
       "resources": [
         {
           "id": "workshop-manual",
           "type": "lecture",
-          "title": "Workshop Manuals",
-          "description": "Practical manuals will be added shortly",
-          "url": null,
-          "available": false
+          "title": "Shop-wise Workshop Files",
+          "description": "Open the seven workshop shop folders",
+          "url": "#unit-vault",
+          "available": true
         },
         {
           "id": "workshop-notes",
           "type": "notes",
-          "title": "Workshop Notes",
-          "description": "College Study first-semester resources",
-          "url": "https://college-study.netlify.app/first-semester",
-          "available": true
+          "title": "Class Notes",
+          "description": "Class notes will be added when provided",
+          "url": null,
+          "available": false
         },
         {
           "id": "workshop-pyq",
           "type": "pyq",
           "title": "Workshop Viva Questions",
-          "description": "PYQ and viva preparation resources",
-          "url": "https://college-study.netlify.app/first-semester",
-          "available": true
+          "description": "Viva resources will be added soon",
+          "url": null,
+          "available": false
         },
         {
           "id": "workshop-books",

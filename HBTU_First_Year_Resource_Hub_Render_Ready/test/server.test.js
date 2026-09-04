@@ -57,7 +57,7 @@ test("library exposes fourteen branches including Biotechnology", async () => {
   assert.equal(data.branches.length, 14);
   assert.equal(data.unitCollections.length, 21);
   const allSections = data.unitCollections.flatMap((subject) => subject.units);
-  assert.equal(allSections.filter((section) => section.kind !== "lab").length, 105);
+  assert.equal(allSections.filter((section) => section.kind !== "lab").length, 108);
   assert.equal(allSections.filter((section) => section.kind === "lab").length, 1);
   assert.ok(data.branches.some((branch) => branch.name === "Mechanical Engineering"));
   assert.ok(data.branches.some((branch) => branch.name === "Electrical Engineering"));
@@ -233,6 +233,40 @@ test("Basic Electronics uses the replacement PYQs, Master Notes and unit-specifi
     assert.equal(notes.headers.get("content-type"), "application/pdf");
     assert.ok((await notes.arrayBuffer()).byteLength > 1000);
   }
+});
+
+test("Central Workshop uses seven shop folders plus a Class Notes section", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  const workshop = data.unitCollections.find((subject) => subject.id === "workshop");
+  const shops = workshop.units.filter((item) => item.kind === "shop");
+  const classNotes = workshop.units.find((item) => item.kind === "class-notes");
+
+  assert.equal(workshop.layout, "shops");
+  assert.deepEqual(shops.map((shop) => shop.title), [
+    "Sheet Metal",
+    "Carpentry",
+    "Foundry",
+    "Blacksmithy",
+    "Fitting",
+    "Machine Shop",
+    "Welding Shop",
+  ]);
+  assert.equal(classNotes.title, "Class Notes");
+  assert.equal(classNotes.classNotesUrl, null);
+
+  for (const shop of shops) {
+    const file = await fetch(`${baseUrl}${shop.workshopFileUrl}`);
+    assert.equal(file.status, 200);
+    assert.equal(file.headers.get("content-type"), "application/pdf");
+    assert.ok((await file.arrayBuffer()).byteLength > 1000);
+  }
+});
+
+test("College Study redirects are removed from every resource section", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  assert.doesNotMatch(JSON.stringify(data), /college[- ]?study/i);
 });
 
 test("spa fallback serves the website", async () => {

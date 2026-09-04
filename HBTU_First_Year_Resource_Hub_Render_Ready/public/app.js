@@ -281,7 +281,9 @@ function visibleBranches() {
 }
 
 function countPdfs(collection) {
-  return collection.units.filter((unit) => Boolean(unit.pyqUrl)).length;
+  return collection.units.filter((unit) =>
+    Boolean(unit.pyqUrl || unit.workshopFileUrl || unit.classNotesUrl)
+  ).length;
 }
 
 function practiceKeyForUnit(unit) {
@@ -289,6 +291,11 @@ function practiceKeyForUnit(unit) {
 }
 
 function collectionCountLabel(collection) {
+  if (collection.layout === "shops") {
+    const shops = collection.units.filter((item) => item.kind === "shop").length;
+    const hasClassNotes = collection.units.some((item) => item.kind === "class-notes");
+    return shops + " shops" + (hasClassNotes ? " · class notes" : "");
+  }
   const units = collection.units.filter((item) => item.kind !== "lab").length;
   const labs = collection.units.filter((item) => item.kind === "lab").length;
   return units + " units" + (labs ? " · " + labs + " lab" : "");
@@ -460,6 +467,8 @@ function renderBranches() {
 }
 
 function renderUnit(subject, unit, index) {
+  if (subject.layout === "shops") return renderWorkshopSection(unit, index);
+
   const isLab = unit.kind === "lab";
   const practiceKey = practiceKeyForUnit(unit);
   const handwrittenNotesUrl = unit.handwrittenNotesUrl || subject.handwrittenNotesUrl || subject.notesUrl;
@@ -579,6 +588,29 @@ function renderUnit(subject, unit, index) {
     '<div class="material-list">' + materials.map((material) =>
       material.children ? renderMaterialFolder(material) : renderMaterial(material)
     ).join("") + '</div></details>';
+}
+
+function renderWorkshopSection(unit, index) {
+  const isClassNotes = unit.kind === "class-notes";
+  const url = isClassNotes ? unit.classNotesUrl : unit.workshopFileUrl;
+  const material = {
+    type: "notes",
+    title: isClassNotes ? "Class Notes PDF" : "Workshop File",
+    description: url
+      ? (isClassNotes ? "Central Workshop class notes" : unit.title + " practical file")
+      : "Coming soon",
+    url,
+  };
+  const indexLabel = isClassNotes ? "CN" : twoDigits(index + 1);
+  const subtitle = isClassNotes ? "Central Workshop notes" : "Workshop shop";
+
+  return '<details class="unit-row workshop-row">' +
+    '<summary><span class="unit-index">' + indexLabel + '</span>' +
+    '<span class="unit-title"><strong>' + escapeHtml(unit.title) + '</strong><small>' +
+    subtitle + '</small></span>' +
+    '<span class="unit-count">' + (url ? "1 file" : "Coming soon") + '</span>' +
+    '<span class="chevron" aria-hidden="true"></span></summary>' +
+    '<div class="material-list workshop-material-list">' + renderMaterial(material) + '</div></details>';
 }
 
 function renderMaterialFolder(material) {

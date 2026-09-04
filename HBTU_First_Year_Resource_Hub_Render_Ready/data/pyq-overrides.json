@@ -24,7 +24,12 @@
     "Minimize F(A,B,C,D) = sum m(0,3,4,7,8) + d(10,11,12,13,14,15) using a K-map and realize the output using logic gates."
   ],
   "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_4_PYQs.pdf": [
-    "Explain the working of an LVDT with suitable diagrams.",
+    "The expected current through a resistor is 20 mA while the measured current is 18 mA. Calculate the absolute error, percentage error and relative accuracy.",
+    "Ten measurements are 99, 101, 102, 97, 101, 100, 103, 98, 106 and 99. Calculate the precision of the fifth measurement.",
+    "Explain the construction and working of an LVDT.",
+    "Discuss the principle of operation of a Linear Variable Differential Transformer (LVDT), and state its advantages and disadvantages.",
+    "What is a transducer? Explain the difference between active and passive transducers with examples.",
+    "Show the working of an LVDT with proper diagrams.",
     "The expected voltage across a resistor is 90 V while the measured value is 88.5 V. Calculate the percentage error and relative accuracy.",
     "Explain the functional block diagram of a measuring instrument."
   ],

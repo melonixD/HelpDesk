@@ -20,10 +20,13 @@ const practiceKeys = units.map((unit) => unit.practiceKey || unit.pyqUrl).filter
 const localPracticeSources = practiceKeys.filter((url) => String(url).startsWith("/"));
 const noteUrls = units.flatMap((unit) => [unit.handwrittenNotesUrl, unit.masterNotesUrl])
   .filter((url) => url && String(url).startsWith("/"));
+const workshopUrls = units.flatMap((unit) => [unit.workshopFileUrl, unit.classNotesUrl])
+  .filter((url) => url && String(url).startsWith("/"));
 const publicPath = (url) => path.join(root, "public", String(url).replace(/^\/+/, ""));
 const missingBankEntries = practiceKeys.filter((url) => !bank[url]);
 const missingPdfs = localPracticeSources.filter((url) => !fs.existsSync(publicPath(url)));
 const missingNotes = noteUrls.filter((url) => !fs.existsSync(publicPath(url)));
+const missingWorkshopFiles = workshopUrls.filter((url) => !fs.existsSync(publicPath(url)));
 
 if (!index.includes("<title>HelpDesk · HBTU</title>")) {
   throw new Error("public/index.html is missing the HelpDesk page title.");
@@ -39,6 +42,9 @@ if (missingPdfs.length) {
 }
 if (missingNotes.length) {
   throw new Error(`Notes files are missing for: ${missingNotes.join(", ")}`);
+}
+if (missingWorkshopFiles.length) {
+  throw new Error(`Workshop files are missing for: ${missingWorkshopFiles.join(", ")}`);
 }
 if (!Array.isArray(placements.latest) || !placements.latest.length || !Array.isArray(placements.reports)) {
   throw new Error("data/placements.json is incomplete.");

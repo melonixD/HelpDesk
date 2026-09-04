@@ -79,3 +79,9 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
     Content-Disposition = "inline"
+
+[[headers]]
+  for = "/resources/workshop/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Disposition = "inline"
