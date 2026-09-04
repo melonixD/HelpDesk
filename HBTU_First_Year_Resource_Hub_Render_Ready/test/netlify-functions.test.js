@@ -188,6 +188,37 @@ test("Netlify practice function falls back instead of failing when Gemini is una
   }
 });
 
+test("replacement Electronics PYQs remain available to Practice Mode", async () => {
+  const previousKey = process.env.GEMINI_API_KEY;
+  const previousFetch = global.fetch;
+  process.env.GEMINI_API_KEY = "test-only";
+  global.fetch = async () => {
+    const error = new Error("The operation was aborted");
+    error.name = "AbortError";
+    throw error;
+  };
+  try {
+    for (const unit of [1, 2, 3, 4, 5]) {
+      const result = await practice({
+        httpMethod: "POST",
+        body: JSON.stringify({
+          pyqUrl: `/resources/pyqs/basic-electronics/Basic_Electronics_Unit_${unit}_PYQs.pdf`,
+        }),
+        headers: { "x-forwarded-for": `192.0.2.${20 + unit}` },
+      });
+      const body = JSON.parse(result.body);
+      assert.equal(result.statusCode, 200);
+      assert.equal(body.subject, "Basic Electronics Engineering");
+      assert.equal(body.unitNumber, unit);
+      assert.equal(body.questions.length, 3);
+    }
+  } finally {
+    global.fetch = previousFetch;
+    if (previousKey) process.env.GEMINI_API_KEY = previousKey;
+    else delete process.env.GEMINI_API_KEY;
+  }
+});
+
 test("both semesters expose PYQ-backed Practice subjects", async () => {
   const result = await resources({ httpMethod: "GET", queryStringParameters: {} });
   const body = JSON.parse(result.body);

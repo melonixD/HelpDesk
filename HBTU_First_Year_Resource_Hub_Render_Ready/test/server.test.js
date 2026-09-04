@@ -205,6 +205,36 @@ test("Engineering Mechanics includes five Master Notes and topic lecture folders
   }
 });
 
+test("Basic Electronics uses the replacement PYQs, Master Notes and unit-specific lectures", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  const electronics = data.unitCollections.find((subject) => subject.id === "bet");
+  assert.equal(electronics.splitNotes, true);
+  assert.match(electronics.lectureUrl, /PLBlnK6fEyqRiw-GZRqfnlVIBz9dxrqHJS/);
+  assert.ok(electronics.units.slice(0, 3).every((unit) => !unit.lectureUrl && !unit.disableSubjectLecture));
+  assert.equal(
+    electronics.units[3].lectureUrl,
+    "https://www.youtube.com/playlist?list=PLe25ovnCxlLRePrD-B1xNsW6BHNWsFD5R"
+  );
+  assert.equal(electronics.units[4].disableSubjectLecture, true);
+  assert.equal(electronics.units[4].lectureMessage, "Study from notes");
+  assert.ok(electronics.units.every((unit, index) =>
+    unit.masterNotesUrl === `/resources/notes/basic-electronics/Basic_Electronics_Unit_${index + 1}_Master_Notes.pdf`
+  ));
+
+  for (const unit of [1, 2, 3, 4, 5]) {
+    const pyq = await fetch(`${baseUrl}/resources/pyqs/basic-electronics/Basic_Electronics_Unit_${unit}_PYQs.pdf`);
+    assert.equal(pyq.status, 200);
+    assert.equal(pyq.headers.get("content-type"), "application/pdf");
+    assert.ok((await pyq.arrayBuffer()).byteLength > 1000);
+
+    const notes = await fetch(`${baseUrl}/resources/notes/basic-electronics/Basic_Electronics_Unit_${unit}_Master_Notes.pdf`);
+    assert.equal(notes.status, 200);
+    assert.equal(notes.headers.get("content-type"), "application/pdf");
+    assert.ok((await notes.arrayBuffer()).byteLength > 1000);
+  }
+});
+
 test("spa fallback serves the website", async () => {
   const response = await fetch(`${baseUrl}/any-page`);
   const html = await response.text();

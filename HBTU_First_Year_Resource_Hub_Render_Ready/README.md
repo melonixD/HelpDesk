@@ -16,6 +16,9 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Chemistry Lab section with Lab Manual, Viva Questions and End-Semester Lab Questions
 - Engineering Mechanics Master Notes PDFs for Units 1–5
 - Mechanics lecture folders for Trusses, Beams, Centroid, Moment of Inertia and Strength of Materials
+- Replacement Basic Electronics PYQs and PYQ-backed Practice Mode for Units 1–5
+- Basic Electronics Master Notes for Units 1–5
+- Neso lectures for Electronics Units 1–3, a dedicated Unit 4 playlist and notes-only Unit 5 guidance
 - Engineering and Technology syllabus folders, initially collapsed
 - Unlimited Practice powered by real PYQ text and Gemini
 - SGPA/CGPA calculator, focus timer and study list
@@ -132,6 +135,7 @@ helpdesk/
 ├── data/
 │   ├── resources.json
 │   ├── pyq-bank.json
+│   ├── pyq-overrides.json
 │   ├── placements.json
 │   └── notices-fallback.json
 ├── netlify/

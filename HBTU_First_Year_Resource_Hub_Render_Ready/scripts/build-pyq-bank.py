@@ -5,6 +5,8 @@ import pdfplumber
 
 ROOT = Path(__file__).parent.parent
 RESOURCES = json.load(open(ROOT / "data" / "resources.json"))
+OVERRIDES_PATH = ROOT / "data" / "pyq-overrides.json"
+OVERRIDES = json.load(open(OVERRIDES_PATH)) if OVERRIDES_PATH.exists() else {}
 
 def clean_line(line):
     line = re.sub(r"\s+", " ", line).strip()
@@ -49,7 +51,7 @@ for collection in RESOURCES["unitCollections"]:
         if not pdf_path.exists():
             print("MISSING:", pdf_path)
             continue
-        questions = extract_questions(pdf_path)
+        questions = OVERRIDES.get(pyq_url) or extract_questions(pdf_path)
         bank[pyq_url] = {
             "subject": collection["name"],
             "unitNumber": unit["number"],

@@ -151,31 +151,60 @@
     "subject": "Basic Electronics Engineering",
     "unitNumber": 1,
     "unitTitle": "P-N Junction Diode & Applications",
-    "questions": []
+    "questions": [
+      "Explain the working principle of a P-N junction diode under open-circuit condition and discuss how the depletion region is formed.",
+      "Explain the working of a P-N junction diode under forward-bias and reverse-bias conditions along with its V-I characteristics.",
+      "Differentiate between avalanche breakdown and Zener breakdown, explaining the mechanism and conditions for each.",
+      "Explain the operation of a centre-tapped full-wave rectifier with a circuit diagram and define its peak inverse voltage.",
+      "Explain the working of a bridge rectifier and evaluate its efficiency and peak inverse voltage.",
+      "Establish the relation between transistor current gains alpha and beta. Evaluate the change in alpha when beta increases from 51 to 80.",
+      "A 230 V, 50 Hz supply is applied to a 5:1 step-down transformer feeding an ideal bridge rectifier with a 500 ohm load. Find the DC output voltage, DC load power, PIV of each diode and output frequency.",
+      "For an ideal diode wave-shaping circuit, determine and sketch the output waveform for the supplied input waveform and bias voltage."
+    ]
   },
   "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_2_PYQs.pdf": {
     "subject": "Basic Electronics Engineering",
     "unitNumber": 2,
     "unitTitle": "Transistors, FETs & Operational Amplifiers",
-    "questions": []
+    "questions": [
+      "Explain the working of a BJT in common-base configuration and sketch its input and output characteristics, marking active, cutoff and saturation regions.",
+      "Explain the input and output characteristics of a common-emitter amplifier with supporting diagrams and write the relation between alpha and beta.",
+      "For a transistor bias circuit, calculate the quiescent base current, collector current and collector-emitter voltage.",
+      "Explain the construction and operation of an N-channel enhancement MOSFET with a suitable diagram, drain characteristics and transfer characteristics.",
+      "State the properties of an ideal operational amplifier and determine the output voltage of a given op-amp circuit."
+    ]
   },
   "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_3_PYQs.pdf": {
     "subject": "Basic Electronics Engineering",
     "unitNumber": 3,
     "unitTitle": "Digital Logic",
-    "questions": []
+    "questions": [
+      "Minimize F(A,B,C,D) = sum m(0,1,3,5,7,9,10,14,15) + d(2,4) and realize the result using basic gates.",
+      "Explain the S-R flip-flop with a suitable diagram and give its truth table, characteristic table and excitation table.",
+      "Explain the working of a J-K flip-flop with a circuit diagram, truth table, excitation table and characteristic table.",
+      "Explain a full adder with its circuit diagram and derive the expressions for sum and carry outputs.",
+      "Minimize F(A,B,C,D) = sum m(0,3,4,7,8) + d(10,11,12,13,14,15) using a K-map and realize the output using logic gates."
+    ]
   },
   "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_4_PYQs.pdf": {
     "subject": "Basic Electronics Engineering",
     "unitNumber": 4,
     "unitTitle": "Transducers & Measurement Errors",
-    "questions": []
+    "questions": [
+      "Explain the working of an LVDT with suitable diagrams.",
+      "The expected voltage across a resistor is 90 V while the measured value is 88.5 V. Calculate the percentage error and relative accuracy.",
+      "Explain the functional block diagram of a measuring instrument."
+    ]
   },
   "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_5_PYQs.pdf": {
     "subject": "Basic Electronics Engineering",
     "unitNumber": 5,
     "unitTitle": "Display Devices & Electronic Instruments",
-    "questions": []
+    "questions": [
+      "Draw and explain the working of a cathode-ray oscilloscope and list the measurements that can be performed using it.",
+      "With a neat figure, explain the construction and working principle of a digital storage oscilloscope.",
+      "What is a digital multimeter? Draw its block diagram and explain the function of each block."
+    ]
   },
   "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_1_PYQs.pdf": {
     "subject": "Engineering Mechanics",

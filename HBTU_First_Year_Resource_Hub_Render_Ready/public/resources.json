@@ -114,12 +114,41 @@
       "accent": "yellow",
       "lectureUrl": "https://www.youtube.com/watch?v=7jaa1rlW7Ak&list=PLBlnK6fEyqRiw-GZRqfnlVIBz9dxrqHJS",
       "notesUrl": "https://college-study.netlify.app/first-semester",
+      "splitNotes": true,
       "units": [
-        { "number": 1, "title": "P-N Junction Diode & Applications", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_1_PYQs.pdf" },
-        { "number": 2, "title": "Transistors, FETs & Operational Amplifiers", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_2_PYQs.pdf" },
-        { "number": 3, "title": "Digital Logic", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_3_PYQs.pdf" },
-        { "number": 4, "title": "Transducers & Measurement Errors", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_4_PYQs.pdf" },
-        { "number": 5, "title": "Display Devices & Electronic Instruments", "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_5_PYQs.pdf" }
+        {
+          "number": 1,
+          "title": "P-N Junction Diode & Applications",
+          "masterNotesUrl": "/resources/notes/basic-electronics/Basic_Electronics_Unit_1_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_1_PYQs.pdf"
+        },
+        {
+          "number": 2,
+          "title": "Transistors, FETs & Operational Amplifiers",
+          "masterNotesUrl": "/resources/notes/basic-electronics/Basic_Electronics_Unit_2_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_2_PYQs.pdf"
+        },
+        {
+          "number": 3,
+          "title": "Digital Logic",
+          "masterNotesUrl": "/resources/notes/basic-electronics/Basic_Electronics_Unit_3_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_3_PYQs.pdf"
+        },
+        {
+          "number": 4,
+          "title": "Transducers & Measurement Errors",
+          "lectureUrl": "https://www.youtube.com/playlist?list=PLe25ovnCxlLRePrD-B1xNsW6BHNWsFD5R",
+          "masterNotesUrl": "/resources/notes/basic-electronics/Basic_Electronics_Unit_4_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_4_PYQs.pdf"
+        },
+        {
+          "number": 5,
+          "title": "Display Devices & Electronic Instruments",
+          "disableSubjectLecture": true,
+          "lectureMessage": "Study from notes",
+          "masterNotesUrl": "/resources/notes/basic-electronics/Basic_Electronics_Unit_5_Master_Notes.pdf",
+          "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_5_PYQs.pdf"
+        }
       ]
     },
     {
