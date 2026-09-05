@@ -8,7 +8,7 @@ async function feedStore() {
 async function readCachedFeed(key) {
   if (!isNetlifyRuntime()) return null;
   try {
-    const result = await (await feedStore()).getWithMetadata(key, { type: "json", consistency: "strong" });
+    const result = await (await feedStore()).getWithMetadata(key, { type: "json" });
     return result && result.data && typeof result.data === "object" ? result.data : null;
   } catch (error) {
     console.error("HelpDesk feed cache read failed:", error && error.message ? error.message : error);

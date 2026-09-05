@@ -31,7 +31,7 @@ async function saveLocal(value) {
 async function loadDraft(target) {
   if (!TARGETS[target]) return null;
   if (isNetlifyRuntime()) {
-    const result = await (await blobStore()).getWithMetadata(`draft:${target}`, { type: "json", consistency: "strong" });
+    const result = await (await blobStore()).getWithMetadata(`draft:${target}`, { type: "json" });
     return result && result.data && result.data.data ? result.data : null;
   }
   const drafts = await loadLocal();

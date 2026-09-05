@@ -35,6 +35,12 @@ test("local tests do not require a Netlify Blobs connection", () => {
   assert.equal(connectNetlifyBlobs({ httpMethod: "GET" }), false);
 });
 
+test("Lambda-compatible Blob reads do not request an unavailable uncached endpoint", async () => {
+  const files = ["admin-state.js", "admin-drafts.js", "feed-cache.js"];
+  const sources = await Promise.all(files.map((file) => fs.readFile(path.resolve(__dirname, "../netlify/lib", file), "utf8")));
+  sources.forEach((source) => assert.doesNotMatch(source, /consistency\s*:\s*["']strong["']/));
+});
+
 test("Netlify health function is ready", async () => {
   const result = await health({ httpMethod: "GET" });
   assert.equal(result.statusCode, 200);

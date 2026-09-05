@@ -42,14 +42,14 @@ async function saveLocal(state) {
 
 async function loadState() {
   if (!isNetlifyRuntime()) return loadLocal();
-  const result = await (await store()).getWithMetadata(STORE_KEY, { type: "json", consistency: "strong" });
+  const result = await (await store()).getWithMetadata(STORE_KEY, { type: "json" });
   return normalize(result && result.data);
 }
 
 async function mutateNetlify(mutator) {
   const blobs = await store();
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const current = await blobs.getWithMetadata(STORE_KEY, { type: "json", consistency: "strong" });
+    const current = await blobs.getWithMetadata(STORE_KEY, { type: "json" });
     const state = normalize(current && current.data);
     const result = await mutator(state);
     const write = await blobs.set(STORE_KEY, JSON.stringify(state), current
