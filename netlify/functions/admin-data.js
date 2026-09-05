@@ -13,9 +13,10 @@ exports.handler = async (event) => {
     const contributor = context.admin;
     const liveResources = readJson("resources");
     const drafts = main ? await draftDirectory() : {};
-    const [resourceDraft, placementDraft, noticeDraft, scholarshipDraft] = main
-      ? await Promise.all(["resources", "placements", "notices", "scholarships"].map(loadDraft))
-      : [null, null, null, null];
+    const resourceDraft = await loadDraft("resources");
+    const [placementDraft, noticeDraft, scholarshipDraft] = main
+      ? await Promise.all(["placements", "notices", "scholarships"].map(loadDraft))
+      : [null, null, null];
     const resources = resourceDraft ? resourceDraft.data : liveResources;
     return json(200, {
       role: context.role,
@@ -24,7 +25,7 @@ exports.handler = async (event) => {
       community: context.community,
       permissions: contributor ? contributor.permissions : "all",
       coins: contributor ? Number(contributor.coins) || 0 : null,
-      resources: main ? resources : filterResources(liveResources, contributor.permissions),
+      resources: main ? resources : filterResources(resources, contributor.permissions),
       placements: main ? (placementDraft ? placementDraft.data : readJson("placements")) : null,
       notices: main ? (noticeDraft ? noticeDraft.data : readJson("notices")) : null,
       scholarships: main ? (scholarshipDraft ? scholarshipDraft.data : readJson("scholarships")) : null,

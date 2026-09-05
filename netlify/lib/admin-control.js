@@ -1,7 +1,8 @@
 const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const { id, loadState, mutateState, cleanRegularAdmin } = require("./admin-state");
-const { commitJson, readJson, validateResources } = require("./admin-content");
+const { readJson, validateResources } = require("./admin-content");
+const { loadDraft, saveDraft } = require("./admin-drafts");
 
 class ControlError extends Error {
   constructor(message, statusCode = 400) { super(message); this.name = "ControlError"; this.statusCode = statusCode; }
@@ -84,7 +85,7 @@ function permissionDirectory(resources) {
 
 function communityFromState(state, resources) {
   const directory = permissionDirectory(resources);
-  const entries = state.regularAdmins.filter((admin) => admin.active !== false).map((admin) => {
+  const entries = state.regularAdmins.filter((admin) => admin.active !== false && admin.role !== "main").map((admin) => {
     const permissions = (admin.permissions || []).map((permission) => {
       const branch = directory.get(permission.branchId);
       return {
@@ -180,13 +181,21 @@ async function registration(body) {
 async function managementSnapshot(mainAdmins) {
   const state = await loadState();
   const resources = readJson("resources");
+  const promotedMainAdmins = state.regularAdmins.filter((admin) => admin.active !== false && admin.role === "main").map((admin) => ({
+    username: admin.username,
+    name: admin.name,
+    photoUrl: savedProfileUrl(state, `main:${admin.username.toLowerCase()}`, ""),
+    promoted: true,
+    promotedAt: admin.promotedAt,
+    promotedBy: admin.promotedBy,
+  }));
   return {
-    mainAdmins: mainAdmins.map((admin) => ({
+    mainAdmins: [...mainAdmins.map((admin) => ({
       ...admin,
       photoUrl: savedProfileUrl(state, `main:${admin.username.toLowerCase()}`, admin.photoUrl || ""),
-    })),
+    })), ...promotedMainAdmins],
     registrations: state.registrations,
-    regularAdmins: state.regularAdmins.map((admin) => ({
+    regularAdmins: state.regularAdmins.filter((admin) => admin.role !== "main").map((admin) => ({
       ...cleanRegularAdmin(admin),
       photoUrl: savedProfileUrl(state, `contributor:${admin.id}`, ""),
     })),
@@ -265,8 +274,8 @@ function scopedCollectionId(resources, collectionId, scope) {
   return candidate;
 }
 
-function buildCandidate(request, contributor = null) {
-  const resources = readJson("resources");
+function buildCandidate(request, contributor = null, baseResources = null) {
+  const resources = clone(baseResources || readJson("resources"));
   const branch = resources.branches.find((item) => item.id === request.scope.branchId);
   const semester = branch && branch.semesters.find((item) => item.id === request.scope.semesterId);
   if (!branch || !semester) throw new ControlError("The requested branch or semester no longer exists.", 409);
@@ -302,8 +311,8 @@ function buildCandidate(request, contributor = null) {
   return resources;
 }
 
-function assertAttributeOnly(request) {
-  const resources = readJson("resources");
+function assertAttributeOnly(request, baseResources = null) {
+  const resources = clone(baseResources || readJson("resources"));
   const branch = resources.branches.find((item) => item.id === request.scope.branchId);
   const semester = branch && branch.semesters.find((item) => item.id === request.scope.semesterId);
   const proposedSemester = request.proposal && request.proposal.semester;
@@ -353,21 +362,24 @@ async function approveChange(requestId, reviewer) {
     request.status = "processing"; request.reviewedBy = reviewer; request.reviewedAt = new Date().toISOString();
   });
   try {
-    const result = await commitJson("resources", buildCandidate(request, { name: request.requestedBy, role: request.requestedRole || "regular" }), `Approve ${request.summary} (requested by ${request.requestedBy})`);
+    const existingDraft = await loadDraft("resources");
+    const baseResources = existingDraft ? existingDraft.data : readJson("resources");
+    const candidate = buildCandidate(request, { name: request.requestedBy, role: request.requestedRole || "regular" }, baseResources);
+    const draft = await saveDraft("resources", candidate, reviewer);
     await mutateState((state) => {
       const item = state.changeRequests.find((entry) => entry.id === requestId);
-      if (item) { item.status = "approved"; item.commitUrl = result.commitUrl; item.coinAwarded = true; delete item.error; }
+      if (item) { item.status = "approved-draft"; item.draftUpdatedAt = draft.updatedAt; item.coinAwarded = true; delete item.commitUrl; delete item.error; }
       const admin = state.regularAdmins.find((entry) => entry.id === request.adminId);
       if (admin) { admin.coins = (Number(admin.coins) || 0) + 1; admin.contributions = (Number(admin.contributions) || 0) + 1; }
     });
-    return { approved: true, deploying: true, ...result };
+    return { approved: true, draft: true, deploying: false, target: "resources", updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
   } catch (error) {
     await mutateState((state) => { const item=state.changeRequests.find((entry)=>entry.id===requestId);if(item){item.status="pending";item.error=String(error.message||"Approval failed").slice(0,300);} });
     throw error;
   }
 }
 
-async function publishScopedChange(session, body) {
+async function saveScopedDraft(session, body) {
   const admin = await activeContributor(session);
   if (contributorRole(admin) !== "branch") throw new ControlError("Only branch admins can publish scoped changes directly.", 403);
   const branchId = text(body && body.scope && body.scope.branchId, "Branch", 80);
@@ -376,12 +388,16 @@ async function publishScopedChange(session, body) {
   const request = {
     id: id("change"), adminId: admin.id, requestedBy: admin.name, username: admin.username, requestedRole: "branch",
     scope: { branchId, semesterId }, summary: text(body && body.summary, "Change summary", 500),
-    proposal: clone(body && body.proposal), status: "published", createdAt: new Date().toISOString(),
+    proposal: clone(body && body.proposal), status: "drafted", createdAt: new Date().toISOString(),
   };
   if (Buffer.byteLength(JSON.stringify(request)) > 1024 * 1024) throw new ControlError("This scoped update is too large.");
-  assertAttributeOnly(request);
-  const result = await commitJson("resources", buildCandidate(request, { name: admin.name, role: "branch" }), `Publish ${request.summary} (branch admin ${admin.name})`);
-  request.commitUrl = result.commitUrl;
+  const existingDraft = await loadDraft("resources");
+  const baseResources = existingDraft ? existingDraft.data : readJson("resources");
+  assertAttributeOnly(request, baseResources);
+  const candidate = buildCandidate(request, { name: admin.name, role: "branch" }, baseResources);
+  const draft = await saveDraft("resources", candidate, admin.username);
+  request.status = "drafted";
+  request.draftUpdatedAt = draft.updatedAt;
   request.reviewedBy = admin.username;
   request.reviewedAt = new Date().toISOString();
   request.coinAwarded = true;
@@ -390,7 +406,23 @@ async function publishScopedChange(session, body) {
     if (current) { current.coins = (Number(current.coins) || 0) + 1; current.contributions = (Number(current.contributions) || 0) + 1; }
     state.changeRequests.unshift(request);
   });
-  return { saved: true, deploying: true, ...result };
+  return { saved: true, draft: true, deploying: false, target: "resources", updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
+}
+
+async function markResourcesDraftPublished(commitUrl, reviewer) {
+  return mutateState((state) => {
+    let count = 0;
+    const deployedAt = new Date().toISOString();
+    state.changeRequests.forEach((request) => {
+      if (!["approved-draft", "drafted"].includes(request.status)) return;
+      request.status = "published";
+      request.commitUrl = commitUrl;
+      request.deployedAt = deployedAt;
+      request.deployedBy = reviewer;
+      count += 1;
+    });
+    return count;
+  });
 }
 
 async function manage(action, body, reviewer, mainAdmins) {
@@ -419,7 +451,7 @@ async function manage(action, body, reviewer, mainAdmins) {
       const application=state.registrations.find((item)=>item.id===body.registrationId&&item.status==="pending");if(!application)throw new ControlError("This application is no longer pending.",409);
       application.status="rejected";application.reviewedAt=new Date().toISOString();application.reviewedBy=reviewer;return { rejected:true };
     }
-    if (["update-permissions","set-regular-status","reset-password","set-contributor-role"].includes(action)) {
+    if (["update-permissions","set-regular-status","reset-password","set-contributor-role","promote-main-admin"].includes(action)) {
       const admin=state.regularAdmins.find((item)=>item.id===body.adminId);if(!admin)throw new ControlError("Regular admin not found.",404);
       if(action==="update-permissions")admin.permissions=validatePermissions(body.permissions,resources);
       if(action==="set-regular-status")admin.active=Boolean(body.active);
@@ -429,7 +461,17 @@ async function manage(action, body, reviewer, mainAdmins) {
         if(body.role==="branch"&&!(admin.permissions||[]).length)throw new ControlError("Assign at least one governed section before promotion.");
         admin.role=body.role;
       }
-      admin.updatedAt=new Date().toISOString();admin.updatedBy=reviewer;return { updated:true,regularAdmin:cleanRegularAdmin(admin) };
+      if(action==="promote-main-admin"){
+        if(admin.active===false)throw new ControlError("Enable this account before promoting it to main admin.");
+        if(admin.role==="main")throw new ControlError("This account is already a main admin.",409);
+        admin.role="main";admin.promotedAt=new Date().toISOString();admin.promotedBy=reviewer;
+        const profile=state.profiles.find((item)=>item.ownerKey===`contributor:${admin.id}`);
+        if(profile)profile.ownerKey=`main:${admin.username.toLowerCase()}`;
+      }
+      admin.updatedAt=new Date().toISOString();admin.updatedBy=reviewer;
+      return action==="promote-main-admin"
+        ? { updated:true,promoted:true,mainAdmin:cleanRegularAdmin(admin) }
+        : { updated:true,regularAdmin:cleanRegularAdmin(admin) };
     }
     if (action === "reject-change") {
       const request=state.changeRequests.find((item)=>item.id===body.requestId&&item.status==="pending");if(!request)throw new ControlError("This change request is no longer pending.",409);
@@ -448,7 +490,8 @@ module.exports = {
   filterResources,
   managementSnapshot,
   manage,
-  publishScopedChange,
+  markResourcesDraftPublished,
+  saveScopedDraft,
   registration,
   updateProfile,
   validatePermissions,

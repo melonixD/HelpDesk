@@ -1,5 +1,6 @@
 const { authorize, json, parseBody } = require("../lib/admin-auth");
 const { publishDraft } = require("../lib/admin-drafts");
+const { markResourcesDraftPublished } = require("../lib/admin-control");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed." }, { Allow: "POST" });
@@ -9,9 +10,13 @@ exports.handler = async (event) => {
   if (!body || typeof body.target !== "string") return json(400, { error: "A content target is required." });
   try {
     const result = await publishDraft(body.target, auth.session.sub, body.message);
-    return json(200, { saved: true, deploying: true, published: true, ...result });
+    let queuedRequestsPublished = 0;
+    if (body.target === "resources") {
+      try { queuedRequestsPublished = await markResourcesDraftPublished(result.commitUrl, auth.session.sub); }
+      catch (error) { console.warn("Resource draft deployed, but contribution statuses could not be refreshed:", error.message); }
+    }
+    return json(200, { saved: true, deploying: true, published: true, queuedRequestsPublished, ...result });
   } catch (error) {
     return json(error.statusCode || 500, { error: error.message || "Could not publish this draft." });
   }
 };
-

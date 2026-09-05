@@ -86,7 +86,7 @@ function cleanRegularAdmin(admin) {
   const { passwordHash, ...safe } = admin;
   return {
     ...safe,
-    role: admin.role === "branch" ? "branch" : "regular",
+    role: admin.role === "main" ? "main" : (admin.role === "branch" ? "branch" : "regular"),
     coins: Number.isFinite(Number(admin.coins)) ? Number(admin.coins) : 0,
     contributions: Number.isFinite(Number(admin.contributions)) ? Number(admin.contributions) : 0,
   };

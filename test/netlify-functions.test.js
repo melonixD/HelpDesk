@@ -382,7 +382,7 @@ test("main-admin drafts do not deploy until the explicit publish request", async
   }
 });
 
-test("main admins approve scoped regular admins and deploy their reviewed requests", async () => {
+test("all contributor changes stay drafted until a main admin explicitly deploys", async () => {
   const bcrypt = require("bcryptjs");
   const register = require("../netlify/functions/admin-register").handler;
   const login = require("../netlify/functions/admin-login").handler;
@@ -392,6 +392,7 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
   const scopedSave = require("../netlify/functions/admin-scoped-save").handler;
   const profile = require("../netlify/functions/admin-profile").handler;
   const directSave = require("../netlify/functions/admin-save").handler;
+  const publish = require("../netlify/functions/admin-publish").handler;
   const previousFetch = global.fetch;
   const prior = Object.fromEntries([
     "MAIN_ADMINS_JSON", "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "SESSION_SECRET",
@@ -520,13 +521,15 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
         commit: { html_url: "https://github.com/owner/repository/commit/reviewed" },
       }), { status: 200 });
     };
-    const deployResult = await management({
+    const approvalDraftResult = await management({
       httpMethod: "POST",
       headers: authHeaders(mainCookie, mainSession.csrfToken),
       body: JSON.stringify({ action: "approve-change", requestId }),
     });
-    assert.equal(deployResult.statusCode, 200);
-    assert.equal(JSON.parse(deployResult.body).deploying, true);
+    assert.equal(approvalDraftResult.statusCode, 200);
+    assert.equal(JSON.parse(approvalDraftResult.body).draft, true);
+    assert.equal(JSON.parse(approvalDraftResult.body).deploying, false);
+    assert.equal(committedDocuments.length, 0);
 
     const snapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
     assert.equal(snapshotResult.statusCode, 200);
@@ -534,8 +537,9 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
     assert.equal(snapshot.regularAdmins[0].passwordHash, undefined);
     assert.equal(snapshot.regularAdmins[0].coins, 1);
     assert.equal(snapshot.regularAdmins[0].contributions, 1);
-    assert.equal(snapshot.changeRequests.find((item) => item.id === requestId).status, "approved");
-    const approvedResources = committedDocuments.at(-1);
+    assert.equal(snapshot.changeRequests.find((item) => item.id === requestId).status, "approved-draft");
+    const stagedDataResult = await dataEndpoint({ httpMethod: "GET", headers: { cookie: mainCookie } });
+    const approvedResources = JSON.parse(stagedDataResult.body).resources;
     const approvedSemester = approvedResources.branches.find((item) => item.id === "mechanical").semesters.find((item) => item.id === "semester-2");
     const originalSubjectId = semester.subjectIds[0];
     assert.notEqual(approvedSemester.subjectIds[0], originalSubjectId);
@@ -566,18 +570,20 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
     const governedBranch = branchData.resources.branches[0];
     const governedSemester = governedBranch.semesters[0];
     const governedCollections = branchData.resources.unitCollections.filter((item) => governedSemester.subjectIds.includes(item.id));
-    governedCollections[0].description = `${governedCollections[0].description} (branch admin publish)`;
-    const branchPublishResult = await scopedSave({
+    governedCollections[0].description = `${governedCollections[0].description} (branch admin draft)`;
+    const branchDraftResult = await scopedSave({
       httpMethod: "POST",
       headers: authHeaders(regularCookie, regularSession.csrfToken),
       body: JSON.stringify({
         scope: { branchId: governedBranch.id, semesterId: governedSemester.id },
-        summary: "Directly publish an assigned attribute",
+        summary: "Save an assigned attribute for deployment",
         proposal: { semester: governedSemester, unitCollections: governedCollections },
       }),
     });
-    assert.equal(branchPublishResult.statusCode, 200);
-    assert.equal(JSON.parse(branchPublishResult.body).deploying, true);
+    assert.equal(branchDraftResult.statusCode, 200);
+    assert.equal(JSON.parse(branchDraftResult.body).draft, true);
+    assert.equal(JSON.parse(branchDraftResult.body).deploying, false);
+    assert.equal(committedDocuments.length, 0);
 
     const structuralSemester = { ...governedSemester, subjectIds: governedSemester.subjectIds.slice(1) };
     const structuralResult = await scopedSave({
@@ -599,7 +605,54 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
     assert.equal(finalSnapshot.regularAdmins[0].role, "branch");
     assert.equal(finalSnapshot.regularAdmins[0].coins, 2);
     assert.equal(finalSnapshot.leaderboard[0].topContributor, true);
-    assert.ok(finalSnapshot.changeRequests.some((item) => item.status === "published"));
+    assert.ok(finalSnapshot.changeRequests.some((item) => item.status === "drafted"));
+
+    const explicitDeployResult = await publish({
+      httpMethod: "POST",
+      headers: authHeaders(mainCookie, mainSession.csrfToken),
+      body: JSON.stringify({ target: "resources", message: "Deploy reviewed resource draft" }),
+    });
+    assert.equal(explicitDeployResult.statusCode, 200);
+    assert.equal(JSON.parse(explicitDeployResult.body).deploying, true);
+    assert.equal(committedDocuments.length, 1);
+    const deployedSnapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
+    const deployedSnapshot = JSON.parse(deployedSnapshotResult.body);
+    assert.ok(deployedSnapshot.changeRequests.filter((item) => [requestId, finalSnapshot.changeRequests.find((item) => item.status === "drafted").id].includes(item.id)).every((item) => item.status === "published"));
+
+    const mainPromotionResult = await management({
+      httpMethod: "POST",
+      headers: authHeaders(mainCookie, mainSession.csrfToken),
+      body: JSON.stringify({
+        action: "promote-main-admin",
+        adminId: finalSnapshot.regularAdmins[0].id,
+      }),
+    });
+    assert.equal(mainPromotionResult.statusCode, 200);
+    assert.equal(JSON.parse(mainPromotionResult.body).promoted, true);
+
+    const promotedLoginResult = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.123" },
+      body: JSON.stringify({ username: "regular-test", password: "temporary-password" }),
+    });
+    assert.equal(promotedLoginResult.statusCode, 200);
+    const promotedSession = JSON.parse(promotedLoginResult.body);
+    assert.equal(promotedSession.role, "main");
+    const promotedCookie = promotedLoginResult.headers["Set-Cookie"].split(";")[0];
+
+    const promotedDataResult = await dataEndpoint({ httpMethod: "GET", headers: { cookie: promotedCookie } });
+    assert.equal(promotedDataResult.statusCode, 200);
+    const promotedData = JSON.parse(promotedDataResult.body);
+    assert.equal(promotedData.role, "main");
+    assert.equal(promotedData.permissions, "all");
+    assert.ok(promotedData.placements);
+
+    const promotedManagementResult = await management({ httpMethod: "GET", headers: { cookie: promotedCookie } });
+    assert.equal(promotedManagementResult.statusCode, 200);
+    const promotedManagement = JSON.parse(promotedManagementResult.body);
+    assert.ok(promotedManagement.mainAdmins.some((admin) => admin.username === "regular-test"));
+    assert.ok(!promotedManagement.regularAdmins.some((admin) => admin.username === "regular-test"));
+    assert.ok(promotedManagement.mainAdmins.every((admin) => admin.passwordHash === undefined));
   } finally {
     global.fetch = previousFetch;
     Object.keys(prior).forEach(restore);
@@ -608,16 +661,21 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
   }
 });
 
-test("admin UI has explicit draft/deploy controls and selected-section fill", async () => {
-  const [html, script] = await Promise.all([
+test("admin UI and server enforce explicit draft/deploy controls", async () => {
+  const [html, script, control] = await Promise.all([
     fs.readFile(path.resolve(__dirname, "../public/admin/index.html"), "utf8"),
     fs.readFile(path.resolve(__dirname, "../public/admin/admin.js"), "utf8"),
+    fs.readFile(path.resolve(__dirname, "../netlify/lib/admin-control.js"), "utf8"),
   ]);
   assert.match(html, /id="save-button"[^>]*>Save draft</);
   assert.match(html, /id="publish-button"[^>]*>Deploy to website</);
   assert.match(script, /Fill in selected/);
   assert.match(script, /data-fill-target/);
+  assert.match(script, /Make main admin/);
+  assert.match(script, /Approve to draft/);
+  assert.match(script, /Save contribution draft/);
   assert.doesNotMatch(script, /setTimeout\(saveChanges,\s*1200\)/);
+  assert.doesNotMatch(control, /commitJson/);
 });
 
 test("admin PDF uploads are validated, assembled and publicly readable", async () => {

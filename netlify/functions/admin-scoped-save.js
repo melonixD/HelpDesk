@@ -1,5 +1,5 @@
 const { authorize, json, parseBody } = require("../lib/admin-auth");
-const { publishScopedChange } = require("../lib/admin-control");
+const { saveScopedDraft } = require("../lib/admin-control");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed." }, { Allow: "POST" });
@@ -8,6 +8,6 @@ exports.handler = async (event) => {
   if (auth.session.role === "main") return json(403, { error: "Main admins use the full save endpoint." });
   const body = parseBody(event);
   if (!body) return json(400, { error: "Request body must be valid JSON." });
-  try { return json(200, await publishScopedChange(auth.session, body)); }
-  catch (error) { return json(error.statusCode || 500, { error: error.message || "Scoped update could not be published." }); }
+  try { return json(200, await saveScopedDraft(auth.session, body)); }
+  catch (error) { return json(error.statusCode || 500, { error: error.message || "Scoped update could not be saved as a draft." }); }
 };

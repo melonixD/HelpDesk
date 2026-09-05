@@ -87,7 +87,7 @@
     if (state.role !== "main" && !contributorSections.has(state.section)) state.section = "resources";
     $("#admin-identity").textContent = `${state.user.name || state.user.username} · ${roleLabel(state.role)}`;
     $("#admin-avatar").src = state.profile.photoUrl || "/favicon.svg";
-    saveButton.textContent = state.role === "main" ? "Save draft" : (state.role === "branch" ? "Publish update" : "Submit request");
+    saveButton.textContent = state.role === "main" ? "Save draft" : (state.role === "branch" ? "Save contribution draft" : "Submit request");
     loginView.hidden = true; adminView.hidden = false;
     ensureSelection(); render();
   }
@@ -137,20 +137,21 @@
     state.dirty = true; state.revision = (state.revision || 0) + 1;
     saveButton.disabled = false;
     publishButton.disabled = true;
-    status.textContent = state.role === "regular" ? "Draft only" : (state.role === "branch" ? "Ready to publish" : "Unsaved");
+    status.textContent = state.role === "regular" ? "Draft only" : "Unsaved";
   }
   function target() { return ["meta", "creators", "syllabus"].includes(state.section) ? "resources" : state.section; }
 
   async function saveChanges() {
     if (!state.dirty) return;
     if (state.role === "regular") return submitRegularChange();
-    if (state.role === "branch") return publishBranchChange();
+    if (state.role === "branch") return saveBranchDraft();
     if (state.saving) { state.saveQueued = true; return; }
     state.saving = true; saveButton.disabled = true; saveButton.textContent = "Saving…"; status.textContent = "Validating";
     const key = target(); const revision = state.revision;
     if (key === "resources") state.data.resources.meta.creators = state.data.resources.creators.map((creator) => creator.name);
     try {
-      const result = await request("/api/admin/save", { method: "POST", body: JSON.stringify({ target: key, data: state.data[key], message: `Update ${titles[state.section][1]} from HelpDesk admin` }) });
+      const result = await request("/api/admin/save", { method: "POST", body: JSON.stringify({ target: key, data: state.data[key] }) });
+      if (!result.draft || result.deploying) throw new Error("Safety check failed: the server did not confirm a private draft-only save.");
       state.dirty = state.revision !== revision;
       if (!state.dirty) state.drafts[key] = { updatedAt: result.updatedAt, updatedBy: result.updatedBy };
       status.textContent = state.dirty ? "Unsaved" : "Draft saved"; state.history[key] = result.historyUrl || state.history[key]; renderHistory();
@@ -165,41 +166,48 @@
       $$('.field[data-dirty="true"]').forEach((field) => { field.dataset.error = "true"; const note = $(".field-state", field); if (note) note.textContent = "Save failed"; });
       toast(error.message);
     } finally {
-      state.saving = false; saveButton.textContent = state.role === "main" ? "Save draft" : (state.role === "branch" ? "Publish update" : "Submit request"); saveButton.disabled = !state.dirty;
+      state.saving = false; saveButton.textContent = state.role === "main" ? "Save draft" : (state.role === "branch" ? "Save contribution draft" : "Submit request"); saveButton.disabled = !state.dirty;
       publishButton.disabled = state.role !== "main" || state.dirty || !state.drafts[target()];
       state.saveQueued = false;
     }
   }
   saveButton.addEventListener("click", saveChanges);
 
-  async function publishChanges() {
-    if (state.role !== "main" || state.publishing) return;
-    const key = target();
-    if (state.dirty) return toast("Save the draft first, then deploy it.");
-    if (!state.drafts[key]) return toast("There is no saved draft to deploy.");
-    if (!confirm("Deploy this saved draft to the public website? This creates one GitHub commit and one Netlify deployment.")) return;
+  async function deploySavedDraft(key, label) {
+    if (state.role !== "main" || state.publishing) return false;
+    if (!state.drafts[key]) { toast("There is no saved draft to deploy."); return false; }
+    if (!confirm(`Deploy the saved ${label} draft to the public website? This is the only action that creates a GitHub commit and a Netlify deployment.`)) return false;
     state.publishing = true; publishButton.disabled = true; publishButton.textContent = "Deploying…"; status.textContent = "Publishing";
     try {
-      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, message: `Publish ${titles[state.section][1]} from HelpDesk admin` }) });
+      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, message: `Deploy saved ${label} draft from HelpDesk admin` }) });
       delete state.drafts[key];
       state.history[key] = result.historyUrl || state.history[key];
       status.textContent = "Deployment started";
       renderHistory();
       toast("Published to GitHub. Netlify is deploying the saved draft now.");
+      return true;
     } catch (error) {
       status.textContent = "Deploy failed";
       toast(error.message);
+      return false;
     } finally {
       state.publishing = false; publishButton.textContent = "Deploy to website";
       publishButton.disabled = state.dirty || !state.drafts[key];
     }
   }
+
+  async function publishChanges() {
+    if (state.role !== "main" || state.publishing) return;
+    const key = target();
+    if (state.dirty) return toast("Save the draft first, then deploy it.");
+    await deploySavedDraft(key, titles[state.section][1]);
+  }
   publishButton.addEventListener("click", publishChanges);
 
-  function askChangeSummary(branchPublish = false) {
+  function askChangeSummary(branchDraft = false) {
     return new Promise((resolve) => {
       const modal=document.createElement("div");modal.className="request-modal";
-      modal.innerHTML=`<form class="request-modal-card"><p class="eyebrow">${branchPublish?"Branch contribution":"Approval required"}</p><h2>Describe your ${branchPublish?"update":"requested change"}</h2><p class="muted">${branchPublish?"This publishes directly inside your governed section and earns one contribution coin.":"A main admin will review this draft before anything reaches the website."}</p><textarea required maxlength="500" placeholder="Example: Replace Unit 2 master notes and add a lecture link."></textarea><div class="management-actions"><button class="primary" type="submit">${branchPublish?"Publish contribution":"Send for approval"}</button><button class="quiet-button" type="button" data-cancel>Keep editing</button></div></form>`;
+      modal.innerHTML=`<form class="request-modal-card"><p class="eyebrow">${branchDraft?"Branch contribution":"Approval required"}</p><h2>Describe your ${branchDraft?"draft":"requested change"}</h2><p class="muted">${branchDraft?"This saves privately for a main admin to deploy later. It does not use a deployment credit.":"A main admin will review this draft before anything reaches the website."}</p><textarea required maxlength="500" placeholder="Example: Replace Unit 2 master notes and add a lecture link."></textarea><div class="management-actions"><button class="primary" type="submit">${branchDraft?"Save contribution draft":"Send for approval"}</button><button class="quiet-button" type="button" data-cancel>Keep editing</button></div></form>`;
       document.body.appendChild(modal);const finish=(value)=>{modal.remove();resolve(value);};
       $("[data-cancel]",modal).addEventListener("click",()=>finish(null));
       $("form",modal).addEventListener("submit",(event)=>{event.preventDefault();finish($("textarea",modal).value.trim());});
@@ -230,15 +238,16 @@
     finally{state.saving=false;saveButton.textContent="Submit request";saveButton.disabled=!state.dirty;}
   }
 
-  async function publishBranchChange() {
+  async function saveBranchDraft() {
     if(state.saving)return;const scoped=scopedProposal();if(!scoped)return toast("Choose a governed branch and semester first.");
     const summary=await askChangeSummary(true);if(!summary)return;
-    state.saving=true;saveButton.disabled=true;saveButton.textContent="Publishing…";status.textContent="Validating scope";
+    state.saving=true;saveButton.disabled=true;saveButton.textContent="Saving…";status.textContent="Validating scope";
     try{
-      await request("/api/admin/scoped-save",{method:"POST",body:JSON.stringify({scope:{branchId:scoped.branch.id,semesterId:scoped.semester.id},summary,proposal:scoped.proposal})});
-      state.dirty=false;status.textContent="Deploying…";toast("Contribution published. You earned 1 coin.");await loadDashboard();
-    }catch(error){status.textContent="Publish failed";toast(error.message);}
-    finally{state.saving=false;saveButton.textContent="Publish update";saveButton.disabled=!state.dirty;}
+      const result=await request("/api/admin/scoped-save",{method:"POST",body:JSON.stringify({scope:{branchId:scoped.branch.id,semesterId:scoped.semester.id},summary,proposal:scoped.proposal})});
+      if(!result.draft||result.deploying)throw new Error("Safety check failed: contribution was not stored as a private draft.");
+      state.dirty=false;status.textContent="Draft saved · awaiting main admin";toast("Contribution saved as a draft. Nothing was deployed. You earned 1 coin.");await loadDashboard();
+    }catch(error){status.textContent="Save failed";toast(error.message);}
+    finally{state.saving=false;saveButton.textContent="Save contribution draft";saveButton.disabled=!state.dirty;}
   }
 
   function renderHistory() {
@@ -252,7 +261,7 @@
     const editable=editableSection();saveButton.hidden=!editable;publishButton.hidden=!editable||state.role!=="main";status.hidden=!editable;
     saveButton.disabled = !state.dirty;
     publishButton.disabled = state.role!=="main"||state.dirty||!state.drafts[target()];
-    status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : (state.role === "branch" ? "Ready to publish" : "Unsaved")) : (state.role === "regular" ? "No pending draft" : (state.role === "branch" ? `${state.coins} coins` : (state.drafts[target()] ? "Draft saved · not deployed" : "Live version"))); renderHistory();
+    status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : "Unsaved") : (state.role === "regular" ? "No pending draft" : (state.role === "branch" ? `${state.coins} coins · drafts need main-admin deployment` : (state.drafts[target()] ? "Draft saved · not deployed" : "Live version"))); renderHistory();
     if (state.section === "resources") renderResources();
     else if (state.section === "syllabus") renderSyllabus();
     else if (state.section === "meta") renderMeta();
@@ -518,7 +527,7 @@
 
   async function runManagementAction(body, button) {
     const old=button&&button.textContent;if(button){button.disabled=true;button.textContent="Working…";}
-    try{const result=await request("/api/admin/management",{method:"POST",body:JSON.stringify(body)});toast(result.deploying?"Approved. The website update is deploying.":"Access settings updated.");state.management=await request("/api/admin/management",{method:"GET"});state.community=state.management.leaderboard||state.community;renderManagement();return result;}
+    try{const result=await request("/api/admin/management",{method:"POST",body:JSON.stringify(body)});if(result.draft&&result.target)state.drafts[result.target]={updatedAt:result.updatedAt,updatedBy:result.updatedBy};toast(result.draft?"Approved and saved as a private draft. Nothing was deployed.":(result.promoted?"Promoted to main admin. They must sign out and sign in again.":"Access settings updated."));state.management=await request("/api/admin/management",{method:"GET"});state.community=state.management.leaderboard||state.community;renderManagement();return result;}
     catch(error){toast(error.message);if(button){button.disabled=false;button.textContent=old;}return null;}
   }
 
@@ -529,12 +538,13 @@
     const pendingChanges=data.changeRequests.filter(item=>item.status==="pending"||item.status==="processing");
     const branchNames=new Map(data.permissionOptions.map(branch=>[branch.id,branch]));
     const scopeName=(scope)=>{const branch=branchNames.get(scope.branchId);const semester=branch&&branch.semesters.find(item=>item.id===scope.semesterId);return `${branch?branch.name:scope.branchId} · ${semester?semester.name:scope.semesterId}`;};
-    editor.innerHTML=`<div class="section-intro"><div><h2>Access & approvals</h2><p class="muted">Control regular admins and approve every requested website change.</p></div><span class="role-pill">Main admins only</span></div><div class="access-grid">
-      <section class="panel data-group"><div class="data-group-head"><h2>Main admins</h2><span class="status-pill active">Full access</span></div>${data.mainAdmins.map(admin=>`<div class="entry-card admin-person-row"><img src="${escape(admin.photoUrl||"/favicon.svg")}" alt="" width="44" height="44"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>Everything</span></div></div></div>`).join("")}</section>
+    editor.innerHTML=`<div class="section-intro"><div><h2>Access & approvals</h2><p class="muted">Approve changes into a private draft. Only the separate Deploy button publishes them.</p></div><span class="role-pill">Main admins only</span></div><div class="access-grid">
+      ${state.drafts.resources?`<section class="panel data-group wide-panel"><div class="entry-head"><div><h2>Resource draft ready</h2><p class="muted">Saved privately. No GitHub commit or Netlify deployment has happened.</p></div><button class="primary" data-deploy-resource-draft>Deploy saved resource draft</button></div></section>`:""}
+      <section class="panel data-group"><div class="data-group-head"><h2>Main admins</h2><span class="status-pill active">Full access</span></div>${data.mainAdmins.map(admin=>`<div class="entry-card admin-person-row"><img src="${escape(admin.photoUrl||"/favicon.svg")}" alt="" width="44" height="44"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>Everything</span>${admin.promoted?`<span>Promoted by ${escape(admin.promotedBy||"main admin")}</span>`:""}</div></div></div>`).join("")}</section>
       <section class="panel data-group"><div class="data-group-head"><h2>Pending registrations</h2><span class="status-pill ${pendingRegistrations.length?"pending":"active"}">${pendingRegistrations.length}</span></div>${pendingRegistrations.length?pendingRegistrations.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.name)}</strong><div class="person-meta"><span>${escape(item.branch)}</span><span>${escape(item.rollNumber)}</span><span>${escape(item.email)}</span></div></div><span class="status-pill pending">Pending</span></div><details><summary class="mini-button">Choose permissions</summary>${permissionChoices([],`registration:${item.id}`)}</details><div class="management-actions"><button class="primary" data-approve-registration="${escape(item.id)}">Approve account</button><button class="danger-button" data-reject-registration="${escape(item.id)}">Reject</button></div></div>`).join(""):'<p class="muted">No registration requests waiting.</p>'}</section>
-      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Contributor admins</h2><span class="role-pill">${data.regularAdmins.length} accounts</span></div>${data.regularAdmins.length?data.regularAdmins.map(admin=>`<div class="entry-card"><div class="entry-head"><div class="admin-person-row"><img src="${escape(admin.photoUrl||"/favicon.svg")}" alt="" width="52" height="52"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>${escape(admin.branch)}</span><span>${escape(admin.rollNumber)}</span><span>${escape(admin.email)}</span><span>◉ ${admin.coins||0} coins</span></div></div></div><span class="status-pill ${admin.active!==false?"active":"disabled"}">${admin.active===false?"Disabled":(admin.role==="branch"?"Branch admin":"Regular admin")}</span></div><details><summary class="mini-button">Manage governed sections (${(admin.permissions||[]).length})</summary>${permissionChoices(admin.permissions,`regular:${admin.id}`)}<button class="primary" data-save-permissions="${escape(admin.id)}">Save permissions</button></details><div class="management-actions"><button class="quiet-button" data-reset-password="${escape(admin.id)}">Reset password</button><button class="quiet-button" data-contributor-role="${escape(admin.id)}" data-role="${admin.role==="branch"?"regular":"branch"}">${admin.role==="branch"?"Return to regular admin":"Promote to branch admin"}</button><button class="${admin.active!==false?"danger-button":"quiet-button"}" data-toggle-admin="${escape(admin.id)}" data-active="${admin.active===false}">${admin.active!==false?"Disable account":"Enable account"}</button></div></div>`).join(""):'<p class="muted">Approved contributor admins will appear here.</p>'}</section>
-      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Change requests</h2><span class="status-pill ${pendingChanges.length?"pending":"active"}">${pendingChanges.length} pending</span></div>${pendingChanges.length?pendingChanges.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${escape(new Date(item.createdAt).toLocaleString())}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div><div class="proposal-preview">Subjects affected: ${escape((item.proposal.unitCollections||[]).map(subject=>`${subject.name} (${(subject.units||[]).length} items)`).join(", ")||"None")}</div>${item.status==="pending"?`<div class="management-actions"><button class="primary" data-approve-change="${escape(item.id)}">Approve & deploy</button><button class="danger-button" data-reject-change="${escape(item.id)}">Reject</button></div>`:""}</div>`).join(""):'<p class="muted">No resource changes are waiting for approval.</p>'}</section>
-      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Recent contributions</h2></div>${data.changeRequests.filter(item=>["approved","rejected","published"].includes(item.status)).slice(0,10).map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${item.status==="published"?"Published by branch admin":`Reviewed by ${escape(item.reviewedBy||"main admin")}`}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div></div>`).join("")||'<p class="muted">No completed contributions yet.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Contributor admins</h2><span class="role-pill">${data.regularAdmins.length} accounts</span></div>${data.regularAdmins.length?data.regularAdmins.map(admin=>`<div class="entry-card"><div class="entry-head"><div class="admin-person-row"><img src="${escape(admin.photoUrl||"/favicon.svg")}" alt="" width="52" height="52"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>${escape(admin.branch)}</span><span>${escape(admin.rollNumber)}</span><span>${escape(admin.email)}</span><span>◉ ${admin.coins||0} coins</span></div></div></div><span class="status-pill ${admin.active!==false?"active":"disabled"}">${admin.active===false?"Disabled":(admin.role==="branch"?"Branch admin":"Regular admin")}</span></div><details><summary class="mini-button">Manage governed sections (${(admin.permissions||[]).length})</summary>${permissionChoices(admin.permissions,`regular:${admin.id}`)}<button class="primary" data-save-permissions="${escape(admin.id)}">Save permissions</button></details><div class="management-actions"><button class="quiet-button" data-reset-password="${escape(admin.id)}">Reset password</button><button class="quiet-button" data-contributor-role="${escape(admin.id)}" data-role="${admin.role==="branch"?"regular":"branch"}">${admin.role==="branch"?"Return to regular admin":"Promote to branch admin"}</button><button class="quiet-button" data-promote-main="${escape(admin.id)}" ${admin.active===false?"disabled":""}>Make main admin</button><button class="${admin.active!==false?"danger-button":"quiet-button"}" data-toggle-admin="${escape(admin.id)}" data-active="${admin.active===false}">${admin.active!==false?"Disable account":"Enable account"}</button></div></div>`).join(""):'<p class="muted">Approved contributor admins will appear here.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Change requests</h2><span class="status-pill ${pendingChanges.length?"pending":"active"}">${pendingChanges.length} pending</span></div>${pendingChanges.length?pendingChanges.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${escape(new Date(item.createdAt).toLocaleString())}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div><div class="proposal-preview">Subjects affected: ${escape((item.proposal.unitCollections||[]).map(subject=>`${subject.name} (${(subject.units||[]).length} items)`).join(", ")||"None")}</div>${item.status==="pending"?`<div class="management-actions"><button class="primary" data-approve-change="${escape(item.id)}">Approve to draft</button><button class="danger-button" data-reject-change="${escape(item.id)}">Reject</button></div>`:""}</div>`).join(""):'<p class="muted">No resource changes are waiting for approval.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Recent contributions</h2></div>${data.changeRequests.filter(item=>["approved","approved-draft","drafted","rejected","published"].includes(item.status)).slice(0,10).map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${item.status==="published"?"Deployed by main admin":(item.status==="approved-draft"||item.status==="drafted"?"Saved privately · awaiting deployment":`Reviewed by ${escape(item.reviewedBy||"main admin")}`)}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div></div>`).join("")||'<p class="muted">No completed contributions yet.</p>'}</section>
     </div>`;
     $$('[data-approve-registration]').forEach(button=>button.addEventListener("click",async()=>{const item=data.registrations.find(entry=>entry.id===button.dataset.approveRegistration);const username=prompt("Choose a username for this regular admin",slug(`${item.name}-${item.rollNumber}`));if(!username)return;const password=prompt("Set a temporary password (minimum 8 characters). Share it with the applicant privately.");if(!password)return;const result=await runManagementAction({action:"approve-registration",registrationId:item.id,username,password,permissions:selectedPermissions(`registration:${item.id}`)},button);if(result&&result.approved)alert(`Account approved for ${item.name}.\n\nUsername: ${username}\nTemporary password: ${password}\n\nCopy these now and share them privately. The password is not shown again.`);}));
     $$('[data-reject-registration]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Reject this registration request?"))runManagementAction({action:"reject-registration",registrationId:button.dataset.rejectRegistration},button);}));
@@ -542,7 +552,9 @@
     $$('[data-toggle-admin]').forEach(button=>button.addEventListener("click",()=>runManagementAction({action:"set-regular-status",adminId:button.dataset.toggleAdmin,active:button.dataset.active==="true"},button)));
     $$('[data-reset-password]').forEach(button=>button.addEventListener("click",()=>{const password=prompt("Enter a new temporary password (minimum 8 characters)");if(password)runManagementAction({action:"reset-password",adminId:button.dataset.resetPassword,password},button);}));
     $$('[data-contributor-role]').forEach(button=>button.addEventListener("click",()=>{const role=button.dataset.role;const verb=role==="branch"?"promote this contributor to Branch Admin":"return this contributor to Regular Admin";if(confirm(`Are you sure you want to ${verb}?`))runManagementAction({action:"set-contributor-role",adminId:button.dataset.contributorRole,role},button);}));
-    $$('[data-approve-change]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Approve this request and deploy it to the public website?"))runManagementAction({action:"approve-change",requestId:button.dataset.approveChange},button);}));
+    $$('[data-promote-main]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Make this person a main admin? They will receive full access to all content, users, approvals and deployments."))runManagementAction({action:"promote-main-admin",adminId:button.dataset.promoteMain},button);}));
+    $$('[data-deploy-resource-draft]').forEach(button=>button.addEventListener("click",async()=>{const deployed=await deploySavedDraft("resources","Resources");if(deployed){state.management=null;await loadDashboard();}}));
+    $$('[data-approve-change]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Approve this request into the private resource draft? Nothing will deploy until a main admin clicks Deploy."))runManagementAction({action:"approve-change",requestId:button.dataset.approveChange},button);}));
     $$('[data-reject-change]').forEach(button=>button.addEventListener("click",()=>{const note=prompt("Optional reason for rejection","");if(note!==null)runManagementAction({action:"reject-change",requestId:button.dataset.rejectChange,note},button);}));
   }
 

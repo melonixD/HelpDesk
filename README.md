@@ -1,4 +1,4 @@
-# HelpDesk V18 · Drafts, selective fill & controlled deploys
+# HelpDesk V18.2 · Draft-only saves & explicit deploys
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -36,7 +36,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Secure 8-hour signed sessions, CSRF checks, bcrypt login and login rate limiting
 - Netlify Blob drafts with a separate GitHub-backed **Deploy to website** action
 - Chunked Netlify Blob uploads for PDFs (20 MB) and profile images (5 MB)
-- Three full-access main-admin accounts configured with bcrypt hashes
+- Four full-access main-admin accounts configured with bcrypt hashes
 - Public regular-admin applications with main-admin approval
 - Branch + semester permission controls for every regular admin
 - Approval-only resource drafts: regular admins cannot publish directly
@@ -44,7 +44,8 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Contributor leaderboard visible to regular and branch admins
 - One contribution coin for every main-admin-approved request
 - Main-admin-controlled promotion from Regular Admin to Branch Admin
-- Branch admins can directly publish resource attributes inside their governed branch + semester sections
+- Main admins can promote approved Regular or Branch Admins to full Main Admin access
+- Branch admins can save scoped contribution drafts inside governed sections; only a main admin can deploy them
 - Automatic scope isolation so shared subjects are not unintentionally changed in other branches
 - Uploadable profile pictures for main, branch and regular admins
 - Automatic “Provided by …” attribution on approved and branch-published resource updates
@@ -92,8 +93,8 @@ The admin route is `/admin`. It is also revealed in the hamburger menu after tap
 
 There are three roles:
 
-- **Main admin:** can edit and publish every website section, approve applicants, assign or remove regular-admin permissions, reset regular-admin passwords, disable accounts, and approve or reject change requests.
-- **Branch admin:** sees only assigned branch + semester combinations and can directly publish edits to existing resource attributes there. Creating or removing structural subjects/units still requires a main-admin-approved request.
+- **Main admin:** can edit and publish every website section, approve applicants, assign or remove regular-admin permissions, reset regular-admin passwords, disable accounts, approve or reject change requests, and promote approved contributors to Main Admin.
+- **Branch admin:** sees only assigned branch + semester combinations and can save edits to existing resource attributes as private contribution drafts. A main admin must explicitly deploy the combined resource draft. Creating or removing structural subjects/units still requires a main-admin-approved request.
 - **Regular admin:** sees only assigned branch + semester combinations. They can prepare a resource draft and submit it for approval, but cannot save directly to GitHub or publish anything.
 
 The configured main-admin usernames are `Priyanshu`, `Akshat`, `racoon67` and `Utkarsh`. Passwords are never stored in source code; only their one-way bcrypt hashes are configured through `MAIN_ADMINS_JSON`.
@@ -109,7 +110,9 @@ Main admins can edit:
 Main-admin edits use two deliberate steps:
 
 1. **Save draft** validates the content and stores it privately in Netlify Blobs. It does not touch GitHub, start a Netlify deployment, or consume a deployment credit. There is no automatic save or automatic deployment.
-2. **Deploy to website** publishes the saved draft to GitHub. This is the only main-admin content action that starts a Netlify deployment and consumes a deployment credit.
+2. **Deploy to website** publishes the saved draft to GitHub. This is the only content action in HelpDesk that starts a Netlify deployment and consumes a deployment credit.
+
+The same rule applies to contributor work: approving a Regular Admin request saves it into the private resource draft, and a Branch Admin's contribution also saves into that draft. Neither action touches GitHub. A main admin must click **Deploy saved resource draft** or open Resources and click **Deploy to website**.
 
 In Resources, **Fill in selected…** lets a main admin reuse the currently selected subject in explicitly checked branch + semester sections. Unchecked sections are never changed. Save the resulting work as a draft, review it, and deploy it only when ready.
 
@@ -129,7 +132,7 @@ GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
 GITHUB_BRANCH=main
 ```
 
-Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V18.
+Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V18.2.
 
 Uploaded assets, unpublished main-admin drafts and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local drafts and registration data use ignored files under `data/`.
 
@@ -141,14 +144,17 @@ Uploaded assets, unpublished main-admin drafts and the private access-control da
 4. The main admin shares those credentials privately with the applicant. This build does not email credentials automatically.
 5. The regular admin signs in and sees only the resource sections assigned to them.
 6. They edit an assigned section and choose **Submit request** with a short summary.
-7. A main admin reviews the request in **Access & approvals**. Only **Approve & deploy** commits the validated resource data to GitHub and triggers Netlify.
+7. A main admin reviews the request in **Access & approvals** and selects **Approve to draft**. This validates the change and adds it to the private resource draft without deploying.
 8. Approval adds one coin to the contributor and stamps changed resources with **Provided by _name_**.
+9. When the batch is ready, a main admin clicks **Deploy saved resource draft**. That explicit action creates the GitHub commit and triggers Netlify once.
 
 All active contributors can open **Leaderboard** to see names, branches, governed sections, roles, approved contributions and coins. Private roll numbers and emails are never shown there. The highest-scoring contributor is highlighted, and a main admin can promote any eligible contributor to Branch Admin from **Access & approvals**.
 
+Any main admin can also choose **Make main admin** on an active approved contributor. The promoted person keeps the same username and password, then signs out and signs in again to receive full Main Admin access. Promotion is saved privately in Netlify Blobs, so it does not commit to GitHub, trigger a deployment, or spend a deployment credit. A promoted main admin can also promote other eligible contributors.
+
 Main admins can change permissions later, promote or demote branch admins, disable or re-enable an account, and set a replacement temporary password. Contributors can upload their own profile picture from **My profile**. Regular and branch admins never receive access to site details, syllabus administration, creators, placements, notices or access management.
 
-Branch-admin direct updates are limited to existing resource attributes. If a subject is shared by several branches, HelpDesk creates a scoped copy for the governed branch + semester so unrelated branches stay unchanged. Each successful branch-admin publication earns one coin and receives contributor attribution.
+Branch-admin updates are limited to existing resource attributes. If a subject is shared by several branches, HelpDesk creates a scoped copy for the governed branch + semester so unrelated branches stay unchanged. Each successfully saved contribution draft earns one coin and receives contributor attribution; publication waits for a main admin's explicit deploy.
 
 ## Unlimited Practice
 
@@ -223,7 +229,7 @@ npm run build
 - `POST /api/admin/register` (public application form)
 - `GET|POST /api/admin/management` (main admins only)
 - `POST /api/admin/change-request` (contributor approval requests)
-- `POST /api/admin/scoped-save` (branch admins inside assigned sections)
+- `POST /api/admin/scoped-save` (branch-admin draft save inside assigned sections; never deploys)
 - `POST /api/admin/profile` (current admin profile picture)
 
 ## Structure

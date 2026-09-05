@@ -208,7 +208,12 @@ async function authenticate(event) {
   } else {
     const regular = await findRegularAdmin(requestedUsername);
     if (regular && await bcrypt.compare(body.password, regular.passwordHash).catch(() => false)) {
-      identity = { id: regular.id, username: regular.username, name: regular.name, role: regular.role === "branch" ? "branch" : "regular" };
+      identity = {
+        id: regular.id,
+        username: regular.username,
+        name: regular.name,
+        role: regular.role === "main" ? "main" : (regular.role === "branch" ? "branch" : "regular"),
+      };
     } else if (!mainAdmin && mainAdmins[0]) {
       await bcrypt.compare(body.password, mainAdmins[0].passwordHash).catch(() => false);
     }
