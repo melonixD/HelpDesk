@@ -962,7 +962,7 @@
       "name": "Basic Electrical Engineering (BEE)",
       "description": "Semester course resources for Basic Electrical Engineering.",
       "accent": "yellow",
-      "lectureUrl": "https://youtube.com/playlist?list=PL9RcWoqXmzaLTYUdnzKhF4bYug3GjGcEc&si=mnafEqcLag6kAvD4",
+      "lectureUrl": null,
       "notesUrl": null,
       "units": [
         {
@@ -1103,7 +1103,7 @@
       "name": "Programming and Problem Solving",
       "description": "Programming fundamentals and introductory computer science resources.",
       "accent": "rose",
-      "lectureUrl": "https://www.youtube.com/playlist?list=PLRLB5WCqU54U-WhYiGp3bi7-VX8yHxkhQ",
+      "lectureUrl": null,
       "notesUrl": null,
       "units": [
         {
