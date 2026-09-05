@@ -864,17 +864,7 @@
       "description": "Faculty material, notes, exam papers and recommended reading.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": [
-        {
-          "number": 1,
-          "title": "Book 1",
-          "lectureUrl": "",
-          "handwrittenNotesUrl": null,
-          "masterNotesUrl": null,
-          "pyqUrl": null,
-          "practiceKey": null
-        }
-      ]
+      "units": []
     },
     {
       "id": "biochemical-core",
@@ -936,7 +926,7 @@
       "id": "maths-1",
       "name": "Engineering Mathematics 1",
       "description": "Semester course resources for Engineering Mathematics 1.",
-      "accent": "violet",
+      "accent": "viole",
       "lectureUrl": null,
       "notesUrl": null,
       "units": [
