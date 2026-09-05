@@ -1,6 +1,6 @@
-# HelpDesk V15 · Netlify edition
+# HelpDesk V17 · Scholarships & scheduled updates
 
-HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, syllabus library, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API now runs as Netlify Functions, so the API key never reaches the browser.
+HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
 ## Included
 
@@ -22,14 +22,16 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Engineering and Technology syllabus folders, initially collapsed
 - Unlimited Practice powered by real PYQ text and Gemini
 - SGPA/CGPA calculator, focus timer and study list
-- Separate Placements and Notice Board entries in the hamburger menu
+- Separate Placements, Notice Board and Scholarships entries in the hamburger menu
 - Official year-wise placement figures and source reports
-- Automatically refreshed HBTU announcements with a resilient saved fallback
+- HBTU announcements refreshed automatically every four hours with a resilient saved fallback
+- Daily official scholarship feed with the UP Government Scholarship pinned first
+- Scholarship updates merged from HBTU, the Ministry of Education and the National Scholarship Portal
 - Akshat Shukla and Priyanshu Dixit help cards and WhatsApp contacts
 - Responsive Android/mobile layout, animations, light mode and dark mode
 - Netlify Functions, clean `/api/*` routes, security headers and SPA routing
 - Static resource fallback if the resource API is temporarily unavailable
-- Private responsive admin dashboard for resources, site details, creator cards, placements and notices
+- Private responsive admin dashboard for resources, site details, creator cards, placements, notices and the saved scholarship directory
 - Dynamic branch → semester → subject → unit management with add, reorder and cascade-delete controls
 - Secure 8-hour signed sessions, CSRF checks, bcrypt login and login rate limiting
 - GitHub-backed content saves that automatically trigger the connected Netlify deployment
@@ -39,6 +41,14 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Branch + semester permission controls for every regular admin
 - Approval-only resource drafts: regular admins cannot publish directly
 - Private Netlify Blob storage for applications, accounts, permissions and change requests
+- Contributor leaderboard visible to regular and branch admins
+- One contribution coin for every main-admin-approved request
+- Main-admin-controlled promotion from Regular Admin to Branch Admin
+- Branch admins can directly publish resource attributes inside their governed branch + semester sections
+- Automatic scope isolation so shared subjects are not unintentionally changed in other branches
+- Uploadable profile pictures for main, branch and regular admins
+- Automatic “Provided by …” attribution on approved and branch-published resource updates
+- Renamed, simplified **Syllabus Citadel** public section
 
 ## Deploy to Netlify from GitHub (recommended)
 
@@ -80,9 +90,10 @@ This project contains several PDFs and may be too large for a reliable browser d
 
 The admin route is `/admin`. It is also revealed in the hamburger menu after tapping the small version label five times within three seconds, or holding it for about one second. The menu shows Admin and Log out only while a valid session exists.
 
-There are two roles:
+There are three roles:
 
 - **Main admin:** can edit and publish every website section, approve applicants, assign or remove regular-admin permissions, reset regular-admin passwords, disable accounts, and approve or reject change requests.
+- **Branch admin:** sees only assigned branch + semester combinations and can directly publish edits to existing resource attributes there. Creating or removing structural subjects/units still requires a main-admin-approved request.
 - **Regular admin:** sees only assigned branch + semester combinations. They can prepare a resource draft and submit it for approval, but cannot save directly to GitHub or publish anything.
 
 The configured main-admin usernames are `Priyanshu`, `Akshat` and `racoon67`. Passwords are never stored in source code; only their one-way bcrypt hashes are configured through `MAIN_ADMINS_JSON`.
@@ -113,7 +124,7 @@ GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
 GITHUB_BRANCH=main
 ```
 
-Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the three main accounts in V15.
+Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the three main accounts in V17.
 
 Uploaded assets and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local registration and approval data is placed in the ignored `data/admin-state.local.json` file.
 
@@ -126,8 +137,13 @@ Uploaded assets and the private access-control database use Netlify Blobs automa
 5. The regular admin signs in and sees only the resource sections assigned to them.
 6. They edit an assigned section and choose **Submit request** with a short summary.
 7. A main admin reviews the request in **Access & approvals**. Only **Approve & deploy** commits the validated resource data to GitHub and triggers Netlify.
+8. Approval adds one coin to the contributor and stamps changed resources with **Provided by _name_**.
 
-Main admins can change permissions later, disable or re-enable an account, and set a replacement temporary password. Regular admins never receive access to site details, syllabus administration, creators, placements, notices, access management or direct GitHub saves.
+All active contributors can open **Leaderboard** to see names, branches, governed sections, roles, approved contributions and coins. Private roll numbers and emails are never shown there. The highest-scoring contributor is highlighted, and a main admin can promote any eligible contributor to Branch Admin from **Access & approvals**.
+
+Main admins can change permissions later, promote or demote branch admins, disable or re-enable an account, and set a replacement temporary password. Contributors can upload their own profile picture from **My profile**. Regular and branch admins never receive access to site details, syllabus administration, creators, placements, notices or access management.
+
+Branch-admin direct updates are limited to existing resource attributes. If a subject is shared by several branches, HelpDesk creates a scoped copy for the governed branch + semester so unrelated branches stay unchanged. Each successful branch-admin publication earns one coin and receives contributor attribution.
 
 ## Unlimited Practice
 
@@ -143,11 +159,11 @@ Practice Mode takes a unit's internal `practiceKey`, finds its extracted real qu
 
 The UI still works without the Gemini key; only question generation shows a setup message. Google API quotas are separate from Netlify traffic limits, so high visitor counts may require a paid Gemini quota.
 
-## Placements and Notice Board
+## Placements, Notice Board and Scholarships
 
-The hamburger menu has separate **Placements** and **Notice Board** entries. Placements opens directly to figures and report links published by HBTU. Notice Board opens directly to the latest announcements and calls `GET /api/notices`, which reads the Circulars & Announcements section of the official HBTU homepage.
+The hamburger menu has separate **Placements**, **Notice Board** and **Scholarships** entries. Placements opens directly to figures and report links published by HBTU. Notice Board opens the latest announcements from `GET /api/notices`. Scholarships opens a dedicated funding directory from `GET /api/scholarships`, with the Uttar Pradesh Government Scholarship & Fee Reimbursement portal permanently pinned first.
 
-Netlify's durable CDN cache holds the notice response for 30 minutes and may serve a stale copy for up to six hours while refreshing. That avoids contacting HBTU once per visitor. If HBTU is unavailable or changes its page structure, the function returns the bundled saved feed instead of leaving the section empty. No extra API key or environment variable is required.
+The `refresh-notices` scheduled function runs every four hours. The public notice endpoint is cached for four hours, so visitors do not contact HBTU individually. The `refresh-scholarships` function runs daily at 18:30 UTC (midnight IST) and merges official scholarship announcements from HBTU, the Ministry of Education and the National Scholarship Portal. Both feeds use Netlify Blobs and fall back to bundled official links if a source is unavailable or changes its page structure. No extra API key or environment variable is required. Scheduled functions only run automatically on published production deploys.
 
 ## Run locally
 
@@ -196,11 +212,14 @@ npm run build
 - `GET /api/resources?branch=mechanical&semester=semester-2`
 - `POST /api/practice/generate` with body `{ "pyqUrl": "/resources/pyqs/.../Unit_3_PYQs.pdf" }`
 - `GET /api/notices`
+- `GET /api/scholarships`
 - `POST /api/admin/login`, `GET /api/admin/session`, `POST /api/admin/logout`
 - `GET /api/admin/data`, `POST /api/admin/save`, `POST /api/admin/upload`
 - `POST /api/admin/register` (public application form)
 - `GET|POST /api/admin/management` (main admins only)
-- `POST /api/admin/change-request` (regular admins only)
+- `POST /api/admin/change-request` (contributor approval requests)
+- `POST /api/admin/scoped-save` (branch admins inside assigned sections)
+- `POST /api/admin/profile` (current admin profile picture)
 
 ## Structure
 
@@ -211,17 +230,23 @@ helpdesk/
 │   ├── pyq-bank.json
 │   ├── pyq-overrides.json
 │   ├── placements.json
-│   └── notices-fallback.json
+│   ├── notices-fallback.json
+│   └── scholarships-fallback.json
 ├── netlify/
 │   ├── functions/
 │   │   ├── health.js
 │   │   ├── resources.js
 │   │   ├── practice-generate.js
 │   │   ├── notices.js
+│   │   ├── scholarships.js
+│   │   ├── refresh-notices.js
+│   │   ├── refresh-scholarships.js
 │   │   └── admin-*.js
 │   └── lib/
 │       ├── helpdesk-api.js
 │       ├── hbtu-feed.js
+│       ├── scholarship-feed.js
+│       ├── feed-cache.js
 │       ├── admin-auth.js
 │       ├── admin-state.js
 │       ├── admin-control.js
@@ -234,6 +259,7 @@ helpdesk/
 │   ├── resources.json
 │   ├── placements.json
 │   ├── notices-fallback.json
+│   ├── scholarships-fallback.json
 │   ├── admin/
 │   ├── images/
 │   └── resources/pyqs/

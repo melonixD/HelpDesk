@@ -102,7 +102,7 @@ function verifySession(event) {
   if (!constantTimeEqual(signature, sign(encoded, signingSecret))) return null;
   try {
     const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
-    if (!payload || payload.exp <= Math.floor(Date.now() / 1000) || !payload.sub || !payload.csrf || !["main", "regular"].includes(payload.role)) return null;
+    if (!payload || payload.exp <= Math.floor(Date.now() / 1000) || !payload.sub || !payload.csrf || !["main", "regular", "branch"].includes(payload.role)) return null;
     return payload;
   } catch {
     return null;
@@ -208,7 +208,7 @@ async function authenticate(event) {
   } else {
     const regular = await findRegularAdmin(requestedUsername);
     if (regular && await bcrypt.compare(body.password, regular.passwordHash).catch(() => false)) {
-      identity = { id: regular.id, username: regular.username, name: regular.name, role: "regular" };
+      identity = { id: regular.id, username: regular.username, name: regular.name, role: regular.role === "branch" ? "branch" : "regular" };
     } else if (!mainAdmin && mainAdmins[0]) {
       await bcrypt.compare(body.password, mainAdmins[0].passwordHash).catch(() => false);
     }
@@ -241,7 +241,12 @@ function configuredMainAdmins() {
       if (!admin || typeof admin.username !== "string" || typeof admin.passwordHash !== "string" || !admin.username.trim() || !admin.passwordHash.startsWith("$2")) {
         throw new Error("Every main admin needs a username and bcrypt passwordHash.");
       }
-      admins.push({ username: admin.username.trim(), name: String(admin.name || admin.username).trim(), passwordHash: admin.passwordHash });
+      admins.push({
+        username: admin.username.trim(),
+        name: String(admin.name || admin.username).trim(),
+        passwordHash: admin.passwordHash,
+        photoUrl: typeof admin.photoUrl === "string" ? admin.photoUrl.trim() : "",
+      });
     });
     if (new Set(admins.map((admin) => admin.username.toLowerCase())).size !== admins.length) {
       throw new Error("MAIN_ADMINS_JSON contains a duplicate username.");
@@ -256,7 +261,7 @@ function configuredMainAdmins() {
 }
 
 function mainAdminDirectory() {
-  return configuredMainAdmins().map((admin) => ({ username: admin.username, name: admin.name, role: "main" }));
+  return configuredMainAdmins().map((admin) => ({ username: admin.username, name: admin.name, role: "main", photoUrl: admin.photoUrl || "" }));
 }
 
 module.exports = {

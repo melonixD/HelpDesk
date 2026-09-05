@@ -53,6 +53,7 @@ let timerInterval = null;
 let resourceDataPromise = null;
 let placementDataPromise = null;
 let noticeDataPromise = null;
+let scholarshipDataPromise = null;
 const placementHubState = { tab: "stats" };
 
 function readStorage(key, fallback) {
@@ -86,7 +87,7 @@ function cacheElements() {
     "theme-toggle", "menu-toggle", "mobile-menu", "menu-backdrop", "available-count", "subject-count", "branch-count",
     "branch-search", "branch-list", "semester-pane", "semester-pane-branch", "semester-list", "subject-pane", "subject-pane-semester",
     "subject-list", "content-pane", "path-branch", "path-semester", "path-subject", "subject-header", "subject-code",
-    "course-name", "course-description", "course-status", "subject-syllabus",
+    "course-name", "course-description", "course-contributor", "course-status", "subject-syllabus",
     "unit-list", "syllabus-list", "today-label", "task-form", "task-input", "task-list",
     "task-empty", "timer-status", "timer-ring", "timer-value", "timer-toggle", "timer-reset",
     "practice-open", "practice-hub", "practice-hub-close", "practice-back", "practice-hub-heading",
@@ -94,6 +95,7 @@ function cacheElements() {
     "calc-open", "calc-hub", "calc-hub-close", "calc-hub-body", "calc-tab-semester", "calc-tab-cgpa",
     "placements-open", "notices-open", "placement-hub", "placement-hub-close", "placement-hub-heading", "placement-hub-body",
     "placement-tab-stats", "placement-tab-notices", "notice-tab-count",
+    "scholarships-open", "scholarship-hub", "scholarship-hub-close", "scholarship-hub-heading", "scholarship-hub-body",
     "contact-grid", "hero-copy", "hero-credit", "hero-institution", "brand-name",
     "admin-reveal-trigger", "admin-menu-link", "admin-logout",
   ].forEach((id) => { elements[id] = document.getElementById(id); });
@@ -109,6 +111,7 @@ async function initialise() {
   initialisePractice();
   initialiseCalculator();
   initialisePlacements();
+  initialiseScholarships();
   bindBrowserControls();
 
   try {
@@ -450,6 +453,7 @@ function renderBrowser(changeType) {
     elements["course-description"].textContent = semester
       ? "Subjects can be added to this semester from the admin dashboard."
       : "No semester has been added to this branch yet.";
+    elements["course-contributor"].hidden = true;
     elements["course-status"].textContent = "Empty";
     renderSubjectSyllabus(branch, null);
     elements["unit-list"].innerHTML = '<div class="empty-state"><h3>Nothing here yet</h3><p>This semester is ready for future subjects.</p></div>';
@@ -472,6 +476,8 @@ function renderBrowser(changeType) {
   elements["subject-code"].textContent = subjectCodes[subject.id] || subject.name.slice(0, 2).toUpperCase();
   elements["course-name"].textContent = subject.name;
   elements["course-description"].textContent = subject.description;
+  elements["course-contributor"].textContent = subject.providedBy ? "Provided by " + subject.providedBy : "";
+  elements["course-contributor"].hidden = !subject.providedBy;
   const pdfCount = countPdfs(subject);
   elements["course-status"].textContent = collectionCountLabel(subject) + (pdfCount ? " · " + pdfCount + " PYQ sets" : "");
   renderSubjectSyllabus(branch, subject);
@@ -506,7 +512,7 @@ function renderSemesters(branch) {
 
 function renderSubjectSyllabus(branch, subject) {
   const syllabus = subject
-    ? state.data.syllabi.find((item) => item.id === subject.id && item.available && item.url)
+    ? state.data.syllabi.find((item) => item.id === (subject.sourceSubjectId || subject.id) && item.available && item.url)
     : null;
   const link = elements["subject-syllabus"];
 
@@ -657,7 +663,7 @@ function renderUnit(subject, unit, index) {
     const ready = labMaterials.filter((material) => material.url).length;
     return '<details class="unit-row lab-row">' +
       '<summary><span class="unit-index">LAB</span>' +
-      '<span class="unit-title"><strong>Chemistry Lab</strong><small>' + escapeHtml(unit.title) + '</small></span>' +
+      '<span class="unit-title"><strong>Chemistry Lab</strong><small>' + escapeHtml(unit.title) + '</small>' + contributorCredit(unit) + '</span>' +
       '<span class="unit-count">' + (ready ? ready + ' available' : 'Coming soon') + '</span>' +
       '<span class="chevron" aria-hidden="true"></span></summary>' +
       '<div class="material-list">' + labMaterials.map(renderMaterial).join("") + '</div></details>';
@@ -708,7 +714,7 @@ function renderUnit(subject, unit, index) {
   ).length;
   return '<details class="unit-row" ' + (index === 0 ? "open" : "") + '>' +
     '<summary><span class="unit-index">' + twoDigits(unit.number) + '</span>' +
-    '<span class="unit-title"><strong>Unit ' + unit.number + '</strong><small>' + escapeHtml(unit.title) + '</small></span>' +
+    '<span class="unit-title"><strong>Unit ' + unit.number + '</strong><small>' + escapeHtml(unit.title) + '</small>' + contributorCredit(unit) + '</span>' +
     '<span class="unit-count">' + ready + ' available</span><span class="chevron" aria-hidden="true"></span></summary>' +
     '<div class="material-list">' + materials.map((material) =>
       material.children ? renderMaterialFolder(material) : renderMaterial(material)
@@ -742,10 +748,16 @@ function renderWorkshopSection(unit, index) {
   return '<details class="unit-row workshop-row">' +
     '<summary><span class="unit-index">' + indexLabel + '</span>' +
     '<span class="unit-title"><strong>' + escapeHtml(unit.title) + '</strong><small>' +
-    subtitle + '</small></span>' +
+    subtitle + '</small>' + contributorCredit(unit) + '</span>' +
     '<span class="unit-count">' + (url ? "1 file" : "Coming soon") + '</span>' +
     '<span class="chevron" aria-hidden="true"></span></summary>' +
     '<div class="material-list workshop-material-list">' + renderMaterial(material) + '</div></details>';
+}
+
+function contributorCredit(item) {
+  return item && item.providedBy
+    ? '<span class="unit-contributor">Provided by ' + escapeHtml(item.providedBy) + '</span>'
+    : '';
 }
 
 function renderMaterialFolder(material) {
@@ -844,7 +856,7 @@ function renderSyllabusItem(item, index) {
 function updateStats() {
   const pdfCount = state.data.unitCollections.reduce((total, subject) => total + countPdfs(subject), 0);
   elements["available-count"].textContent = String(pdfCount);
-  elements["subject-count"].textContent = String(state.data.unitCollections.length);
+  elements["subject-count"].textContent = String(new Set(state.data.unitCollections.map((subject) => subject.sourceSubjectId || subject.id)).size);
 }
 
 function initialisePlanner() {
@@ -1471,6 +1483,93 @@ function renderPlacementHub() {
       console.error(error);
       if (placementHubState.tab === "notices") renderPlacementError("HBTU notices could not load. Check your connection and try again.");
     });
+}
+
+/* ---------- Daily official scholarship feed ---------- */
+
+function initialiseScholarships() {
+  elements["scholarships-open"].addEventListener("click", () => {
+    closeMenu();
+    elements["scholarship-hub"].classList.add("open");
+    document.body.classList.add("no-scroll");
+    renderScholarshipHub();
+  });
+  elements["scholarship-hub-close"].addEventListener("click", closeScholarshipHub);
+  elements["scholarship-hub-body"].addEventListener("click", (event) => {
+    if (!event.target.closest("[data-refresh-scholarships]")) return;
+    scholarshipDataPromise = null;
+    renderScholarshipHub();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && elements["scholarship-hub"].classList.contains("open")) closeScholarshipHub();
+  });
+}
+
+function closeScholarshipHub() {
+  elements["scholarship-hub"].classList.remove("open");
+  document.body.classList.remove("no-scroll");
+}
+
+async function loadScholarshipData() {
+  if (!scholarshipDataPromise) {
+    scholarshipDataPromise = (async () => {
+      const sources = ["/api/scholarships", "/scholarships-fallback.json"];
+      let lastError;
+      for (const source of sources) {
+        try {
+          const response = await fetch(source, { cache: "no-store" });
+          if (!response.ok) throw new Error(source + " returned " + response.status);
+          const data = await response.json();
+          if (!data.featured || !Array.isArray(data.scholarships)) throw new Error("Scholarship feed is incomplete");
+          return data;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Scholarships could not load");
+    })().catch((error) => {
+      scholarshipDataPromise = null;
+      throw error;
+    });
+  }
+  return scholarshipDataPromise;
+}
+
+function scholarshipMeta(item) {
+  return '<span>' + escapeHtml(item.organization || "Official source") + '</span><i>·</i><span>' + escapeHtml(item.category || "Scholarship") + '</span>';
+}
+
+function renderFeaturedScholarship(item) {
+  return '<a class="scholarship-feature" href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">' +
+    '<div><p>PINNED · UTTAR PRADESH GOVERNMENT</p><h3>' + escapeHtml(item.title) + '</h3><span>' + escapeHtml(item.description) + '</span></div>' +
+    '<div class="scholarship-feature-foot"><small>' + escapeHtml(item.deadline || "Check the current application window") + '</small><b>Open official portal ↗</b></div></a>';
+}
+
+function renderScholarshipCard(item) {
+  return '<a class="scholarship-card" href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">' +
+    '<div class="scholarship-card-meta">' + scholarshipMeta(item) + (item.isNew ? '<b>NEW</b>' : '') + '</div>' +
+    '<h4>' + escapeHtml(item.title) + '</h4><p>' + escapeHtml(item.description || "Open the official source for complete details.") + '</p>' +
+    '<div class="scholarship-card-foot"><span>' + escapeHtml(item.deadline || "Verify dates on the official portal") + '</span><i>↗</i></div></a>';
+}
+
+function renderScholarships(data) {
+  const live = data.source === "live";
+  elements["scholarship-hub-body"].innerHTML =
+    '<section class="notice-status"><div class="notice-status-copy"><span class="notice-live-dot ' + (live ? "live" : "") + '"></span><div>' +
+      '<strong>' + (live ? "Daily official feed" : "Saved official directory") + '</strong><small>Checked ' + escapeHtml(noticeTimeLabel(data.fetchedAt)) + '</small></div></div>' +
+      '<div class="notice-status-actions"><button type="button" data-refresh-scholarships>Refresh</button><a href="https://scholarships.gov.in/" target="_blank" rel="noopener noreferrer">NSP ↗</a></div></section>' +
+    renderFeaturedScholarship(data.featured) +
+    '<section class="scholarship-section"><div class="placement-section-heading"><div><p>MORE OPPORTUNITIES</p><h3>Official scholarships and updates</h3></div><span>Refreshed daily</span></div>' +
+      '<div class="scholarship-grid">' + data.scholarships.map(renderScholarshipCard).join("") + '</div></section>' +
+    '<p class="placement-footnote">HelpDesk never asks for scholarship payments or documents. Apply only through the linked official portal.</p>';
+}
+
+function renderScholarshipHub() {
+  elements["scholarship-hub-body"].innerHTML = placementLoadingHtml();
+  loadScholarshipData().then(renderScholarships).catch((error) => {
+    console.error(error);
+    elements["scholarship-hub-body"].innerHTML = '<div class="placement-error"><p>Scholarships could not load. Check your connection and try again.</p><button class="secondary-button" type="button" data-refresh-scholarships>Try again</button></div>';
+  });
 }
 
 /* ---------- SGPA / CGPA Calculator ---------- */

@@ -8,16 +8,17 @@ const LOCAL_PATH = process.env.ADMIN_STATE_PATH || path.resolve(__dirname, "../.
 let localQueue = Promise.resolve();
 
 function emptyState() {
-  return { version: 1, registrations: [], regularAdmins: [], changeRequests: [] };
+  return { version: 2, registrations: [], regularAdmins: [], changeRequests: [], profiles: [] };
 }
 
 function normalize(value) {
   const state = value && typeof value === "object" ? value : emptyState();
   return {
-    version: 1,
+    version: 2,
     registrations: Array.isArray(state.registrations) ? state.registrations : [],
     regularAdmins: Array.isArray(state.regularAdmins) ? state.regularAdmins : [],
     changeRequests: Array.isArray(state.changeRequests) ? state.changeRequests : [],
+    profiles: Array.isArray(state.profiles) ? state.profiles : [],
   };
 }
 
@@ -83,7 +84,12 @@ function id(prefix) {
 function cleanRegularAdmin(admin) {
   if (!admin) return null;
   const { passwordHash, ...safe } = admin;
-  return safe;
+  return {
+    ...safe,
+    role: admin.role === "branch" ? "branch" : "regular",
+    coins: Number.isFinite(Number(admin.coins)) ? Number(admin.coins) : 0,
+    contributions: Number.isFinite(Number(admin.contributions)) ? Number(admin.contributions) : 0,
+  };
 }
 
 async function findRegularAdmin(username) {

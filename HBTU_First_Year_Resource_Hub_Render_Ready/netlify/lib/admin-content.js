@@ -6,6 +6,7 @@ const TARGETS = {
   resources: "data/resources.json",
   placements: "data/placements.json",
   notices: "data/notices-fallback.json",
+  scholarships: "data/scholarships-fallback.json",
 };
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
@@ -81,6 +82,10 @@ function validateResources(value) {
     text(collection.name, `resources.unitCollections[${collectionIndex}].name`, { maximum: 160 });
     text(collection.description, `resources.unitCollections[${collectionIndex}].description`, { maximum: 1000 });
     optionalText(collection.accent, `resources.unitCollections[${collectionIndex}].accent`, 40);
+    optionalText(collection.sourceSubjectId, `resources.unitCollections[${collectionIndex}].sourceSubjectId`, 80);
+    optionalText(collection.providedBy, `resources.unitCollections[${collectionIndex}].providedBy`, 120);
+    optionalText(collection.providedByRole, `resources.unitCollections[${collectionIndex}].providedByRole`, 30);
+    optionalText(collection.providedAt, `resources.unitCollections[${collectionIndex}].providedAt`, 100);
     const units = array(collection.units, `resources.unitCollections[${collectionIndex}].units`);
     units.forEach((unit, unitIndex) => {
       object(unit, `resources.unitCollections[${collectionIndex}].units[${unitIndex}]`);
@@ -88,6 +93,9 @@ function validateResources(value) {
         throw new ValidationError(`Unit number at ${collection.id}[${unitIndex}] is invalid.`);
       }
       text(unit.title, `Unit title at ${collection.id}[${unitIndex}]`, { maximum: 250 });
+      optionalText(unit.providedBy, `${collection.id}.providedBy`, 120);
+      optionalText(unit.providedByRole, `${collection.id}.providedByRole`, 30);
+      optionalText(unit.providedAt, `${collection.id}.providedAt`, 100);
       ["lectureUrl", "handwrittenNotesUrl", "masterNotesUrl", "pyqUrl", "practiceKey", "bookUrl",
         "workshopFileUrl", "classNotesUrl", "labManualUrl", "vivaQuestionsUrl", "endSemesterQuestionsUrl"]
         .forEach((key) => optionalText(unit[key], `${collection.id}.${key}`, 4000));
@@ -203,12 +211,42 @@ function validateNotices(value) {
   return data;
 }
 
+function validateScholarshipItem(item, label) {
+  object(item, label);
+  text(item.id, `${label}.id`, { maximum: 80 });
+  if (!ID_PATTERN.test(item.id)) throw new ValidationError(`${label}.id contains unsupported characters.`);
+  text(item.title, `${label}.title`, { maximum: 500 });
+  text(item.organization, `${label}.organization`, { maximum: 200 });
+  text(item.category, `${label}.category`, { maximum: 100 });
+  text(item.description, `${label}.description`, { maximum: 1000 });
+  text(item.deadline, `${label}.deadline`, { maximum: 200 });
+  text(item.url, `${label}.url`, { maximum: 2000 });
+  if (typeof item.isNew !== "boolean") throw new ValidationError(`${label}.isNew must be true or false.`);
+  if (item.pinned !== undefined && typeof item.pinned !== "boolean") throw new ValidationError(`${label}.pinned must be true or false.`);
+}
+
+function validateScholarships(value) {
+  const data = object(value, "scholarships");
+  optionalText(data.source, "scholarships.source", 100);
+  text(data.sourceUrl, "scholarships.sourceUrl", { maximum: 2000 });
+  optionalText(data.fetchedAt, "scholarships.fetchedAt", 100);
+  validateScholarshipItem(data.featured, "scholarships.featured");
+  const scholarships = array(data.scholarships, "scholarships.scholarships");
+  uniqueIds(scholarships, "scholarships.scholarships");
+  scholarships.forEach((item, index) => validateScholarshipItem(item, `scholarships.scholarships[${index}]`));
+  if (scholarships.some((item) => item.id === data.featured.id)) {
+    throw new ValidationError("The featured scholarship must not be duplicated in the scholarship list.");
+  }
+  return data;
+}
+
 function validateTarget(target, value) {
   if (!TARGETS[target]) throw new ValidationError("Unknown content target.");
   if (Buffer.byteLength(JSON.stringify(value)) > 2 * 1024 * 1024) throw new ValidationError("JSON document is too large.");
   if (target === "resources") return validateResources(value);
   if (target === "placements") return validatePlacements(value);
-  return validateNotices(value);
+  if (target === "notices") return validateNotices(value);
+  return validateScholarships(value);
 }
 
 function readJson(target) {
@@ -301,5 +339,6 @@ module.exports = {
   validateNotices,
   validatePlacements,
   validateResources,
+  validateScholarships,
   validateTarget,
 };

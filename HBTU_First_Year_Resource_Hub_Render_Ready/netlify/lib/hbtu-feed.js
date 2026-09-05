@@ -1,8 +1,11 @@
 const fallbackFeed = require("../../data/notices-fallback.json");
+const { isFresh, readCachedFeed, writeCachedFeed } = require("./feed-cache");
 
 const HBTU_HOME = "https://hbtu.ac.in/";
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_NOTICES = 20;
+const CACHE_KEY = "hbtu-notices-v1";
+const CACHE_MAX_AGE_MS = 5 * 60 * 60 * 1000;
 
 function decodeHtml(value) {
   const named = {
@@ -112,9 +115,9 @@ function fallbackResult() {
   };
 }
 
-async function getNoticeFeed(fetchImpl) {
+async function fetchLiveNoticeFeed(fetchImpl) {
   const request = fetchImpl || global.fetch;
-  if (typeof request !== "function") return fallbackResult();
+  if (typeof request !== "function") throw new Error("Fetch is unavailable");
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -122,7 +125,7 @@ async function getNoticeFeed(fetchImpl) {
     const response = await request(HBTU_HOME, {
       headers: {
         Accept: "text/html,application/xhtml+xml",
-        "User-Agent": "HelpDesk-HBTU/13.4 (+https://helpdeskhbtu.netlify.app/)",
+        "User-Agent": "HelpDesk-HBTU/17.0 (+https://helpdeskhbtu.netlify.app/)",
       },
       redirect: "follow",
       signal: controller.signal,
@@ -137,17 +140,36 @@ async function getNoticeFeed(fetchImpl) {
       newCount: notices.filter((notice) => notice.isNew).length,
       notices,
     };
-  } catch (error) {
-    console.error("HBTU notice refresh failed:", error && error.message ? error.message : error);
-    return fallbackResult();
   } finally {
     clearTimeout(timeout);
   }
 }
 
+async function refreshNoticeFeed(fetchImpl) {
+  const cached = await readCachedFeed(CACHE_KEY);
+  try {
+    const feed = await fetchLiveNoticeFeed(fetchImpl);
+    await writeCachedFeed(CACHE_KEY, feed);
+    return feed;
+  } catch (error) {
+    console.error("HBTU notice refresh failed:", error && error.message ? error.message : error);
+    return cached || fallbackResult();
+  }
+}
+
+async function getNoticeFeed(fetchImpl, options) {
+  if (!(options && options.forceRefresh)) {
+    const cached = await readCachedFeed(CACHE_KEY);
+    if (cached && isFresh(cached, CACHE_MAX_AGE_MS)) return cached;
+  }
+  return refreshNoticeFeed(fetchImpl);
+}
+
 module.exports = {
   HBTU_HOME,
   categorizeNotice,
+  fetchLiveNoticeFeed,
   getNoticeFeed,
   parseNotices,
+  refreshNoticeFeed,
 };

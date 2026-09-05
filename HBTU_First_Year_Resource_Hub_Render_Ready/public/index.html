@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>HelpDesk · HBTU</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/premium.css?v=20260904-8" />
-    <script src="/app.js?v=20260904-8" defer></script>
+    <link rel="stylesheet" href="/premium.css?v=20260905-2" />
+    <script src="/app.js?v=20260905-2" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#resources">Skip to resources</a>
@@ -51,6 +51,7 @@
         <button class="drawer-nav-button" id="calc-open" type="button">SGPA &amp; CGPA Calculator <span>Σ</span></button>
         <button class="drawer-nav-button" id="placements-open" type="button">Placements <span>↗</span></button>
         <button class="drawer-nav-button" id="notices-open" type="button">Notice Board <span>↗</span></button>
+        <button class="drawer-nav-button" id="scholarships-open" type="button">Scholarships <span>✦</span></button>
         <a href="#help">Help &amp; contact <span>↗</span></a>
         <a id="admin-menu-link" href="/admin" hidden>Admin <span>↗</span></a>
         <button class="drawer-nav-button" id="admin-logout" type="button" hidden>Log out <span>↗</span></button>
@@ -84,7 +85,7 @@
         <p class="task-empty" id="task-empty">No tasks yet.</p>
       </section>
 
-      <button class="drawer-version" id="admin-reveal-trigger" type="button" aria-label="HelpDesk version">HelpDesk v14</button>
+      <button class="drawer-version" id="admin-reveal-trigger" type="button" aria-label="HelpDesk version">HelpDesk v17</button>
     </aside>
 
     <main>
@@ -104,10 +105,9 @@
         <div class="shell">
           <header class="section-header">
             <div>
-              <p class="overline">SYLLABUS</p>
-              <h2>Syllabus library</h2>
+              <p class="overline">SYLLABUS CITADEL</p>
+              <h2>Syllabus Citadel</h2>
             </div>
-            <p>Engineering Semester 1 and Technology Semester 2 now include their shared syllabus set.</p>
           </header>
           <div class="syllabus-list" id="syllabus-list"></div>
         </div>
@@ -167,6 +167,7 @@
               <div>
                 <h3 id="course-name">Engineering Chemistry</h3>
                 <p id="course-description"></p>
+                <p class="subject-contributor" id="course-contributor" hidden></p>
               </div>
               <div class="subject-actions">
                 <span class="subject-status" id="course-status">5 units</span>
@@ -262,6 +263,18 @@
       </div>
       <div class="placement-hub-body" id="placement-hub-body"></div>
       <p class="practice-disclaimer">Official HBTU sources. HelpDesk is not the university’s official notice portal.</p>
+    </section>
+
+    <section class="scholarship-hub" id="scholarship-hub" role="dialog" aria-modal="true" aria-labelledby="scholarship-hub-heading">
+      <header class="practice-hub-header">
+        <div class="practice-hub-title">
+          <p class="overline">STUDENT FUNDING</p>
+          <h2 id="scholarship-hub-heading">Scholarships</h2>
+        </div>
+        <button class="practice-close" id="scholarship-hub-close" type="button" aria-label="Close scholarships">×</button>
+      </header>
+      <div class="scholarship-hub-body" id="scholarship-hub-body"></div>
+      <p class="practice-disclaimer">Only official government and HBTU links are surfaced automatically. Confirm eligibility and deadlines on the original portal.</p>
     </section>
 
     <footer class="site-footer">

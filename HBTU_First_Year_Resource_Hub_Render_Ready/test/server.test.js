@@ -31,7 +31,12 @@ test("health endpoint reports ok", async () => {
 test("private admin route serves the login application and hides data without a session", async () => {
   const page = await fetch(`${baseUrl}/admin`);
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /HelpDesk Admin/);
+  const html = await page.text();
+  assert.match(html, /HelpDesk Admin/);
+  assert.match(html, /Contributor leaderboard|Leaderboard/);
+  assert.match(html, /My profile/);
+  assert.match(html, /data-section="scholarships"/);
+  assert.match(html, /main admin creates your username and temporary password/i);
   const data = await fetch(`${baseUrl}/api/admin/data`);
   assert.equal(data.status, 401);
 });
@@ -304,6 +309,9 @@ test("spa fallback serves the website", async () => {
   assert.match(html, /id="semester-list"/);
   assert.match(html, /id="subject-list"/);
   assert.match(html, /id="subject-syllabus"/);
+  assert.match(html, /SYLLABUS CITADEL/);
+  assert.match(html, /<h2>Syllabus Citadel<\/h2>/);
+  assert.doesNotMatch(html, /Engineering Semester 1 and Technology Semester 2 now include/);
   assert.ok(html.indexOf('id="syllabus"') < html.indexOf('id="resources"'));
   assert.doesNotMatch(html, /resource-grid|30 resources across all subjects/);
 });
@@ -315,10 +323,19 @@ test("hamburger menu has separate Placements and Notice Board entries", async ()
   assert.match(html, /id="notices-open"/);
   assert.match(html, /id="placements-open"[^>]*>Placements /);
   assert.match(html, /id="notices-open"[^>]*>Notice Board /);
+  assert.match(html, /id="scholarships-open"[^>]*>Scholarships /);
   assert.doesNotMatch(html, /id="placements-open"[^>]*>Placements &amp; Notices/);
   assert.match(html, /id="placement-hub"/);
   assert.match(html, /id="placement-tab-stats"/);
   assert.match(html, /id="placement-tab-notices"/);
+  assert.match(html, /id="scholarship-hub"/);
+
+  const scholarshipResponse = await fetch(`${baseUrl}/scholarships-fallback.json`);
+  const scholarshipData = await scholarshipResponse.json();
+  assert.equal(scholarshipResponse.status, 200);
+  assert.equal(scholarshipData.featured.id, "up-government-scholarship");
+  assert.equal(scholarshipData.featured.pinned, true);
+  assert.ok(scholarshipData.scholarships.length >= 6);
 
   const placementResponse = await fetch(`${baseUrl}/placements.json`);
   const placementData = await placementResponse.json();

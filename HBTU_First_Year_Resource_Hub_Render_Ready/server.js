@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { filterResources, generatePractice } = require("./netlify/lib/helpdesk-api");
 const { getNoticeFeed } = require("./netlify/lib/hbtu-feed");
+const { getScholarshipFeed } = require("./netlify/lib/scholarship-feed");
 const adminLogin = require("./netlify/functions/admin-login").handler;
 const adminSession = require("./netlify/functions/admin-session").handler;
 const adminLogout = require("./netlify/functions/admin-logout").handler;
@@ -12,6 +13,8 @@ const adminUpload = require("./netlify/functions/admin-upload").handler;
 const adminRegister = require("./netlify/functions/admin-register").handler;
 const adminManagement = require("./netlify/functions/admin-management").handler;
 const adminChangeRequest = require("./netlify/functions/admin-change-request").handler;
+const adminScopedSave = require("./netlify/functions/admin-scoped-save").handler;
+const adminProfile = require("./netlify/functions/admin-profile").handler;
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
@@ -168,6 +171,14 @@ async function handleRequest(req, res) {
     });
   }
 
+  if (url.pathname === "/api/scholarships") {
+    if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET" });
+    const feed = await getScholarshipFeed();
+    return sendJson(res, 200, feed, {
+      "Cache-Control": "public, max-age=900",
+    });
+  }
+
   const adminRoutes = {
     "/api/admin/login": adminLogin,
     "/api/admin/session": adminSession,
@@ -178,6 +189,8 @@ async function handleRequest(req, res) {
     "/api/admin/register": adminRegister,
     "/api/admin/management": adminManagement,
     "/api/admin/change-request": adminChangeRequest,
+    "/api/admin/scoped-save": adminScopedSave,
+    "/api/admin/profile": adminProfile,
   };
   if (adminRoutes[url.pathname]) {
     const body = ["POST", "PUT", "PATCH"].includes(req.method) ? await readBody(req) : "";

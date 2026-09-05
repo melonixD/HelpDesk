@@ -1,0 +1,78 @@
+{
+  "source": "saved-official-directory",
+  "sourceUrl": "https://scholarship.up.gov.in/",
+  "fetchedAt": "2026-09-05T00:00:00.000Z",
+  "featured": {
+    "id": "up-government-scholarship",
+    "title": "Uttar Pradesh Government Scholarship & Fee Reimbursement",
+    "organization": "Government of Uttar Pradesh",
+    "category": "State Government",
+    "description": "The official UP portal for post-matric scholarship applications, renewals, corrections and status checks.",
+    "deadline": "Check the current application window",
+    "url": "https://scholarship.up.gov.in/",
+    "isNew": false,
+    "pinned": true
+  },
+  "scholarships": [
+    {
+      "id": "national-scholarship-portal",
+      "title": "National Scholarship Portal",
+      "organization": "Government of India",
+      "category": "Central Government",
+      "description": "Official single-window portal for central and participating state scholarship schemes. Students can check eligibility and current application windows here.",
+      "deadline": "Check current schemes on NSP",
+      "url": "https://scholarships.gov.in/",
+      "isNew": false
+    },
+    {
+      "id": "ministry-education-scholarships",
+      "title": "Ministry of Education Scholarship Announcements",
+      "organization": "Ministry of Education, Government of India",
+      "category": "Central Government",
+      "description": "Official announcements for Indian and international scholarship opportunities published by the Ministry of Education.",
+      "deadline": "Varies by announcement",
+      "url": "https://www.education.gov.in/en/scholarships",
+      "isNew": false
+    },
+    {
+      "id": "hbtu-scholarship-notices",
+      "title": "HBTU Scholarship Notices",
+      "organization": "Harcourt Butler Technical University",
+      "category": "University",
+      "description": "University circulars concerning scholarship forms, verification, corrections and student instructions.",
+      "deadline": "Check the latest university notice",
+      "url": "https://hbtu.ac.in/academic-circular/",
+      "isNew": false
+    },
+    {
+      "id": "pm-usp-csss",
+      "title": "PM-USP Central Sector Scholarship for College Students",
+      "organization": "Department of Higher Education, Government of India",
+      "category": "Merit",
+      "description": "Central Sector Scheme supporting eligible students pursuing regular graduate, postgraduate and professional courses.",
+      "deadline": "Apply through NSP when the scheme window opens",
+      "url": "https://scholarships.gov.in/public/schemeGuidelines/Guidelines_DOHE_CSSS.pdf",
+      "isNew": false
+    },
+    {
+      "id": "top-class-sc-scholarship",
+      "title": "Top Class Scholarship for SC Students",
+      "organization": "Ministry of Social Justice and Empowerment",
+      "category": "Category-based",
+      "description": "Financial support for eligible Scheduled Caste students pursuing studies beyond Class XII at notified institutions.",
+      "deadline": "Apply through NSP when available",
+      "url": "https://scholarships.gov.in/public/schemeGuidelines/Top_Class_Education_Scheme_2018.pdf",
+      "isNew": false
+    },
+    {
+      "id": "national-scholarship-st",
+      "title": "National Scholarship for ST Students",
+      "organization": "Ministry of Tribal Affairs",
+      "category": "Category-based",
+      "description": "Central support for eligible Scheduled Tribe students admitted to approved graduate and postgraduate courses at notified institutions.",
+      "deadline": "Apply through NSP when available",
+      "url": "https://scholarships.gov.in/public/schemeGuidelines/tribalfellowshipguideline.pdf",
+      "isNew": false
+    }
+  ]
+}

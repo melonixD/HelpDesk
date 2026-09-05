@@ -10,6 +10,12 @@
   node_bundler = "esbuild"
   included_files = ["data/*.json"]
 
+[functions."refresh-notices"]
+  schedule = "0 */4 * * *"
+
+[functions."refresh-scholarships"]
+  schedule = "30 18 * * *"
+
 [[redirects]]
   from = "/api/health"
   to = "/.netlify/functions/health"
@@ -31,6 +37,12 @@
 [[redirects]]
   from = "/api/notices"
   to = "/.netlify/functions/notices"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/scholarships"
+  to = "/.netlify/functions/scholarships"
   status = 200
   force = true
 
@@ -85,6 +97,18 @@
 [[redirects]]
   from = "/api/admin/change-request"
   to = "/.netlify/functions/admin-change-request"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/scoped-save"
+  to = "/.netlify/functions/admin-scoped-save"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/profile"
+  to = "/.netlify/functions/admin-profile"
   status = 200
   force = true
 

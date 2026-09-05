@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/admin.css?v=15">
+  <link rel="stylesheet" href="/admin/admin.css?v=17">
 </head>
 <body>
   <main id="login-view" class="login-shell" hidden>
@@ -35,6 +35,7 @@
         <label class="trap-field" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
         <p id="registration-message" class="form-error" role="status" hidden></p>
         <button class="primary wide" type="submit">Submit application</button>
+        <p class="credential-note">If approved, a main admin creates your username and temporary password and shares them with you privately.</p>
       </form>
       <a class="back-link" href="/">← Return to HelpDesk</a>
     </section>
@@ -53,10 +54,13 @@
         <button data-section="creators"><span>♡</span>Creators</button>
         <button data-section="placements"><span>↗</span>Placements</button>
         <button data-section="notices"><span>□</span>Notices</button>
+        <button data-section="scholarships"><span>✦</span>Scholarships</button>
+        <button data-section="community" id="community-nav"><span>♜</span>Leaderboard</button>
+        <button data-section="profile" id="profile-nav"><span>◎</span>My profile</button>
         <button data-section="management" id="management-nav" hidden><span>⌘</span>Access &amp; approvals</button>
       </nav>
       <div class="sidebar-foot">
-        <span id="admin-identity" class="admin-identity"></span>
+        <div class="admin-account"><img id="admin-avatar" src="/favicon.svg" alt="" width="34" height="34"><span id="admin-identity" class="admin-identity"></span></div>
         <a href="/" target="_blank" rel="noopener">View live site ↗</a>
         <button id="logout-button">Log out</button>
       </div>
@@ -81,6 +85,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" hidden></div>
-  <script src="/admin/admin.js?v=15" defer></script>
+  <script src="/admin/admin.js?v=17" defer></script>
 </body>
 </html>

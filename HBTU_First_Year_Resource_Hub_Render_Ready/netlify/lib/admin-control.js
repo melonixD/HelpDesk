@@ -1,3 +1,4 @@
+const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const { id, loadState, mutateState, cleanRegularAdmin } = require("./admin-state");
 const { commitJson, readJson, validateResources } = require("./admin-content");
@@ -15,6 +16,8 @@ function text(value, label, maximum = 200) {
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 function permissionKey(permission) { return `${permission.branchId}:${permission.semesterId}`; }
+
+function contributorRole(admin) { return admin && admin.role === "branch" ? "branch" : "regular"; }
 
 function validatePermissions(value, resources = readJson("resources")) {
   if (!Array.isArray(value)) throw new ControlError("Permissions must be a list.");
@@ -36,13 +39,15 @@ function isAllowed(admin, branchId, semesterId) {
   );
 }
 
-async function activeRegularAdmin(session) {
-  if (!session || session.role !== "regular" || !session.adminId) throw new ControlError("Regular admin access is required.", 403);
+async function activeContributor(session) {
+  if (!session || session.role === "main" || !session.adminId) throw new ControlError("Contributor access is required.", 403);
   const state = await loadState();
   const admin = state.regularAdmins.find((item) => item.id === session.adminId && item.active !== false);
-  if (!admin) throw new ControlError("This regular-admin account is no longer active.", 403);
+  if (!admin) throw new ControlError("This contributor account is no longer active.", 403);
   return admin;
 }
+
+const activeRegularAdmin = activeContributor;
 
 function filterResources(resources, permissions) {
   const keys = new Set(permissions.map(permissionKey));
@@ -59,6 +64,97 @@ function filterResources(resources, permissions) {
     syllabi: [],
     syllabusGroups: [],
   };
+}
+
+function profileKey(session) {
+  return session.role === "main" ? `main:${String(session.sub).toLowerCase()}` : `contributor:${session.adminId}`;
+}
+
+function savedProfileUrl(state, key, fallback = "") {
+  const profile = state.profiles.find((item) => item.ownerKey === key);
+  return profile && profile.photoUrl ? profile.photoUrl : fallback;
+}
+
+function permissionDirectory(resources) {
+  return new Map(resources.branches.map((branch) => [branch.id, {
+    name: branch.name,
+    semesters: new Map(branch.semesters.map((semester) => [semester.id, semester.name])),
+  }]));
+}
+
+function communityFromState(state, resources) {
+  const directory = permissionDirectory(resources);
+  const entries = state.regularAdmins.filter((admin) => admin.active !== false).map((admin) => {
+    const permissions = (admin.permissions || []).map((permission) => {
+      const branch = directory.get(permission.branchId);
+      return {
+        branchId: permission.branchId,
+        branchName: branch ? branch.name : permission.branchId,
+        semesterId: permission.semesterId,
+        semesterName: branch && branch.semesters.get(permission.semesterId) || permission.semesterId,
+      };
+    });
+    return {
+      id: admin.id,
+      username: admin.username,
+      name: admin.name,
+      branch: admin.branch,
+      role: contributorRole(admin),
+      photoUrl: savedProfileUrl(state, `contributor:${admin.id}`, ""),
+      permissions,
+      coins: Number(admin.coins) || 0,
+      contributions: Number(admin.contributions) || 0,
+      requestsSubmitted: state.changeRequests.filter((request) => request.adminId === admin.id).length,
+    };
+  }).sort((left, right) => right.coins - left.coins || right.contributions - left.contributions || left.name.localeCompare(right.name));
+  return entries.map((entry, index) => ({ ...entry, rank: index + 1, topContributor: index === 0 && entry.coins > 0 }));
+}
+
+async function dashboardContext(session, mainAdmins) {
+  const state = await loadState();
+  const resources = readJson("resources");
+  let admin = null;
+  let role = "main";
+  let fallbackPhoto = "";
+  if (session.role === "main") {
+    const main = mainAdmins.find((item) => item.username.toLowerCase() === String(session.sub).toLowerCase());
+    fallbackPhoto = main && main.photoUrl || "";
+  } else {
+    admin = state.regularAdmins.find((item) => item.id === session.adminId && item.active !== false);
+    if (!admin) throw new ControlError("This contributor account is no longer active.", 403);
+    role = contributorRole(admin);
+  }
+  return {
+    admin,
+    role,
+    profile: { photoUrl: savedProfileUrl(state, profileKey({ ...session, role }), fallbackPhoto) },
+    community: communityFromState(state, resources),
+  };
+}
+
+function validatePhotoUrl(value) {
+  const url = text(value, "Profile picture URL", 2000);
+  if (!/^\/uploads\/[A-Za-z0-9._/-]+$/.test(url) && !/^\/images\/[A-Za-z0-9._/-]+$/.test(url) && !/^https:\/\//i.test(url)) {
+    throw new ControlError("Use an uploaded image or a secure HTTPS image URL.");
+  }
+  return url;
+}
+
+async function updateProfile(session, body, mainAdmins) {
+  if (session.role !== "main") await activeContributor(session);
+  const photoUrl = validatePhotoUrl(body && body.photoUrl);
+  const key = profileKey(session);
+  await mutateState((state) => {
+    let profile = state.profiles.find((item) => item.ownerKey === key);
+    if (!profile) {
+      profile = { id: id("profile"), ownerKey: key, createdAt: new Date().toISOString() };
+      state.profiles.push(profile);
+    }
+    profile.photoUrl = photoUrl;
+    profile.updatedAt = new Date().toISOString();
+  });
+  const context = await dashboardContext(session, mainAdmins);
+  return { saved: true, profile: context.profile, community: context.community };
 }
 
 async function registration(body) {
@@ -83,19 +179,93 @@ async function registration(body) {
 
 async function managementSnapshot(mainAdmins) {
   const state = await loadState();
+  const resources = readJson("resources");
   return {
-    mainAdmins,
+    mainAdmins: mainAdmins.map((admin) => ({
+      ...admin,
+      photoUrl: savedProfileUrl(state, `main:${admin.username.toLowerCase()}`, admin.photoUrl || ""),
+    })),
     registrations: state.registrations,
-    regularAdmins: state.regularAdmins.map(cleanRegularAdmin),
+    regularAdmins: state.regularAdmins.map((admin) => ({
+      ...cleanRegularAdmin(admin),
+      photoUrl: savedProfileUrl(state, `contributor:${admin.id}`, ""),
+    })),
     changeRequests: state.changeRequests.map((request) => ({ ...request })),
-    permissionOptions: readJson("resources").branches.map((branch) => ({
+    leaderboard: communityFromState(state, resources),
+    permissionOptions: resources.branches.map((branch) => ({
       id: branch.id, name: branch.name,
       semesters: branch.semesters.map((semester) => ({ id: semester.id, name: semester.name })),
     })),
   };
 }
 
-function buildCandidate(request) {
+const ATTRIBUTION_FIELDS = ["providedBy", "providedAt", "providedByRole"];
+
+function withoutAttribution(value) {
+  if (!value || typeof value !== "object") return value;
+  const copy = clone(value);
+  ATTRIBUTION_FIELDS.forEach((field) => { delete copy[field]; });
+  if (Array.isArray(copy.units)) copy.units = copy.units.map(withoutAttribution);
+  return copy;
+}
+
+function sameContent(left, right) {
+  return JSON.stringify(withoutAttribution(left)) === JSON.stringify(withoutAttribution(right));
+}
+
+function copyAttribution(source, target) {
+  ATTRIBUTION_FIELDS.forEach((field) => {
+    if (source && source[field]) target[field] = source[field];
+    else delete target[field];
+  });
+}
+
+function stampCollection(previous, proposed, contributor, providedAt) {
+  const next = clone(proposed);
+  let changedUnit = false;
+  next.units = (next.units || []).map((unit, index) => {
+    const prior = previous && previous.units && previous.units[index];
+    const updated = clone(unit);
+    if (!prior || !sameContent(prior, updated)) {
+      changedUnit = true;
+      updated.providedBy = contributor.name;
+      updated.providedByRole = contributor.role;
+      updated.providedAt = providedAt;
+    } else {
+      copyAttribution(prior, updated);
+    }
+    return updated;
+  });
+  const previousHeader = previous ? { ...withoutAttribution(previous), units: undefined } : null;
+  const nextHeader = { ...withoutAttribution(next), units: undefined };
+  if (!previous || JSON.stringify(previousHeader) !== JSON.stringify(nextHeader) || changedUnit) {
+    next.providedBy = contributor.name;
+    next.providedByRole = contributor.role;
+    next.providedAt = providedAt;
+  } else {
+    copyAttribution(previous, next);
+  }
+  return next;
+}
+
+function hasOutsideReference(resources, collectionId, scope) {
+  return resources.branches.some((branch) => branch.semesters.some((semester) =>
+    semester.subjectIds.includes(collectionId) && (branch.id !== scope.branchId || semester.id !== scope.semesterId)
+  ));
+}
+
+function scopedCollectionId(resources, collectionId, scope) {
+  const digest = crypto.createHash("sha256").update(`${collectionId}:${scope.branchId}:${scope.semesterId}`).digest("hex").slice(0, 8);
+  const root = collectionId.slice(0, 68).replace(/-+$/g, "") || "subject";
+  const base = `${root}-${digest}`;
+  const ids = new Set(resources.unitCollections.map((item) => item.id));
+  let candidate = base;
+  let index = 2;
+  while (ids.has(candidate)) candidate = `${base.slice(0, 76 - String(index).length)}-${index++}`;
+  return candidate;
+}
+
+function buildCandidate(request, contributor = null) {
   const resources = readJson("resources");
   const branch = resources.branches.find((item) => item.id === request.scope.branchId);
   const semester = branch && branch.semesters.find((item) => item.id === request.scope.semesterId);
@@ -109,24 +279,59 @@ function buildCandidate(request) {
   if (proposedIds.size !== proposedSemester.subjectIds.length || collections.some((collection) => !proposedIds.has(collection.id)) || collections.length !== proposedIds.size) {
     throw new ControlError("The proposal must contain exactly the subjects linked to its semester.");
   }
-  semester.subjectIds = [...proposedSemester.subjectIds];
+  const linkedIds = [...proposedSemester.subjectIds];
+  const providedAt = new Date().toISOString();
   collections.forEach((collection) => {
     const index = resources.unitCollections.findIndex((item) => item.id === collection.id);
-    if (index >= 0) resources.unitCollections[index] = clone(collection);
-    else resources.unitCollections.push(clone(collection));
+    const previous = index >= 0 ? resources.unitCollections[index] : null;
+    let next = contributor ? stampCollection(previous, collection, contributor, providedAt) : clone(collection);
+    const changed = !previous || !sameContent(previous, collection);
+    if (contributor && previous && changed && hasOutsideReference(resources, collection.id, request.scope)) {
+      const nextId = scopedCollectionId(resources, collection.id, request.scope);
+      next.sourceSubjectId = previous.sourceSubjectId || previous.id;
+      next.id = nextId;
+      for (let cursor = 0; cursor < linkedIds.length; cursor += 1) {
+        if (linkedIds[cursor] === collection.id) linkedIds[cursor] = nextId;
+      }
+      resources.unitCollections.push(next);
+    } else if (index >= 0) resources.unitCollections[index] = next;
+    else resources.unitCollections.push(next);
   });
+  semester.subjectIds = linkedIds;
   validateResources(resources);
   return resources;
 }
 
+function assertAttributeOnly(request) {
+  const resources = readJson("resources");
+  const branch = resources.branches.find((item) => item.id === request.scope.branchId);
+  const semester = branch && branch.semesters.find((item) => item.id === request.scope.semesterId);
+  const proposedSemester = request.proposal && request.proposal.semester;
+  const collections = request.proposal && request.proposal.unitCollections;
+  if (!semester || !proposedSemester || JSON.stringify(semester.subjectIds) !== JSON.stringify(proposedSemester.subjectIds)) {
+    throw new ControlError("Branch admins can edit resource attributes, but structural subject changes still require main-admin approval.", 403);
+  }
+  const collectionFields = new Set(["name", "description", "accent", "lectureUrl", "notesUrl", "handwrittenNotesUrl", "booksUrl"]);
+  const unitFields = new Set(["number", "title", "lectureUrl", "lectureMessage", "handwrittenNotesUrl", "masterNotesUrl", "notesUrl", "pyqUrl", "practiceKey", "bookUrl", "workshopFileUrl", "classNotesUrl", "labManualUrl", "vivaQuestionsUrl", "endSemesterQuestionsUrl", "experimentVideosUrl"]);
+  const changedOutside = (current, proposed, allowed) => [...new Set([...Object.keys(current || {}), ...Object.keys(proposed || {})])]
+    .some((key) => key !== "units" && !ATTRIBUTION_FIELDS.includes(key) && !allowed.has(key) && JSON.stringify(current && current[key]) !== JSON.stringify(proposed && proposed[key]));
+  if (!Array.isArray(collections) || collections.some((collection) => {
+    const current = resources.unitCollections.find((item) => item.id === collection.id);
+    return !current || !Array.isArray(collection.units) || collection.units.length !== current.units.length ||
+      changedOutside(current, collection, collectionFields) || collection.units.some((unit, index) => changedOutside(current.units[index], unit, unitFields));
+  })) {
+    throw new ControlError("Branch admins may change existing resource attributes only. Structural changes require main-admin approval.", 403);
+  }
+}
+
 async function createChangeRequest(session, body) {
-  const admin = await activeRegularAdmin(session);
+  const admin = await activeContributor(session);
   const branchId = text(body && body.scope && body.scope.branchId, "Branch", 80);
   const semesterId = text(body && body.scope && body.scope.semesterId, "Semester", 80);
   if (!isAllowed(admin, branchId, semesterId)) throw new ControlError("You do not have access to this branch and semester.", 403);
   if (!body || !body.proposal || typeof body.proposal !== "object") throw new ControlError("A proposed resource change is required.");
   const request = {
-    id: id("change"), adminId: admin.id, requestedBy: admin.name, username: admin.username,
+    id: id("change"), adminId: admin.id, requestedBy: admin.name, username: admin.username, requestedRole: contributorRole(admin),
     scope: { branchId, semesterId }, summary: text(body && body.summary, "Change summary", 500),
     proposal: clone(body.proposal), status: "pending", createdAt: new Date().toISOString(),
   };
@@ -148,13 +353,44 @@ async function approveChange(requestId, reviewer) {
     request.status = "processing"; request.reviewedBy = reviewer; request.reviewedAt = new Date().toISOString();
   });
   try {
-    const result = await commitJson("resources", buildCandidate(request), `Approve ${request.summary} (requested by ${request.requestedBy})`);
-    await mutateState((state) => { const item=state.changeRequests.find((entry)=>entry.id===requestId);if(item){item.status="approved";item.commitUrl=result.commitUrl;delete item.error;} });
+    const result = await commitJson("resources", buildCandidate(request, { name: request.requestedBy, role: request.requestedRole || "regular" }), `Approve ${request.summary} (requested by ${request.requestedBy})`);
+    await mutateState((state) => {
+      const item = state.changeRequests.find((entry) => entry.id === requestId);
+      if (item) { item.status = "approved"; item.commitUrl = result.commitUrl; item.coinAwarded = true; delete item.error; }
+      const admin = state.regularAdmins.find((entry) => entry.id === request.adminId);
+      if (admin) { admin.coins = (Number(admin.coins) || 0) + 1; admin.contributions = (Number(admin.contributions) || 0) + 1; }
+    });
     return { approved: true, deploying: true, ...result };
   } catch (error) {
     await mutateState((state) => { const item=state.changeRequests.find((entry)=>entry.id===requestId);if(item){item.status="pending";item.error=String(error.message||"Approval failed").slice(0,300);} });
     throw error;
   }
+}
+
+async function publishScopedChange(session, body) {
+  const admin = await activeContributor(session);
+  if (contributorRole(admin) !== "branch") throw new ControlError("Only branch admins can publish scoped changes directly.", 403);
+  const branchId = text(body && body.scope && body.scope.branchId, "Branch", 80);
+  const semesterId = text(body && body.scope && body.scope.semesterId, "Semester", 80);
+  if (!isAllowed(admin, branchId, semesterId)) throw new ControlError("You do not govern this branch and semester.", 403);
+  const request = {
+    id: id("change"), adminId: admin.id, requestedBy: admin.name, username: admin.username, requestedRole: "branch",
+    scope: { branchId, semesterId }, summary: text(body && body.summary, "Change summary", 500),
+    proposal: clone(body && body.proposal), status: "published", createdAt: new Date().toISOString(),
+  };
+  if (Buffer.byteLength(JSON.stringify(request)) > 1024 * 1024) throw new ControlError("This scoped update is too large.");
+  assertAttributeOnly(request);
+  const result = await commitJson("resources", buildCandidate(request, { name: admin.name, role: "branch" }), `Publish ${request.summary} (branch admin ${admin.name})`);
+  request.commitUrl = result.commitUrl;
+  request.reviewedBy = admin.username;
+  request.reviewedAt = new Date().toISOString();
+  request.coinAwarded = true;
+  await mutateState((state) => {
+    const current = state.regularAdmins.find((entry) => entry.id === admin.id);
+    if (current) { current.coins = (Number(current.coins) || 0) + 1; current.contributions = (Number(current.contributions) || 0) + 1; }
+    state.changeRequests.unshift(request);
+  });
+  return { saved: true, deploying: true, ...result };
 }
 
 async function manage(action, body, reviewer, mainAdmins) {
@@ -175,7 +411,7 @@ async function manage(action, body, reviewer, mainAdmins) {
       if (!permissions.length) throw new ControlError("Assign at least one branch and semester before approving this account.");
       const admin = { id: id("regular"), username, passwordHash: await bcrypt.hash(password, 12), name: application.name,
         branch: application.branch, rollNumber: application.rollNumber, email: application.email,
-        permissions, active: true, createdAt: new Date().toISOString(), createdBy: reviewer };
+        permissions, role: "regular", coins: 0, contributions: 0, active: true, createdAt: new Date().toISOString(), createdBy: reviewer };
       state.regularAdmins.unshift(admin); application.status="approved"; application.reviewedAt=new Date().toISOString();application.reviewedBy=reviewer;application.adminId=admin.id;
       return { approved: true, regularAdmin: cleanRegularAdmin(admin) };
     }
@@ -183,11 +419,16 @@ async function manage(action, body, reviewer, mainAdmins) {
       const application=state.registrations.find((item)=>item.id===body.registrationId&&item.status==="pending");if(!application)throw new ControlError("This application is no longer pending.",409);
       application.status="rejected";application.reviewedAt=new Date().toISOString();application.reviewedBy=reviewer;return { rejected:true };
     }
-    if (["update-permissions","set-regular-status","reset-password"].includes(action)) {
+    if (["update-permissions","set-regular-status","reset-password","set-contributor-role"].includes(action)) {
       const admin=state.regularAdmins.find((item)=>item.id===body.adminId);if(!admin)throw new ControlError("Regular admin not found.",404);
       if(action==="update-permissions")admin.permissions=validatePermissions(body.permissions,resources);
       if(action==="set-regular-status")admin.active=Boolean(body.active);
       if(action==="reset-password"){const password=text(body.password,"New password",200);if(password.length<8)throw new ControlError("New password must contain at least 8 characters.");admin.passwordHash=await bcrypt.hash(password,12);}
+      if(action==="set-contributor-role"){
+        if(!["regular","branch"].includes(body.role))throw new ControlError("Contributor role must be regular or branch admin.");
+        if(body.role==="branch"&&!(admin.permissions||[]).length)throw new ControlError("Assign at least one governed section before promotion.");
+        admin.role=body.role;
+      }
       admin.updatedAt=new Date().toISOString();admin.updatedBy=reviewer;return { updated:true,regularAdmin:cleanRegularAdmin(admin) };
     }
     if (action === "reject-change") {
@@ -200,11 +441,15 @@ async function manage(action, body, reviewer, mainAdmins) {
 
 module.exports = {
   ControlError,
+  activeContributor,
   activeRegularAdmin,
   createChangeRequest,
+  dashboardContext,
   filterResources,
   managementSnapshot,
   manage,
+  publishScopedChange,
   registration,
+  updateProfile,
   validatePermissions,
 };

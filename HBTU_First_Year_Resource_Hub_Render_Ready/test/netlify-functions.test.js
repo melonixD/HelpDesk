@@ -12,7 +12,9 @@ const health = require("../netlify/functions/health").handler;
 const resources = require("../netlify/functions/resources").handler;
 const practice = require("../netlify/functions/practice-generate").handler;
 const notices = require("../netlify/functions/notices").handler;
+const scholarships = require("../netlify/functions/scholarships").handler;
 const { parseNotices } = require("../netlify/lib/hbtu-feed");
+const { parseScholarships, SOURCES } = require("../netlify/lib/scholarship-feed");
 
 test("Netlify health function is ready", async () => {
   const result = await health({ httpMethod: "GET" });
@@ -68,10 +70,50 @@ test("Netlify notices function returns a durable cached live feed", async () => 
     assert.equal(body.source, "live");
     assert.equal(body.notices.length, 3);
     assert.match(result.headers["Netlify-CDN-Cache-Control"], /durable/);
-    assert.match(result.headers["Netlify-CDN-Cache-Control"], /max-age=1800/);
+    assert.match(result.headers["Netlify-CDN-Cache-Control"], /max-age=14400/);
   } finally {
     global.fetch = previousFetch;
   }
+});
+
+test("scholarship parser keeps only official scholarship announcements", () => {
+  const source = SOURCES.find((item) => item.id === "hbtu");
+  const html = '<a href="/academics-notice/up-scholarship.pdf">UP Scholarship correction window | NEW</a>' +
+    '<a href="https://example.com/fake-scholarship">Fake Scholarship Offer</a>' +
+    '<a href="/academic-calendar.pdf">Academic Calendar</a>';
+  const result = parseScholarships(html, source);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].organization, "Harcourt Butler Technical University");
+  assert.match(result[0].url, /^https:\/\/hbtu\.ac\.in\//);
+});
+
+test("Netlify scholarship function pins UP Government and merges daily official updates", async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => {
+    const address = String(url);
+    if (address.includes("hbtu.ac.in")) return new Response('<a href="/academics-notice/scholarship.pdf">HBTU Scholarship Verification Notice</a>', { status: 200 });
+    if (address.includes("education.gov.in")) return new Response('<a href="/en/engineering-scholarship-2026">Engineering Scholarship Announcement 2026</a>', { status: 200 });
+    return new Response('<a href="/student/schemes">National Scholarship Portal Student Schemes</a>', { status: 200 });
+  };
+  try {
+    const result = await scholarships({ httpMethod: "GET" });
+    const body = JSON.parse(result.body);
+    assert.equal(result.statusCode, 200);
+    assert.equal(body.source, "live");
+    assert.equal(body.featured.id, "up-government-scholarship");
+    assert.equal(body.featured.pinned, true);
+    assert.match(body.featured.url, /^https:\/\/scholarship\.up\.gov\.in\//);
+    assert.ok(body.scholarships.length >= 6);
+    assert.match(result.headers["Netlify-CDN-Cache-Control"], /max-age=86400/);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test("Netlify schedules notices every four hours and scholarships daily", async () => {
+  const config = await fs.readFile(path.resolve(__dirname, "../netlify.toml"), "utf8");
+  assert.match(config, /\[functions\."refresh-notices"\][\s\S]*schedule = "0 \*\/4 \* \* \*"/);
+  assert.match(config, /\[functions\."refresh-scholarships"\][\s\S]*schedule = "30 18 \* \* \*"/);
 });
 
 test("Netlify notices function falls back safely when HBTU is unavailable", async () => {
@@ -335,6 +377,8 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
   const dataEndpoint = require("../netlify/functions/admin-data").handler;
   const management = require("../netlify/functions/admin-management").handler;
   const changeRequest = require("../netlify/functions/admin-change-request").handler;
+  const scopedSave = require("../netlify/functions/admin-scoped-save").handler;
+  const profile = require("../netlify/functions/admin-profile").handler;
   const directSave = require("../netlify/functions/admin-save").handler;
   const previousFetch = global.fetch;
   const prior = Object.fromEntries([
@@ -452,10 +496,13 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
     });
     assert.equal(forbiddenScope.statusCode, 403);
 
+    const committedDocuments = [];
     global.fetch = async (_url, options) => {
       if (!options || !options.method) {
         return new Response(JSON.stringify({ sha: "current-sha" }), { status: 200 });
       }
+      const payload = JSON.parse(options.body);
+      committedDocuments.push(JSON.parse(Buffer.from(payload.content, "base64").toString("utf8")));
       return new Response(JSON.stringify({
         commit: { html_url: "https://github.com/owner/repository/commit/reviewed" },
       }), { status: 200 });
@@ -472,7 +519,74 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
     assert.equal(snapshotResult.statusCode, 200);
     const snapshot = JSON.parse(snapshotResult.body);
     assert.equal(snapshot.regularAdmins[0].passwordHash, undefined);
+    assert.equal(snapshot.regularAdmins[0].coins, 1);
+    assert.equal(snapshot.regularAdmins[0].contributions, 1);
     assert.equal(snapshot.changeRequests.find((item) => item.id === requestId).status, "approved");
+    const approvedResources = committedDocuments.at(-1);
+    const approvedSemester = approvedResources.branches.find((item) => item.id === "mechanical").semesters.find((item) => item.id === "semester-2");
+    const originalSubjectId = semester.subjectIds[0];
+    assert.notEqual(approvedSemester.subjectIds[0], originalSubjectId);
+    assert.ok(approvedResources.unitCollections.some((item) => item.id === originalSubjectId));
+    assert.equal(approvedResources.unitCollections.find((item) => item.id === approvedSemester.subjectIds[0]).providedBy, "Regular Student");
+
+    const profileResult = await profile({
+      httpMethod: "POST",
+      headers: authHeaders(regularCookie, regularSession.csrfToken),
+      body: JSON.stringify({ photoUrl: "https://example.com/regular-student.webp" }),
+    });
+    assert.equal(profileResult.statusCode, 200);
+    const community = JSON.parse(profileResult.body).community;
+    assert.equal(community[0].photoUrl, "https://example.com/regular-student.webp");
+    assert.equal(community[0].email, undefined);
+    assert.equal(community[0].rollNumber, undefined);
+
+    const promotionResult = await management({
+      httpMethod: "POST",
+      headers: authHeaders(mainCookie, mainSession.csrfToken),
+      body: JSON.stringify({ action: "set-contributor-role", adminId: snapshot.regularAdmins[0].id, role: "branch" }),
+    });
+    assert.equal(promotionResult.statusCode, 200);
+
+    const branchDataResult = await dataEndpoint({ httpMethod: "GET", headers: { cookie: regularCookie } });
+    const branchData = JSON.parse(branchDataResult.body);
+    assert.equal(branchData.role, "branch");
+    const governedBranch = branchData.resources.branches[0];
+    const governedSemester = governedBranch.semesters[0];
+    const governedCollections = branchData.resources.unitCollections.filter((item) => governedSemester.subjectIds.includes(item.id));
+    governedCollections[0].description = `${governedCollections[0].description} (branch admin publish)`;
+    const branchPublishResult = await scopedSave({
+      httpMethod: "POST",
+      headers: authHeaders(regularCookie, regularSession.csrfToken),
+      body: JSON.stringify({
+        scope: { branchId: governedBranch.id, semesterId: governedSemester.id },
+        summary: "Directly publish an assigned attribute",
+        proposal: { semester: governedSemester, unitCollections: governedCollections },
+      }),
+    });
+    assert.equal(branchPublishResult.statusCode, 200);
+    assert.equal(JSON.parse(branchPublishResult.body).deploying, true);
+
+    const structuralSemester = { ...governedSemester, subjectIds: governedSemester.subjectIds.slice(1) };
+    const structuralResult = await scopedSave({
+      httpMethod: "POST",
+      headers: authHeaders(regularCookie, regularSession.csrfToken),
+      body: JSON.stringify({
+        scope: { branchId: governedBranch.id, semesterId: governedSemester.id },
+        summary: "Attempt a structural direct change",
+        proposal: {
+          semester: structuralSemester,
+          unitCollections: governedCollections.filter((item) => structuralSemester.subjectIds.includes(item.id)),
+        },
+      }),
+    });
+    assert.equal(structuralResult.statusCode, 403);
+
+    const finalSnapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
+    const finalSnapshot = JSON.parse(finalSnapshotResult.body);
+    assert.equal(finalSnapshot.regularAdmins[0].role, "branch");
+    assert.equal(finalSnapshot.regularAdmins[0].coins, 2);
+    assert.equal(finalSnapshot.leaderboard[0].topContributor, true);
+    assert.ok(finalSnapshot.changeRequests.some((item) => item.status === "published"));
   } finally {
     global.fetch = previousFetch;
     Object.keys(prior).forEach(restore);

@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { validateNotices, validatePlacements, validateResources } = require("../netlify/lib/admin-content");
+const { validateNotices, validatePlacements, validateResources, validateScholarships } = require("../netlify/lib/admin-content");
 
 const root = path.resolve(__dirname, "..");
 const dataPath = path.join(root, "data", "resources.json");
@@ -8,16 +8,19 @@ const publicDataPath = path.join(root, "public", "resources.json");
 const bankPath = path.join(root, "data", "pyq-bank.json");
 const placementsPath = path.join(root, "data", "placements.json");
 const fallbackNoticesPath = path.join(root, "data", "notices-fallback.json");
+const fallbackScholarshipsPath = path.join(root, "data", "scholarships-fallback.json");
 const indexPath = path.join(root, "public", "index.html");
 
 const resources = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 const bank = JSON.parse(fs.readFileSync(bankPath, "utf8"));
 const placements = JSON.parse(fs.readFileSync(placementsPath, "utf8"));
 const fallbackNotices = JSON.parse(fs.readFileSync(fallbackNoticesPath, "utf8"));
+const fallbackScholarships = JSON.parse(fs.readFileSync(fallbackScholarshipsPath, "utf8"));
 const index = fs.readFileSync(indexPath, "utf8");
 validateResources(resources);
 validatePlacements(placements);
 validateNotices(fallbackNotices);
+validateScholarships(fallbackScholarships);
 const units = resources.unitCollections.flatMap((subject) => subject.units);
 const pyqUrls = units.map((unit) => unit.pyqUrl).filter(Boolean);
 const practiceKeys = units.map((unit) => unit.practiceKey || unit.pyqUrl).filter(Boolean);
@@ -60,6 +63,7 @@ if (!Array.isArray(fallbackNotices.notices) || !fallbackNotices.notices.length) 
 fs.copyFileSync(dataPath, publicDataPath);
 fs.copyFileSync(placementsPath, path.join(root, "public", "placements.json"));
 fs.copyFileSync(fallbackNoticesPath, path.join(root, "public", "notices-fallback.json"));
+fs.copyFileSync(fallbackScholarshipsPath, path.join(root, "public", "scholarships-fallback.json"));
 const externalPyqCount = pyqUrls.filter((url) => /^https?:\/\//.test(url)).length;
 console.log(
   `HelpDesk Netlify build ready: ${resources.branches.length} branches, ` +
