@@ -1,6 +1,6 @@
 {
   "name": "helpdesk-hbtu",
-  "version": "19.0.0",
+  "version": "19.0.1",
   "private": true,
   "description": "HelpDesk — a premium, Netlify-ready resource library for HBTU students.",
   "main": "server.js",

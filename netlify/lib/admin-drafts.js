@@ -1,14 +1,11 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { commitJson, TARGETS, validateTarget } = require("./admin-content");
+const { isNetlifyRuntime } = require("./netlify-runtime");
 
 const STORE_NAME = "helpdesk-admin-drafts";
 const LOCAL_PATH = process.env.ADMIN_DRAFT_PATH || path.resolve(__dirname, "../../data/admin-drafts.local.json");
 let localQueue = Promise.resolve();
-
-function netlifyRuntime() {
-  return Boolean(process.env.NETLIFY || process.env.NETLIFY_BLOBS_CONTEXT || process.env.DEPLOY_ID);
-}
 
 function normalize(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -33,7 +30,7 @@ async function saveLocal(value) {
 
 async function loadDraft(target) {
   if (!TARGETS[target]) return null;
-  if (netlifyRuntime()) {
+  if (isNetlifyRuntime()) {
     const result = await (await blobStore()).getWithMetadata(`draft:${target}`, { type: "json", consistency: "strong" });
     return result && result.data && result.data.data ? result.data : null;
   }
@@ -49,7 +46,7 @@ async function saveDraft(target, data, author) {
     updatedAt: new Date().toISOString(),
     updatedBy: String(author || "main-admin").slice(0, 100),
   };
-  if (netlifyRuntime()) {
+  if (isNetlifyRuntime()) {
     await (await blobStore()).set(`draft:${target}`, JSON.stringify(draft), { metadata: { updatedAt: draft.updatedAt, updatedBy: draft.updatedBy } });
     return draft;
   }
@@ -65,7 +62,7 @@ async function saveDraft(target, data, author) {
 
 async function removeDraft(target) {
   if (!TARGETS[target]) return;
-  if (netlifyRuntime()) return (await blobStore()).delete(`draft:${target}`);
+  if (isNetlifyRuntime()) return (await blobStore()).delete(`draft:${target}`);
   const operation = localQueue.then(async () => {
     const drafts = await loadLocal();
     delete drafts[target];

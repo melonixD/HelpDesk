@@ -1,4 +1,4 @@
-# HelpDesk V19 · Easier admin uploads, reusable resources & explicit deploys
+# HelpDesk V19.0.1 · Easier admin uploads, reusable resources & explicit deploys
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -137,6 +137,8 @@ GITHUB_BRANCH=main
 Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V19.
 
 Uploaded assets, unpublished main-admin drafts and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local drafts and registration data use ignored files under `data/`.
+
+V19.0.1 also detects Netlify's Lambda runtime directly, preventing deployed registration, draft and upload functions from falling back to the read-only `/var/task` file system.
 
 ### Regular-admin workflow
 

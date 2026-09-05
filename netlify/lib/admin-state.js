@@ -1,6 +1,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { isNetlifyRuntime } = require("./netlify-runtime");
 
 const STORE_NAME = "helpdesk-admin-control";
 const STORE_KEY = "admin-state-v1";
@@ -22,10 +23,6 @@ function normalize(value) {
   };
 }
 
-function netlifyRuntime() {
-  return Boolean(process.env.NETLIFY || process.env.NETLIFY_BLOBS_CONTEXT || process.env.DEPLOY_ID);
-}
-
 async function store() {
   const { getStore } = require("@netlify/blobs");
   return getStore(STORE_NAME);
@@ -44,7 +41,7 @@ async function saveLocal(state) {
 }
 
 async function loadState() {
-  if (!netlifyRuntime()) return loadLocal();
+  if (!isNetlifyRuntime()) return loadLocal();
   const result = await (await store()).getWithMetadata(STORE_KEY, { type: "json", consistency: "strong" });
   return normalize(result && result.data);
 }
@@ -66,7 +63,7 @@ async function mutateNetlify(mutator) {
 }
 
 async function mutateState(mutator) {
-  if (netlifyRuntime()) return mutateNetlify(mutator);
+  if (isNetlifyRuntime()) return mutateNetlify(mutator);
   const operation = localQueue.then(async () => {
     const state = await loadLocal();
     const result = await mutator(state);

@@ -1,6 +1,4 @@
-function netlifyRuntime() {
-  return Boolean(process.env.NETLIFY || process.env.NETLIFY_BLOBS_CONTEXT || process.env.DEPLOY_ID);
-}
+const { isNetlifyRuntime } = require("./netlify-runtime");
 
 async function feedStore() {
   const { getStore } = require("@netlify/blobs");
@@ -8,7 +6,7 @@ async function feedStore() {
 }
 
 async function readCachedFeed(key) {
-  if (!netlifyRuntime()) return null;
+  if (!isNetlifyRuntime()) return null;
   try {
     const result = await (await feedStore()).getWithMetadata(key, { type: "json", consistency: "strong" });
     return result && result.data && typeof result.data === "object" ? result.data : null;
@@ -19,7 +17,7 @@ async function readCachedFeed(key) {
 }
 
 async function writeCachedFeed(key, value) {
-  if (!netlifyRuntime()) return false;
+  if (!isNetlifyRuntime()) return false;
   try {
     await (await feedStore()).set(key, JSON.stringify(value), {
       metadata: { fetchedAt: value.fetchedAt || new Date().toISOString() },

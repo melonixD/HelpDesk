@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
+const { isNetlifyRuntime } = require("./netlify-runtime");
 
 const CHUNK_BYTES = 1536 * 1024;
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
@@ -14,10 +15,6 @@ const TYPES = {
   "image/png": { extension: ".png", kind: "image", maximum: MAX_IMAGE_BYTES },
   "image/webp": { extension: ".webp", kind: "image", maximum: MAX_IMAGE_BYTES },
 };
-
-function netlifyRuntime() {
-  return Boolean(process.env.NETLIFY || process.env.NETLIFY_BLOBS_CONTEXT || process.env.DEPLOY_ID);
-}
 
 function safeId(value, label) {
   const result = String(value || "");
@@ -54,14 +51,14 @@ async function blobStore() {
 }
 
 async function putTemporary(key, data, metadata) {
-  if (netlifyRuntime()) return (await blobStore()).set(key, data, { metadata });
+  if (isNetlifyRuntime()) return (await blobStore()).set(key, data, { metadata });
   await fs.mkdir(LOCAL_DIR, { recursive: true });
   await fs.writeFile(path.join(LOCAL_DIR, encodeURIComponent(key)), data);
   if (metadata) await fs.writeFile(path.join(LOCAL_DIR, `${encodeURIComponent(key)}.json`), JSON.stringify(metadata));
 }
 
 async function getTemporary(key) {
-  if (netlifyRuntime()) {
+  if (isNetlifyRuntime()) {
     const result = await (await blobStore()).getWithMetadata(key, { type: "arrayBuffer" });
     return result ? { data: Buffer.from(result.data), metadata: result.metadata || {} } : null;
   }
@@ -74,7 +71,7 @@ async function getTemporary(key) {
 }
 
 async function removeTemporary(key) {
-  if (netlifyRuntime()) return (await blobStore()).delete(key);
+  if (isNetlifyRuntime()) return (await blobStore()).delete(key);
   await Promise.allSettled([
     fs.unlink(path.join(LOCAL_DIR, encodeURIComponent(key))),
     fs.unlink(path.join(LOCAL_DIR, `${encodeURIComponent(key)}.json`)),
@@ -82,20 +79,20 @@ async function removeTemporary(key) {
 }
 
 async function saveFinal(key, data, metadata) {
-  if (netlifyRuntime()) return (await blobStore()).set(`asset:${key}`, data, { metadata });
+  if (isNetlifyRuntime()) return (await blobStore()).set(`asset:${key}`, data, { metadata });
   await fs.mkdir(PUBLIC_UPLOADS, { recursive: true });
   await fs.writeFile(path.join(PUBLIC_UPLOADS, key), data);
 }
 
 async function removeFinal(key) {
   if (!/^[a-z0-9-]{10,100}\.(pdf|png|jpg|webp)$/.test(String(key || ""))) return;
-  if (netlifyRuntime()) return (await blobStore()).delete(`asset:${key}`);
+  if (isNetlifyRuntime()) return (await blobStore()).delete(`asset:${key}`);
   await fs.unlink(path.join(PUBLIC_UPLOADS, key)).catch(() => {});
 }
 
 async function readFinal(key) {
   if (!/^[a-z0-9-]{10,100}\.(pdf|png|jpg|webp)$/.test(String(key || ""))) return null;
-  if (netlifyRuntime()) {
+  if (isNetlifyRuntime()) {
     const result = await (await blobStore()).getWithMetadata(`asset:${key}`, { type: "arrayBuffer" });
     return result ? { data: Buffer.from(result.data), metadata: result.metadata || {} } : null;
   }

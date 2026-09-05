@@ -8,6 +8,7 @@ const adminStatePath = path.join(os.tmpdir(), `helpdesk-admin-state-${process.pi
 const adminDraftPath = path.join(os.tmpdir(), `helpdesk-admin-drafts-${process.pid}-${Date.now()}.json`);
 process.env.ADMIN_STATE_PATH = adminStatePath;
 process.env.ADMIN_DRAFT_PATH = adminDraftPath;
+process.env.HELPDESK_LOCAL_STORAGE = "true";
 test.after(async () => { await Promise.all([fs.unlink(adminStatePath).catch(() => {}), fs.unlink(adminDraftPath).catch(() => {})]); });
 
 const health = require("../netlify/functions/health").handler;
@@ -17,6 +18,18 @@ const notices = require("../netlify/functions/notices").handler;
 const scholarships = require("../netlify/functions/scholarships").handler;
 const { parseNotices } = require("../netlify/lib/hbtu-feed");
 const { parseScholarships, SOURCES } = require("../netlify/lib/scholarship-feed");
+const { isNetlifyRuntime } = require("../netlify/lib/netlify-runtime");
+
+test("Netlify runtime detection recognizes the deployed Lambda file system", () => {
+  const previousLocal = process.env.HELPDESK_LOCAL_STORAGE;
+  const previousRoot = process.env.LAMBDA_TASK_ROOT;
+  delete process.env.HELPDESK_LOCAL_STORAGE;
+  process.env.LAMBDA_TASK_ROOT = "/var/task";
+  assert.equal(isNetlifyRuntime(), true);
+  if (previousRoot === undefined) delete process.env.LAMBDA_TASK_ROOT;
+  else process.env.LAMBDA_TASK_ROOT = previousRoot;
+  process.env.HELPDESK_LOCAL_STORAGE = previousLocal;
+});
 
 test("Netlify health function is ready", async () => {
   const result = await health({ httpMethod: "GET" });
