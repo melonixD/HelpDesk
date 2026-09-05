@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/admin.css?v=17">
+  <link rel="stylesheet" href="/admin/admin.css?v=18">
 </head>
 <body>
   <main id="login-view" class="login-shell" hidden>
@@ -77,7 +77,8 @@
         <div class="top-actions">
           <span id="save-status" class="save-status" aria-live="polite">Saved</span>
           <a id="history-link" class="quiet-button" target="_blank" rel="noopener" hidden>History ↗</a>
-          <button id="save-button" class="primary" disabled>Save changes</button>
+          <button id="save-button" class="quiet-button" disabled>Save draft</button>
+          <button id="publish-button" class="primary" disabled>Deploy to website</button>
         </div>
       </header>
       <div id="editor" class="editor" aria-live="polite"></div>
@@ -85,6 +86,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" hidden></div>
-  <script src="/admin/admin.js?v=17" defer></script>
+  <script src="/admin/admin.js?v=18" defer></script>
 </body>
 </html>

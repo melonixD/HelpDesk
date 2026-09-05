@@ -9,6 +9,7 @@ const adminSession = require("./netlify/functions/admin-session").handler;
 const adminLogout = require("./netlify/functions/admin-logout").handler;
 const adminData = require("./netlify/functions/admin-data").handler;
 const adminSave = require("./netlify/functions/admin-save").handler;
+const adminPublish = require("./netlify/functions/admin-publish").handler;
 const adminUpload = require("./netlify/functions/admin-upload").handler;
 const adminRegister = require("./netlify/functions/admin-register").handler;
 const adminManagement = require("./netlify/functions/admin-management").handler;
@@ -185,6 +186,7 @@ async function handleRequest(req, res) {
     "/api/admin/logout": adminLogout,
     "/api/admin/data": adminData,
     "/api/admin/save": adminSave,
+    "/api/admin/publish": adminPublish,
     "/api/admin/upload": adminUpload,
     "/api/admin/register": adminRegister,
     "/api/admin/management": adminManagement,

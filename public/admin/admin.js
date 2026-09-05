@@ -12,9 +12,10 @@
   const adminView = $("#admin-view");
   const editor = $("#editor");
   const saveButton = $("#save-button");
+  const publishButton = $("#publish-button");
   const status = $("#save-status");
   const historyLink = $("#history-link");
-  const state = { csrf: "", data: null, history: {}, section: "resources", dirty: false, saving: false, selection: {}, role: null, user: null, permissions: [], management: null, profile: null, community: [], coins: 0 };
+  const state = { csrf: "", data: null, drafts: {}, history: {}, section: "resources", dirty: false, saving: false, publishing: false, selection: {}, role: null, user: null, permissions: [], management: null, profile: null, community: [], coins: 0 };
   const titles = {
     resources: ["Content", "Resources"], syllabus: ["Academics", "Syllabus Citadel"], meta: ["Website", "Site details"], creators: ["People", "Creators"],
     placements: ["Outcomes", "Placements"], notices: ["Updates", "Notices"], scholarships: ["Funding", "Scholarships"], management: ["Security", "Access & approvals"],
@@ -79,14 +80,14 @@
     state.data = { resources: payload.resources, placements: payload.placements, notices: payload.notices, scholarships: payload.scholarships };
     state.role = payload.role; state.user = payload.user; state.permissions = payload.permissions || [];
     state.profile = payload.profile || { photoUrl: "" }; state.community = payload.community || []; state.coins = payload.coins || 0;
-    state.history = payload.history || {}; state.csrf = payload.csrfToken || state.csrf;
+    state.history = payload.history || {}; state.drafts = payload.drafts || {}; state.csrf = payload.csrfToken || state.csrf;
     const contributorSections = new Set(["resources", "community", "profile"]);
     $$('[data-section]').forEach((button) => { button.hidden = state.role !== "main" && !contributorSections.has(button.dataset.section); });
     $("#management-nav").hidden = state.role !== "main";
     if (state.role !== "main" && !contributorSections.has(state.section)) state.section = "resources";
     $("#admin-identity").textContent = `${state.user.name || state.user.username} · ${roleLabel(state.role)}`;
     $("#admin-avatar").src = state.profile.photoUrl || "/favicon.svg";
-    saveButton.textContent = state.role === "main" ? "Save changes" : (state.role === "branch" ? "Publish update" : "Submit request");
+    saveButton.textContent = state.role === "main" ? "Save draft" : (state.role === "branch" ? "Publish update" : "Submit request");
     loginView.hidden = true; adminView.hidden = false;
     ensureSelection(); render();
   }
@@ -124,8 +125,7 @@
   });
 
   $$("#admin-nav button").forEach((button) => button.addEventListener("click", async () => {
-    if (state.dirty) await saveChanges();
-    if (state.dirty) return toast("Save the current section before leaving it.");
+    if (state.dirty) return toast(state.role === "main" ? "Save this draft before leaving the section." : "Save the current section before leaving it.");
     state.section = button.dataset.section; render(); closeSidebar();
   }));
 
@@ -136,14 +136,12 @@
   function markDirty() {
     state.dirty = true; state.revision = (state.revision || 0) + 1;
     saveButton.disabled = false;
+    publishButton.disabled = true;
     status.textContent = state.role === "regular" ? "Draft only" : (state.role === "branch" ? "Ready to publish" : "Unsaved");
-    clearTimeout(state.autoSaveTimer);
-    if (state.role === "main") state.autoSaveTimer = setTimeout(saveChanges, 1200);
   }
   function target() { return ["meta", "creators", "syllabus"].includes(state.section) ? "resources" : state.section; }
 
   async function saveChanges() {
-    clearTimeout(state.autoSaveTimer);
     if (!state.dirty) return;
     if (state.role === "regular") return submitRegularChange();
     if (state.role === "branch") return publishBranchChange();
@@ -154,23 +152,49 @@
     try {
       const result = await request("/api/admin/save", { method: "POST", body: JSON.stringify({ target: key, data: state.data[key], message: `Update ${titles[state.section][1]} from HelpDesk admin` }) });
       state.dirty = state.revision !== revision;
-      status.textContent = state.dirty ? "Unsaved" : "Deploying…"; state.history[key] = result.historyUrl || state.history[key]; renderHistory();
+      if (!state.dirty) state.drafts[key] = { updatedAt: result.updatedAt, updatedBy: result.updatedBy };
+      status.textContent = state.dirty ? "Unsaved" : "Draft saved"; state.history[key] = result.historyUrl || state.history[key]; renderHistory();
       $$('.field[data-dirty="true"]').forEach((field) => {
         field.dataset.dirty = "false"; field.dataset.saved = "true";
         const note = $(".field-state", field); if (note) note.textContent = "Saved ✓";
         setTimeout(() => { field.dataset.saved = "false"; }, 2200);
       });
-      toast("Saved. Netlify is deploying your update now.");
+      toast("Draft saved privately. Nothing was deployed and no deploy credit was used.");
     } catch (error) {
       status.textContent = "Save failed"; saveButton.disabled = false;
       $$('.field[data-dirty="true"]').forEach((field) => { field.dataset.error = "true"; const note = $(".field-state", field); if (note) note.textContent = "Save failed"; });
       toast(error.message);
     } finally {
-      state.saving = false; saveButton.textContent = state.role === "main" ? "Save changes" : (state.role === "branch" ? "Publish update" : "Submit request"); saveButton.disabled = !state.dirty;
-      if (state.saveQueued || state.dirty) { state.saveQueued = false; clearTimeout(state.autoSaveTimer); state.autoSaveTimer = setTimeout(saveChanges, 500); }
+      state.saving = false; saveButton.textContent = state.role === "main" ? "Save draft" : (state.role === "branch" ? "Publish update" : "Submit request"); saveButton.disabled = !state.dirty;
+      publishButton.disabled = state.role !== "main" || state.dirty || !state.drafts[target()];
+      state.saveQueued = false;
     }
   }
   saveButton.addEventListener("click", saveChanges);
+
+  async function publishChanges() {
+    if (state.role !== "main" || state.publishing) return;
+    const key = target();
+    if (state.dirty) return toast("Save the draft first, then deploy it.");
+    if (!state.drafts[key]) return toast("There is no saved draft to deploy.");
+    if (!confirm("Deploy this saved draft to the public website? This creates one GitHub commit and one Netlify deployment.")) return;
+    state.publishing = true; publishButton.disabled = true; publishButton.textContent = "Deploying…"; status.textContent = "Publishing";
+    try {
+      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, message: `Publish ${titles[state.section][1]} from HelpDesk admin` }) });
+      delete state.drafts[key];
+      state.history[key] = result.historyUrl || state.history[key];
+      status.textContent = "Deployment started";
+      renderHistory();
+      toast("Published to GitHub. Netlify is deploying the saved draft now.");
+    } catch (error) {
+      status.textContent = "Deploy failed";
+      toast(error.message);
+    } finally {
+      state.publishing = false; publishButton.textContent = "Deploy to website";
+      publishButton.disabled = state.dirty || !state.drafts[key];
+    }
+  }
+  publishButton.addEventListener("click", publishChanges);
 
   function askChangeSummary(branchPublish = false) {
     return new Promise((resolve) => {
@@ -225,9 +249,10 @@
   function render() {
     $$("#admin-nav button").forEach((button) => button.classList.toggle("active", button.dataset.section === state.section));
     $("#section-eyebrow").textContent = titles[state.section][0]; $("#section-title").textContent = titles[state.section][1];
-    const editable=editableSection();saveButton.hidden=!editable;status.hidden=!editable;
+    const editable=editableSection();saveButton.hidden=!editable;publishButton.hidden=!editable||state.role!=="main";status.hidden=!editable;
     saveButton.disabled = !state.dirty;
-    status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : (state.role === "branch" ? "Ready to publish" : "Unsaved")) : (state.role === "regular" ? "No pending draft" : (state.role === "branch" ? `${state.coins} coins` : "Saved")); renderHistory();
+    publishButton.disabled = state.role!=="main"||state.dirty||!state.drafts[target()];
+    status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : (state.role === "branch" ? "Ready to publish" : "Unsaved")) : (state.role === "regular" ? "No pending draft" : (state.role === "branch" ? `${state.coins} coins` : (state.drafts[target()] ? "Draft saved · not deployed" : "Live version"))); renderHistory();
     if (state.section === "resources") renderResources();
     else if (state.section === "syllabus") renderSyllabus();
     else if (state.section === "meta") renderMeta();
@@ -258,7 +283,7 @@
       keys.slice(0, -1).forEach((key) => { current = current[key]; });
       current[keys.at(-1)] = node.type === "number" ? (node.value === "" ? null : Number(node.value)) : node.type === "checkbox" ? node.checked : node.value;
       const field = node.closest(".field");
-      if (field) { field.dataset.dirty = "true"; field.dataset.error = "false"; const note = $(".field-state", field); if (note) note.textContent = "Saving…"; }
+      if (field) { field.dataset.dirty = "true"; field.dataset.error = "false"; const note = $(".field-state", field); if (note) note.textContent = state.role === "main" ? "Unsaved draft" : "Unsaved"; }
       markDirty();
     }));
     $$('[data-upload-bind]', container).forEach((node) => node.addEventListener("change", async () => {
@@ -305,6 +330,45 @@
   function move(list, index, direction) { const targetIndex = index + direction; if (targetIndex < 0 || targetIndex >= list.length) return; [list[index], list[targetIndex]] = [list[targetIndex], list[index]]; markDirty(); renderResources(); }
   function requireDelete(label) { return prompt(`This permanently removes ${label} and its linked content. Type DELETE to continue.`) === "DELETE"; }
 
+  function openFillSelected() {
+    if (state.role !== "main") return;
+    const source = selectedSubject();
+    if (!source) return toast("Choose the subject or resource you want to reuse first.");
+    const modal = document.createElement("div");
+    modal.className = "request-modal";
+    modal.innerHTML = `<form class="request-modal-card fill-modal-card"><p class="eyebrow">Fill in selected</p><h2>Apply ${escape(source.name)}</h2><p class="muted">Select only the branches and semester sections that should receive this subject and its current lecture, notes, PYQs and units. Unchecked sections will not change.</p><div class="fill-selection">${state.data.resources.branches.map((branch) => `<div class="fill-branch"><strong>${escape(branch.name)}</strong><div class="fill-semesters">${[...branch.semesters].sort((a,b)=>a.order-b.order).map((semester) => `<label class="fill-option"><input type="checkbox" data-fill-target value="${escape(branch.id)}:${escape(semester.id)}"><span>${escape(semester.name)}</span></label>`).join("") || '<span class="muted">No sections</span>'}</div></div>`).join("")}</div><p class="fill-hint">If a matching subject already exists in a selected section, it will be linked to this updated version. Otherwise the subject will be added to that section.</p><div class="management-actions"><button class="primary" type="submit">Apply to selected</button><button class="quiet-button" type="button" data-cancel>Cancel</button></div></form>`;
+    document.body.appendChild(modal);
+    $("[data-cancel]", modal).addEventListener("click", () => modal.remove());
+    $("form", modal).addEventListener("submit", (event) => {
+      event.preventDefault();
+      const targets = $$('[data-fill-target]:checked', modal).map((node) => node.value);
+      if (!targets.length) return toast("Select at least one branch and semester section.");
+      const sourceRoot = source.sourceSubjectId || source.id;
+      const sourceName = source.name.trim().toLowerCase();
+      let changed = 0;
+      targets.forEach((value) => {
+        const [branchId, semesterId] = value.split(":");
+        const branch = state.data.resources.branches.find((item) => item.id === branchId);
+        const semester = branch && branch.semesters.find((item) => item.id === semesterId);
+        if (!semester) return;
+        const matchIndex = semester.subjectIds.findIndex((subjectId) => {
+          const item = state.data.resources.unitCollections.find((collection) => collection.id === subjectId);
+          return subjectId === source.id || subjectId === sourceRoot || item && (item.sourceSubjectId === sourceRoot || item.id === sourceRoot || item.name.trim().toLowerCase() === sourceName);
+        });
+        const before = semester.subjectIds.join("|");
+        if (matchIndex >= 0) semester.subjectIds[matchIndex] = source.id;
+        else semester.subjectIds.push(source.id);
+        semester.subjectIds = [...new Set(semester.subjectIds)];
+        if (semester.subjectIds.join("|") !== before) changed += 1;
+      });
+      modal.remove();
+      if (!changed) return toast("The selected sections already use this subject version.");
+      markDirty();
+      renderResources();
+      toast(`Applied ${source.name} to ${changed} selected section${changed === 1 ? "" : "s"}. Save the draft when ready.`);
+    });
+  }
+
   function renderResources() {
     ensureSelection(); const resources = state.data.resources; const branch = selectedBranch(); const semester = selectedSemester(); const subject = selectedSubject();
     const main = state.role === "main";
@@ -315,8 +379,9 @@
       return `<div class="semester-block"><div class="semester-row"><button class="semester-name ${active ? "active" : ""}" data-semester="${escape(item.id)}">${escape(item.name)}</button>${main?`<span class="tree-actions"><button class="mini-button" data-sem-rename="${escape(item.id)}" title="Rename">✎</button><button class="mini-button" data-sem-move="${item.id}:-1" ${index===0?"disabled":""}>↑</button><button class="mini-button" data-sem-move="${item.id}:1" ${index===list.length-1?"disabled":""}>↓</button><button class="mini-button danger" data-sem-delete="${escape(item.id)}">×</button></span>`:""}</div>${active ? `<div class="subject-list">${item.subjectIds.map((id) => `<div class="subject-row"><button data-subject="${escape(id)}" class="${id===state.selection.subjectId?"active":""}">${escape(names.get(id) || id)}</button>${branchAdmin?"":`<button class="mini-button danger" data-unlink="${escape(id)}" title="${main?"Remove":"Request removal"}">×</button>`}</div>`).join("")}${branchAdmin?"":`<div class="tree-add"><select id="link-subject"><option value="">Link existing subject…</option>${resources.unitCollections.filter((entry)=>!item.subjectIds.includes(entry.id)).map((entry)=>`<option value="${escape(entry.id)}">${escape(entry.name)}</option>`).join("")}</select><button class="mini-button" id="link-subject-button">+</button></div>`}</div>` : ""}</div>`;
     }).join("") : "";
     const banner=branchAdmin?`<div class="regular-banner branch-banner"><div><strong>Branch admin access</strong><p>You can publish resource attribute updates directly inside your governed sections. Structural changes still need a main admin.</p></div><span class="role-pill">${state.coins} coins</span></div>`:`<div class="regular-banner"><div><strong>Approval-only access</strong><p>You can draft changes only inside your assigned semesters. Approved contributions earn 1 coin.</p></div><span class="role-pill">${state.permissions.length} assigned</span></div>`;
-    editor.innerHTML = `${main?"":banner}<div class="section-intro"><div><h2>Library structure</h2><p class="muted">${main?"Branches, semesters, subjects and unit resources.":"Your assigned resource sections."}</p></div></div><div class="resource-layout"><aside class="panel tree"><div class="tree-head"><select id="branch-picker">${branchOptions}</select>${main?`<span class="tree-actions"><button class="mini-button" id="edit-branch" title="Edit branch">Edit</button><button class="mini-button danger" id="delete-branch" title="Delete branch">×</button></span>`:""}</div>${semesterHtml}<div class="tree-footer">${main?`<button class="mini-button" id="add-semester">＋ Add section</button><button class="mini-button" id="add-branch">＋ New branch</button>`:""}${branchAdmin?"":`<button class="mini-button" id="add-subject">＋ ${main?"New subject":"Request new subject"}</button>`}</div></aside><article class="panel document" id="resource-document">${renderSubjectDocument(subject)}</article></div>`;
+    editor.innerHTML = `${main?"":banner}<div class="section-intro"><div><h2>Library structure</h2><p class="muted">${main?"Branches, semesters, subjects and unit resources.":"Your assigned resource sections."}</p></div>${main?`<button class="quiet-button" id="fill-selected" ${subject?"":"disabled"}>Fill in selected…</button>`:""}</div><div class="resource-layout"><aside class="panel tree"><div class="tree-head"><select id="branch-picker">${branchOptions}</select>${main?`<span class="tree-actions"><button class="mini-button" id="edit-branch" title="Edit branch">Edit</button><button class="mini-button danger" id="delete-branch" title="Delete branch">×</button></span>`:""}</div>${semesterHtml}<div class="tree-footer">${main?`<button class="mini-button" id="add-semester">＋ Add section</button><button class="mini-button" id="add-branch">＋ New branch</button>`:""}${branchAdmin?"":`<button class="mini-button" id="add-subject">＋ ${main?"New subject":"Request new subject"}</button>`}</div></aside><article class="panel document" id="resource-document">${renderSubjectDocument(subject)}</article></div>`;
     bindResourceTree(); bind($("#resource-document"), subject || {}); bindUnitActions();
+    $("#fill-selected")?.addEventListener("click", openFillSelected);
   }
 
   function renderSubjectDocument(subject) {

@@ -1,5 +1,6 @@
 const { authorize, json, parseBody } = require("../lib/admin-auth");
-const { commitJson, ValidationError } = require("../lib/admin-content");
+const { ValidationError } = require("../lib/admin-content");
+const { saveDraft } = require("../lib/admin-drafts");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed." }, { Allow: "POST" });
@@ -10,8 +11,8 @@ exports.handler = async (event) => {
     return json(400, { error: "A content target and data are required." });
   }
   try {
-    const result = await commitJson(body.target, body.data, body.message);
-    return json(200, { saved: true, deploying: true, ...result });
+    const result = await saveDraft(body.target, body.data, auth.session.sub);
+    return json(200, { saved: true, draft: true, deploying: false, updatedAt: result.updatedAt, updatedBy: result.updatedBy });
   } catch (error) {
     const status = error instanceof ValidationError ? 400 : (error.statusCode || 500);
     return json(status, { error: error.message || "Could not save this change." });

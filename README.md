@@ -1,4 +1,4 @@
-# HelpDesk V17 · Scholarships & scheduled updates
+# HelpDesk V18 · Drafts, selective fill & controlled deploys
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -34,7 +34,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Private responsive admin dashboard for resources, site details, creator cards, placements, notices and the saved scholarship directory
 - Dynamic branch → semester → subject → unit management with add, reorder and cascade-delete controls
 - Secure 8-hour signed sessions, CSRF checks, bcrypt login and login rate limiting
-- GitHub-backed content saves that automatically trigger the connected Netlify deployment
+- Netlify Blob drafts with a separate GitHub-backed **Deploy to website** action
 - Chunked Netlify Blob uploads for PDFs (20 MB) and profile images (5 MB)
 - Three full-access main-admin accounts configured with bcrypt hashes
 - Public regular-admin applications with main-admin approval
@@ -84,7 +84,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 
 You can upload this complete ZIP at [Netlify Drop](https://app.netlify.com/drop) while signed in. Upload the project ZIP—not only the `public` folder—because the Netlify Functions and configuration are outside `public`. Add `GEMINI_API_KEY` in the project environment variables and redeploy once afterward.
 
-This project contains several PDFs and may be too large for a reliable browser drop. The GitHub method is recommended and also enables the admin dashboard's automatic saves.
+This project contains several PDFs and may be too large for a reliable browser drop. The GitHub method is recommended and enables the admin dashboard's explicit deployment button.
 
 ## Private admin dashboard
 
@@ -96,7 +96,7 @@ There are three roles:
 - **Branch admin:** sees only assigned branch + semester combinations and can directly publish edits to existing resource attributes there. Creating or removing structural subjects/units still requires a main-admin-approved request.
 - **Regular admin:** sees only assigned branch + semester combinations. They can prepare a resource draft and submit it for approval, but cannot save directly to GitHub or publish anything.
 
-The configured main-admin usernames are `Priyanshu`, `Akshat` and `racoon67`. Passwords are never stored in source code; only their one-way bcrypt hashes are configured through `MAIN_ADMINS_JSON`.
+The configured main-admin usernames are `Priyanshu`, `Akshat`, `racoon67` and `Utkarsh`. Passwords are never stored in source code; only their one-way bcrypt hashes are configured through `MAIN_ADMINS_JSON`.
 
 Main admins can edit:
 
@@ -106,7 +106,12 @@ Main admins can edit:
 - placement records and reports;
 - Notice Board fallback entries.
 
-Choose **Save changes** to validate the entire JSON document on the server and commit it through GitHub. Netlify then deploys that commit. The History link opens the relevant GitHub file history. Saves are serialized by the UI; if GitHub reports a conflict, reload before retrying.
+Main-admin edits use two deliberate steps:
+
+1. **Save draft** validates the content and stores it privately in Netlify Blobs. It does not touch GitHub, start a Netlify deployment, or consume a deployment credit. There is no automatic save or automatic deployment.
+2. **Deploy to website** publishes the saved draft to GitHub. This is the only main-admin content action that starts a Netlify deployment and consumes a deployment credit.
+
+In Resources, **Fill in selected…** lets a main admin reuse the currently selected subject in explicitly checked branch + semester sections. Unchecked sections are never changed. Save the resulting work as a draft, review it, and deploy it only when ready.
 
 The password itself is never stored in the source or sent to the browser. Generate a replacement hash locally with:
 
@@ -117,16 +122,16 @@ node -e "require('bcryptjs').hash(process.argv[1], 12).then(console.log)" 'YOUR_
 Copy these values into Netlify. Keep `MAIN_ADMINS_JSON` on one line exactly as shown (the values inside it are one-way bcrypt hashes, not passwords):
 
 ```dotenv
-MAIN_ADMINS_JSON=[{"username":"Priyanshu","name":"Priyanshu Dixit","passwordHash":"$2b$12$9DsaIlwzN45reAa8sSTcgOFl5chG7AV.totGf30xQbWQUZw.bQ/sS"},{"username":"Akshat","name":"Akshat Shukla","passwordHash":"$2b$12$KwyCWEvO24hKoQhTTwR0XeeSd4XxxpGJZ8zJVX1pWcxNjzgdcE5R."},{"username":"racoon67","name":"Shreyansh","passwordHash":"$2b$12$2qpnFwrJr6M0q1xxm2uHwuKZEFzqYscTGJxbdBY/ESSsdqsbnUP3O"}]
+MAIN_ADMINS_JSON=[{"username":"Priyanshu","name":"Priyanshu Dixit","passwordHash":"$2b$12$9DsaIlwzN45reAa8sSTcgOFl5chG7AV.totGf30xQbWQUZw.bQ/sS"},{"username":"Akshat","name":"Akshat Shukla","passwordHash":"$2b$12$KwyCWEvO24hKoQhTTwR0XeeSd4XxxpGJZ8zJVX1pWcxNjzgdcE5R."},{"username":"racoon67","name":"Shreyansh","passwordHash":"$2b$12$2qpnFwrJr6M0q1xxm2uHwuKZEFzqYscTGJxbdBY/ESSsdqsbnUP3O"},{"username":"Utkarsh","name":"Utkarsh","passwordHash":"$2b$12$gSoLCwjf4kELN2QHT6LNGujupjCP6.YHq67gYJm7coJrNEyn4QfWy"}]
 SESSION_SECRET=replace-with-the-output-of-openssl-rand-hex-32
 GITHUB_TOKEN=your-fine-grained-github-token
 GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
 GITHUB_BRANCH=main
 ```
 
-Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the three main accounts in V17.
+Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V18.
 
-Uploaded assets and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local registration and approval data is placed in the ignored `data/admin-state.local.json` file.
+Uploaded assets, unpublished main-admin drafts and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local drafts and registration data use ignored files under `data/`.
 
 ### Regular-admin workflow
 
@@ -214,7 +219,7 @@ npm run build
 - `GET /api/notices`
 - `GET /api/scholarships`
 - `POST /api/admin/login`, `GET /api/admin/session`, `POST /api/admin/logout`
-- `GET /api/admin/data`, `POST /api/admin/save`, `POST /api/admin/upload`
+- `GET /api/admin/data`, `POST /api/admin/save` (private draft), `POST /api/admin/publish` (GitHub + Netlify deployment), `POST /api/admin/upload`
 - `POST /api/admin/register` (public application form)
 - `GET|POST /api/admin/management` (main admins only)
 - `POST /api/admin/change-request` (contributor approval requests)

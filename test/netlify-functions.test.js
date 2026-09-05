@@ -5,8 +5,10 @@ const os = require("node:os");
 const path = require("node:path");
 
 const adminStatePath = path.join(os.tmpdir(), `helpdesk-admin-state-${process.pid}-${Date.now()}.json`);
+const adminDraftPath = path.join(os.tmpdir(), `helpdesk-admin-drafts-${process.pid}-${Date.now()}.json`);
 process.env.ADMIN_STATE_PATH = adminStatePath;
-test.after(async () => { await fs.unlink(adminStatePath).catch(() => {}); });
+process.env.ADMIN_DRAFT_PATH = adminDraftPath;
+test.after(async () => { await Promise.all([fs.unlink(adminStatePath).catch(() => {}), fs.unlink(adminDraftPath).catch(() => {})]); });
 
 const health = require("../netlify/functions/health").handler;
 const resources = require("../netlify/functions/resources").handler;
@@ -325,10 +327,11 @@ test("admin login rejects bad credentials", async () => {
   }
 });
 
-test("admin login creates a valid session and a GitHub-backed save", async () => {
+test("main-admin drafts do not deploy until the explicit publish request", async () => {
   const bcrypt = require("bcryptjs");
   const login = require("../netlify/functions/admin-login").handler;
   const save = require("../netlify/functions/admin-save").handler;
+  const publish = require("../netlify/functions/admin-publish").handler;
   const prior = {
     username: process.env.ADMIN_USERNAME, hash: process.env.ADMIN_PASSWORD_HASH,
     secret: process.env.SESSION_SECRET, token: process.env.GITHUB_TOKEN,
@@ -360,7 +363,16 @@ test("admin login creates a valid session and a GitHub-backed save", async () =>
       headers: { cookie, host: "localhost:3000", origin: "http://localhost:3000", "x-helpdesk-csrf": session.csrfToken },
     });
     assert.equal(result.statusCode, 200);
-    assert.equal(JSON.parse(result.body).deploying, true);
+    assert.equal(JSON.parse(result.body).deploying, false);
+    assert.equal(JSON.parse(result.body).draft, true);
+    assert.equal(calls, 0);
+    const published = await publish({
+      httpMethod: "POST",
+      body: JSON.stringify({ target: "resources", message: "Publish saved resources draft" }),
+      headers: { cookie, host: "localhost:3000", origin: "http://localhost:3000", "x-helpdesk-csrf": session.csrfToken },
+    });
+    assert.equal(published.statusCode, 200);
+    assert.equal(JSON.parse(published.body).deploying, true);
     assert.equal(calls, 2);
   } finally {
     global.fetch = previousFetch;
@@ -387,6 +399,7 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
   ].map((key) => [key, process.env[key]]));
   const restore = (key) => prior[key] === undefined ? delete process.env[key] : process.env[key] = prior[key];
   await fs.unlink(adminStatePath).catch(() => {});
+  await fs.unlink(adminDraftPath).catch(() => {});
   process.env.MAIN_ADMINS_JSON = JSON.stringify([{
     username: "main-test",
     name: "Main Test",
@@ -591,7 +604,20 @@ test("main admins approve scoped regular admins and deploy their reviewed reques
     global.fetch = previousFetch;
     Object.keys(prior).forEach(restore);
     await fs.unlink(adminStatePath).catch(() => {});
+    await fs.unlink(adminDraftPath).catch(() => {});
   }
+});
+
+test("admin UI has explicit draft/deploy controls and selected-section fill", async () => {
+  const [html, script] = await Promise.all([
+    fs.readFile(path.resolve(__dirname, "../public/admin/index.html"), "utf8"),
+    fs.readFile(path.resolve(__dirname, "../public/admin/admin.js"), "utf8"),
+  ]);
+  assert.match(html, /id="save-button"[^>]*>Save draft</);
+  assert.match(html, /id="publish-button"[^>]*>Deploy to website</);
+  assert.match(script, /Fill in selected/);
+  assert.match(script, /data-fill-target/);
+  assert.doesNotMatch(script, /setTimeout\(saveChanges,\s*1200\)/);
 });
 
 test("admin PDF uploads are validated, assembled and publicly readable", async () => {

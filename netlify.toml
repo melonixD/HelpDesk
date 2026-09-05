@@ -77,6 +77,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/publish"
+  to = "/.netlify/functions/admin-publish"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/admin/upload"
   to = "/.netlify/functions/admin-upload"
   status = 200
