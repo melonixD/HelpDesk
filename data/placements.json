@@ -1,0 +1,117 @@
+{
+  "source": {
+    "title": "HBTU Training & Placement",
+    "url": "https://hbtu.ac.in/training-placements/",
+    "verifiedAt": "2026-09-04"
+  },
+  "latest": [
+    {
+      "session": "2025–26",
+      "status": "Up to 30 June 2026",
+      "highestLpa": 18,
+      "highestLabel": "Highest listed",
+      "averageLpa": 7.1,
+      "averageLabel": "Engineering average",
+      "offers": 715,
+      "studentsPlaced": 600,
+      "placementRate": 76.05,
+      "reportUrl": "https://hbtu.ac.in/placement/Placement%20details%202025-26%20(up%20to%2030%20June%202026).pdf"
+    },
+    {
+      "session": "2024–25",
+      "status": "Published company-wise report",
+      "highestLpa": 22,
+      "highestLabel": "Highest listed",
+      "averageLpa": 6.85,
+      "averageLabel": "Overall average",
+      "offers": 708,
+      "studentsPlaced": 602,
+      "placementRate": null,
+      "reportUrl": "https://hbtu.ac.in/placement/Placement-details-2024-25.pdf"
+    }
+  ],
+  "history": [
+    {
+      "session": "2021–22",
+      "highestLpa": 44.5,
+      "averageLpa": 8.82,
+      "companies": 106,
+      "internships": 202,
+      "reportUrl": "https://hbtu.ac.in/wp-content/uploads/2024/11/Placement-list-2021-22.pdf"
+    },
+    {
+      "session": "2020–21",
+      "highestLpa": 43.5,
+      "averageLpa": 6.46,
+      "companies": null,
+      "internships": 78,
+      "reportUrl": "https://hbtu.ac.in/wp-content/uploads/2024/11/Placement-list-2020-21.pdf"
+    },
+    {
+      "session": "2019–20",
+      "highestLpa": 60,
+      "averageLpa": 7.18,
+      "companies": null,
+      "internships": 26,
+      "reportUrl": null
+    },
+    {
+      "session": "2018–19",
+      "highestLpa": 37,
+      "averageLpa": 6.03,
+      "companies": null,
+      "internships": null,
+      "reportUrl": null
+    },
+    {
+      "session": "2017–18",
+      "highestLpa": 17.5,
+      "averageLpa": 5.8,
+      "companies": null,
+      "internships": null,
+      "reportUrl": null
+    }
+  ],
+  "reports": [
+    {
+      "title": "Placement details 2025–26",
+      "meta": "Up to 30 June 2026",
+      "url": "https://hbtu.ac.in/placement/Placement%20details%202025-26%20(up%20to%2030%20June%202026).pdf"
+    },
+    {
+      "title": "Placement details 2024–25",
+      "meta": "Company-wise",
+      "url": "https://hbtu.ac.in/placement/Placement-details-2024-25.pdf"
+    },
+    {
+      "title": "Placement details 2024–25",
+      "meta": "Student-wise",
+      "url": "https://hbtu.ac.in/placement/Placement-details-2024-25-student-wise.pdf"
+    },
+    {
+      "title": "Placement details 2023–24",
+      "meta": "Student-wise",
+      "url": "https://hbtu.ac.in/placement/2%20Details%20of%20placed%20students.pdf"
+    },
+    {
+      "title": "Placement details 2022–23",
+      "meta": "Student-wise",
+      "url": "https://hbtu.ac.in/wp-content/uploads/2024/11/HBTUDetails-of-placed-students-in-Academic-session-2022-23.pdf"
+    },
+    {
+      "title": "Placement details 2021–22",
+      "meta": "Student-wise",
+      "url": "https://hbtu.ac.in/wp-content/uploads/2024/11/Placement-list-2021-22.pdf"
+    },
+    {
+      "title": "Placement details 2020–21",
+      "meta": "Student-wise",
+      "url": "https://hbtu.ac.in/wp-content/uploads/2024/11/Placement-list-2020-21.pdf"
+    },
+    {
+      "title": "Four-year placement demographs",
+      "meta": "2021–22 to 2024–25",
+      "url": "https://hbtu.ac.in/placement/Demographs%20of%202021-22,%202022-23,%202023-24%20&%202024-25.pdf"
+    }
+  ]
+}

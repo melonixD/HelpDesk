@@ -1,0 +1,70 @@
+{
+  "source": "fallback",
+  "sourceUrl": "https://hbtu.ac.in/",
+  "fetchedAt": "2026-09-04T00:00:00.000Z",
+  "notices": [
+    {
+      "id": "patent-attorney-empanelment",
+      "title": "Applications invited for Empanelment of Patent Attorney",
+      "url": "https://hbtu.ac.in/Patents/application%20form%20register%20of%20patent%20agents%20(Final%20ad).pdf",
+      "category": "General",
+      "isNew": true
+    },
+    {
+      "id": "ug-classes-2026-27",
+      "title": "Notice Regarding Classes UG Courses AS 2026–27",
+      "url": "https://hbtu.ac.in/academics-notice/Notice%20Regarding%20Classes%20UG%20Courses%20.pdf",
+      "category": "Academic",
+      "isNew": true
+    },
+    {
+      "id": "research-paper-policy",
+      "title": "HBTU Authors Research Paper Publication Policy",
+      "url": "https://hbtu.ac.in/HBTU-Policy/Notice%20Research%20Policy%20HBTU_compressed.pdf",
+      "category": "Policy",
+      "isNew": true
+    },
+    {
+      "id": "branch-transfer-2026-27",
+      "title": "Notice and Final Student List of Branch Transfer 2026–27",
+      "url": "https://hbtu.ac.in/academics-notice/Notice%20and%20Final%20Student%20list%20of%20Branch%20Transfer_2026-27.pdf",
+      "category": "Academic",
+      "isNew": false
+    },
+    {
+      "id": "hostel-flow-chart",
+      "title": "Flow Chart for Hostel Application, Fee and Room Allotment",
+      "url": "https://hbtu.ac.in/DSW-Circular/flow-chart-hostel-allotment.pdf",
+      "category": "Hostel",
+      "isNew": false
+    },
+    {
+      "id": "hostel-bank-details",
+      "title": "Notice Regarding Account Details of University Accounts",
+      "url": "https://hbtu.ac.in/DSW-Circular/Bank-deails-hostels.pdf",
+      "category": "Hostel",
+      "isNew": false
+    },
+    {
+      "id": "academic-calendar-2026-27",
+      "title": "Updated Academic Calendar 2026–27",
+      "url": "https://hbtu.ac.in/academics-notice/UPDATED%20ACADEMIC%20CALENDER_26-27-2.pdf",
+      "category": "Academic",
+      "isNew": false
+    },
+    {
+      "id": "hostel-allotment-second-year",
+      "title": "Hostel Allotment Process for Second Year Onwards",
+      "url": "https://hbtu.ac.in/DSW-Circular/Hostel%20allotment%20process%20for%202nd%20year%20onwards.pdf",
+      "category": "Hostel",
+      "isNew": false
+    },
+    {
+      "id": "hostel-fee-2026-27",
+      "title": "Revised Hostel Fee Structure 2026–27",
+      "url": "https://hbtu.ac.in/DSW-Circular/Revise%20fee%20structure%202026-2.pdf",
+      "category": "Fees",
+      "isNew": false
+    }
+  ]
+}

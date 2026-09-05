@@ -1,0 +1,187 @@
+[build]
+  command = "npm run build"
+  publish = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22.12.0"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["data/*.json"]
+
+[functions."refresh-notices"]
+  schedule = "0 */4 * * *"
+
+[functions."refresh-scholarships"]
+  schedule = "30 18 * * *"
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/resources"
+  to = "/.netlify/functions/resources"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/practice/generate"
+  to = "/.netlify/functions/practice-generate"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/notices"
+  to = "/.netlify/functions/notices"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/scholarships"
+  to = "/.netlify/functions/scholarships"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/login"
+  to = "/.netlify/functions/admin-login"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/session"
+  to = "/.netlify/functions/admin-session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/logout"
+  to = "/.netlify/functions/admin-logout"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/data"
+  to = "/.netlify/functions/admin-data"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/save"
+  to = "/.netlify/functions/admin-save"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/upload"
+  to = "/.netlify/functions/admin-upload"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/register"
+  to = "/.netlify/functions/admin-register"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/management"
+  to = "/.netlify/functions/admin-management"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/change-request"
+  to = "/.netlify/functions/admin-change-request"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/scoped-save"
+  to = "/.netlify/functions/admin-scoped-save"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/profile"
+  to = "/.netlify/functions/admin-profile"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "/.netlify/functions/admin-asset?key=:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/login"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; script-src 'self'; connect-src 'self'; object-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/*.json"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/resources/pyqs/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Disposition = "inline"
+
+[[headers]]
+  for = "/resources/notes/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Disposition = "inline"
+
+[[headers]]
+  for = "/resources/workshop/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Disposition = "inline"
