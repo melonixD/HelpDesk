@@ -626,13 +626,27 @@ function renderUnit(subject, unit, index) {
       url: unit.masterNotesUrl,
     },
   ] : null;
+  const bookItems = [...(Array.isArray(subject.books) ? subject.books : []), ...(Array.isArray(unit.books) ? unit.books : [])]
+    .filter((item) => item && item.url)
+    .filter((item, itemIndex, items) => items.findIndex((candidate) => candidate.url === item.url) === itemIndex)
+    .map((item) => ({
+      type: "book",
+      title: item.title || "Recommended Book",
+      description: item.description || "Recommended reading",
+      url: item.url,
+    }));
+  const legacyBookUrl = unit.bookUrl || subject.booksUrl;
+  if (legacyBookUrl && !bookItems.some((item) => item.url === legacyBookUrl)) {
+    bookItems.push({ type: "book", title: "Recommended Book", description: "Recommended reading", url: legacyBookUrl });
+  }
 
   if (isLab) {
+    const labName = unit.sectionTitle || subject.name.replace(/^Engineering\s+/i, "") + " Lab";
     const labMaterials = [
       {
         type: "notes",
         title: "Lab Manual",
-        description: unit.labManualUrl ? "Chemistry practical manual" : "Coming soon",
+        description: unit.labManualUrl ? subject.name + " practical manual" : "Coming soon",
         url: unit.labManualUrl,
       },
       {
@@ -653,20 +667,21 @@ function renderUnit(subject, unit, index) {
         description: unit.endSemesterQuestionsUrl ? "Lab-related end-semester questions" : "Coming soon",
         url: unit.endSemesterQuestionsUrl,
       },
-      {
+      bookItems.length > 1 ? {
         type: "book",
-        title: "Reference Book",
-        description: unit.bookUrl ? "Recommended laboratory reading" : "Coming soon",
-        url: unit.bookUrl,
-      },
+        title: "Reference Books",
+        description: bookItems.length + " books available",
+        url: null,
+        children: bookItems,
+      } : (bookItems[0] || { type: "book", title: "Reference Books", description: "Coming soon", url: null }),
     ];
-    const ready = labMaterials.filter((material) => material.url).length;
+    const ready = labMaterials.filter((material) => material.url || (material.children && material.children.length)).length;
     return '<details class="unit-row lab-row">' +
       '<summary><span class="unit-index">LAB</span>' +
-      '<span class="unit-title"><strong>Chemistry Lab</strong><small>' + escapeHtml(unit.title) + '</small>' + contributorCredit(unit) + '</span>' +
+      '<span class="unit-title"><strong>' + escapeHtml(labName) + '</strong><small>' + escapeHtml(unit.title) + '</small>' + contributorCredit(unit) + '</span>' +
       '<span class="unit-count">' + (ready ? ready + ' available' : 'Coming soon') + '</span>' +
       '<span class="chevron" aria-hidden="true"></span></summary>' +
-      '<div class="material-list">' + labMaterials.map(renderMaterial).join("") + '</div></details>';
+      '<div class="material-list">' + labMaterials.map((material) => material.children ? renderMaterialFolder(material) : renderMaterial(material)).join("") + '</div></details>';
   }
 
   const materials = [
@@ -697,8 +712,9 @@ function renderUnit(subject, unit, index) {
     {
       type: "book",
       title: "Books",
-      description: unit.bookUrl || subject.booksUrl ? "Recommended reading" : "Not added yet",
-      url: unit.bookUrl || subject.booksUrl,
+      description: bookItems.length ? (bookItems.length === 1 ? "Recommended reading" : bookItems.length + " books available") : "Not added yet",
+      url: bookItems.length === 1 ? bookItems[0].url : null,
+      children: bookItems.length > 1 ? bookItems : null,
     },
     {
       type: "practice",

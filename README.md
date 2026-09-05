@@ -1,4 +1,4 @@
-# HelpDesk V18.2 · Draft-only saves & explicit deploys
+# HelpDesk V19 · Easier admin uploads, reusable resources & explicit deploys
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -116,6 +116,8 @@ The same rule applies to contributor work: approving a Regular Admin request sav
 
 In Resources, **Fill in selected…** lets a main admin reuse the currently selected subject in explicitly checked branch + semester sections. Unchecked sections are never changed. Save the resulting work as a draft, review it, and deploy it only when ready.
 
+The V19 resource editor uses a guided **Branch → Semester → Subject** picker. Subject settings and structural controls stay collapsed until needed, while every unit opens focused upload groups for lectures, notes, PYQs and books. Books support any number of titled links as well as multi-PDF upload. **Add unit or special section** can create a standard unit, Physics/Chemistry-style Lab, workshop shop or class-notes section and immediately opens the new item for editing.
+
 The password itself is never stored in the source or sent to the browser. Generate a replacement hash locally with:
 
 ```bash
@@ -132,7 +134,7 @@ GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
 GITHUB_BRANCH=main
 ```
 
-Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V18.2.
+Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V19.
 
 Uploaded assets, unpublished main-admin drafts and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local drafts and registration data use ignored files under `data/`.
 

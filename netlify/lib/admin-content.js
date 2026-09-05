@@ -86,6 +86,14 @@ function validateResources(value) {
     optionalText(collection.providedBy, `resources.unitCollections[${collectionIndex}].providedBy`, 120);
     optionalText(collection.providedByRole, `resources.unitCollections[${collectionIndex}].providedByRole`, 30);
     optionalText(collection.providedAt, `resources.unitCollections[${collectionIndex}].providedAt`, 100);
+    if (collection.books !== undefined) {
+      array(collection.books, `resources.unitCollections[${collectionIndex}].books`).forEach((book, bookIndex) => {
+        object(book, `${collection.id}.books[${bookIndex}]`);
+        text(book.title, `${collection.id}.books[${bookIndex}].title`, { maximum: 250 });
+        optionalText(book.description, `${collection.id}.books[${bookIndex}].description`, 500);
+        text(book.url, `${collection.id}.books[${bookIndex}].url`, { maximum: 4000 });
+      });
+    }
     const units = array(collection.units, `resources.unitCollections[${collectionIndex}].units`);
     units.forEach((unit, unitIndex) => {
       object(unit, `resources.unitCollections[${collectionIndex}].units[${unitIndex}]`);
@@ -97,8 +105,18 @@ function validateResources(value) {
       optionalText(unit.providedByRole, `${collection.id}.providedByRole`, 30);
       optionalText(unit.providedAt, `${collection.id}.providedAt`, 100);
       ["lectureUrl", "handwrittenNotesUrl", "masterNotesUrl", "pyqUrl", "practiceKey", "bookUrl",
-        "workshopFileUrl", "classNotesUrl", "labManualUrl", "vivaQuestionsUrl", "endSemesterQuestionsUrl"]
+        "workshopFileUrl", "classNotesUrl", "labManualUrl", "vivaQuestionsUrl", "endSemesterQuestionsUrl",
+        "experimentVideosUrl", "lectureMessage", "notesUrl", "sectionTitle"]
         .forEach((key) => optionalText(unit[key], `${collection.id}.${key}`, 4000));
+      optionalText(unit.kind, `${collection.id}.kind`, 40);
+      if (unit.books !== undefined) {
+        array(unit.books, `${collection.id}.books`).forEach((book, bookIndex) => {
+          object(book, `${collection.id}.books[${bookIndex}]`);
+          text(book.title, `${collection.id}.books[${bookIndex}].title`, { maximum: 250 });
+          optionalText(book.description, `${collection.id}.books[${bookIndex}].description`, 500);
+          text(book.url, `${collection.id}.books[${bookIndex}].url`, { maximum: 4000 });
+        });
+      }
       if (unit.lectureItems !== undefined) {
         array(unit.lectureItems, `${collection.id}.lectureItems`).forEach((lecture, lectureIndex) => {
           object(lecture, `${collection.id}.lectureItems[${lectureIndex}]`);

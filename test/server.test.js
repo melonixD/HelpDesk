@@ -71,7 +71,7 @@ test("library exposes fourteen branches including Biotechnology", async () => {
   assert.equal(data.unitCollections.length, 21);
   const allSections = data.unitCollections.flatMap((subject) => subject.units);
   assert.equal(allSections.filter((section) => section.kind !== "lab").length, 68);
-  assert.equal(allSections.filter((section) => section.kind === "lab").length, 1);
+  assert.equal(allSections.filter((section) => section.kind === "lab").length, 2);
   assert.ok(data.branches.some((branch) => branch.name === "Mechanical Engineering"));
   assert.ok(data.branches.some((branch) => branch.name === "Electrical Engineering"));
   assert.ok(data.branches.some((branch) => branch.name === "Biotechnology" && branch.group === "technology"));
@@ -247,6 +247,31 @@ test("Basic Electronics uses the replacement PYQs, Master Notes and unit-specifi
     assert.equal(notes.headers.get("content-type"), "application/pdf");
     assert.ok((await notes.arrayBuffer()).byteLength > 1000);
   }
+});
+
+test("Engineering semester subjects include the new lecture sets, Graphics book and Physics Lab", async () => {
+  const response = await fetch(`${baseUrl}/api/resources`);
+  const data = await response.json();
+  const electrical = data.unitCollections.find((subject) => subject.id === "bee");
+  const graphics = data.unitCollections.find((subject) => subject.id === "engineering-graphics");
+  const physics = data.unitCollections.find((subject) => subject.id === "engineering-physics");
+
+  assert.equal(electrical.units.length, 5);
+  assert.ok(electrical.units.every((unit) => /^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(unit.lectureUrl)));
+  assert.equal(graphics.units.length, 5);
+  assert.ok(graphics.units.every((unit) => unit.lectureUrl.includes("youtube.com/playlist")));
+  assert.equal(graphics.books.length, 1);
+  assert.equal(
+    graphics.books[0].url,
+    "https://drive.google.com/file/d/1hY68Wif6LCQUipraYXIT_utPQvzsKK_F/view?usp=drivesdk"
+  );
+  const physicsLab = physics.units.find((unit) => unit.kind === "lab");
+  assert.equal(physics.units.filter((unit) => unit.kind !== "lab").length, 5);
+  assert.equal(physicsLab.sectionTitle, "Physics Lab");
+  assert.equal(
+    physicsLab.labManualUrl,
+    "https://drive.google.com/file/d/1YYafb_TK1gWabj3kRC34wUn_Rztt-piI/view?usp=drivesdk"
+  );
 });
 
 test("Central Workshop uses seven shop folders plus a Class Notes section", async () => {

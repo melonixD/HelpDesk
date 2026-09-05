@@ -320,8 +320,8 @@ function assertAttributeOnly(request, baseResources = null) {
   if (!semester || !proposedSemester || JSON.stringify(semester.subjectIds) !== JSON.stringify(proposedSemester.subjectIds)) {
     throw new ControlError("Branch admins can edit resource attributes, but structural subject changes still require main-admin approval.", 403);
   }
-  const collectionFields = new Set(["name", "description", "accent", "lectureUrl", "notesUrl", "handwrittenNotesUrl", "booksUrl"]);
-  const unitFields = new Set(["number", "title", "lectureUrl", "lectureMessage", "handwrittenNotesUrl", "masterNotesUrl", "notesUrl", "pyqUrl", "practiceKey", "bookUrl", "workshopFileUrl", "classNotesUrl", "labManualUrl", "vivaQuestionsUrl", "endSemesterQuestionsUrl", "experimentVideosUrl"]);
+  const collectionFields = new Set(["name", "description", "accent", "lectureUrl", "notesUrl", "handwrittenNotesUrl", "booksUrl", "books"]);
+  const unitFields = new Set(["number", "title", "lectureUrl", "lectureItems", "lectureMessage", "handwrittenNotesUrl", "masterNotesUrl", "notesUrl", "pyqUrl", "practiceKey", "bookUrl", "books", "workshopFileUrl", "classNotesUrl", "labManualUrl", "vivaQuestionsUrl", "endSemesterQuestionsUrl", "experimentVideosUrl"]);
   const changedOutside = (current, proposed, allowed) => [...new Set([...Object.keys(current || {}), ...Object.keys(proposed || {})])]
     .some((key) => key !== "units" && !ATTRIBUTION_FIELDS.includes(key) && !allowed.has(key) && JSON.stringify(current && current[key]) !== JSON.stringify(proposed && proposed[key]));
   if (!Array.isArray(collections) || collections.some((collection) => {

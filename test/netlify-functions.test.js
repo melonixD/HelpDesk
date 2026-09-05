@@ -671,6 +671,13 @@ test("admin UI and server enforce explicit draft/deploy controls", async () => {
   assert.match(html, /id="publish-button"[^>]*>Deploy to website</);
   assert.match(script, /Fill in selected/);
   assert.match(script, /data-fill-target/);
+  assert.match(script, /id="branch-picker"/);
+  assert.match(script, /id="semester-picker"/);
+  assert.match(script, /id="subject-picker"/);
+  assert.match(script, /Upload PDFs/);
+  assert.match(script, /multiple data-upload-books/);
+  assert.match(script, /Add a unit or section/);
+  assert.match(script, /Lab section/);
   assert.match(script, /Make main admin/);
   assert.match(script, /Approve to draft/);
   assert.match(script, /Save contribution draft/);
