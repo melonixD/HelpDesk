@@ -801,7 +801,7 @@
     {
       "id": "workshop",
       "name": "Central Workshop Practice",
-      "description": "Shop-wise practical files for Central Workshop Practice. \nNotes provided by Aarush Srivastava ❤️",
+      "description": "Shop-wise practical files for Central Workshop Practice. Notes provided by Aarush Shrivastava ❤️",
       "accent": "rose",
       "layout": "shops",
       "lectureUrl": null,
@@ -1102,7 +1102,7 @@
       "name": "Programming and Problem Solving",
       "description": "Programming fundamentals and introductory computer science resources.",
       "accent": "rose",
-      "lectureUrl": null,
+      "lectureUrl": "https://www.youtube.com/playlist?list=PLRLB5WCqU54U-WhYiGp3bi7-VX8yHxkhQ",
       "notesUrl": null,
       "units": [
         {
