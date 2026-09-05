@@ -864,7 +864,17 @@
       "description": "Faculty material, notes, exam papers and recommended reading.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [
+        {
+          "number": 1,
+          "title": "New unit",
+          "lectureUrl": null,
+          "handwrittenNotesUrl": null,
+          "masterNotesUrl": null,
+          "pyqUrl": null,
+          "practiceKey": null
+        }
+      ]
     },
     {
       "id": "biochemical-core",
