@@ -868,7 +868,7 @@
         {
           "number": 1,
           "title": "Book 1",
-          "lectureUrl": null,
+          "lectureUrl": "https://drive.google.com/file/d/1Wd9BbM9BYNAtNehllNTXo_7PxVDfX5P8/view?usp=drivesdk",
           "handwrittenNotesUrl": null,
           "masterNotesUrl": null,
           "pyqUrl": null,
