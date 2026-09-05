@@ -1,6 +1,8 @@
 const { readFinal } = require("../lib/admin-uploads");
+const { connectNetlifyBlobs } = require("../lib/netlify-runtime");
 
 exports.handler = async (event) => {
+  connectNetlifyBlobs(event);
   if (!["GET", "HEAD"].includes(event.httpMethod)) return { statusCode: 405, headers: { Allow: "GET, HEAD" }, body: "" };
   const key = event.queryStringParameters && event.queryStringParameters.key;
   const result = await readFinal(key);

@@ -1,7 +1,9 @@
 const { authorize, json, mainAdminDirectory, parseBody } = require("../lib/admin-auth");
 const { managementSnapshot, manage } = require("../lib/admin-control");
+const { connectNetlifyBlobs } = require("../lib/netlify-runtime");
 
 exports.handler = async (event) => {
+  connectNetlifyBlobs(event);
   if (!['GET','POST'].includes(event.httpMethod)) return json(405,{error:"Method not allowed."},{Allow:"GET, POST"});
   const auth=authorize(event,{csrf:event.httpMethod==='POST',role:'main'});if(!auth.ok)return auth.response;
   try {

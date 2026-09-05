@@ -18,7 +18,7 @@ const notices = require("../netlify/functions/notices").handler;
 const scholarships = require("../netlify/functions/scholarships").handler;
 const { parseNotices } = require("../netlify/lib/hbtu-feed");
 const { parseScholarships, SOURCES } = require("../netlify/lib/scholarship-feed");
-const { isNetlifyRuntime } = require("../netlify/lib/netlify-runtime");
+const { connectNetlifyBlobs, isNetlifyRuntime } = require("../netlify/lib/netlify-runtime");
 
 test("Netlify runtime detection recognizes the deployed Lambda file system", () => {
   const previousLocal = process.env.HELPDESK_LOCAL_STORAGE;
@@ -29,6 +29,10 @@ test("Netlify runtime detection recognizes the deployed Lambda file system", () 
   if (previousRoot === undefined) delete process.env.LAMBDA_TASK_ROOT;
   else process.env.LAMBDA_TASK_ROOT = previousRoot;
   process.env.HELPDESK_LOCAL_STORAGE = previousLocal;
+});
+
+test("local tests do not require a Netlify Blobs connection", () => {
+  assert.equal(connectNetlifyBlobs({ httpMethod: "GET" }), false);
 });
 
 test("Netlify health function is ready", async () => {

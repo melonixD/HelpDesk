@@ -14,4 +14,11 @@ function isNetlifyRuntime() {
   );
 }
 
-module.exports = { isNetlifyRuntime };
+function connectNetlifyBlobs(event) {
+  if (!isNetlifyRuntime() || !event || typeof event.blobs !== "string") return false;
+  const { connectLambda } = require("@netlify/blobs");
+  connectLambda(event);
+  return true;
+}
+
+module.exports = { connectNetlifyBlobs, isNetlifyRuntime };

@@ -1,8 +1,10 @@
 const { authorize, json, parseBody } = require("../lib/admin-auth");
 const { publishDraft } = require("../lib/admin-drafts");
 const { markResourcesDraftPublished } = require("../lib/admin-control");
+const { connectNetlifyBlobs } = require("../lib/netlify-runtime");
 
 exports.handler = async (event) => {
+  connectNetlifyBlobs(event);
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed." }, { Allow: "POST" });
   const auth = authorize(event, { csrf: true, role: "main" });
   if (!auth.ok) return auth.response;
