@@ -858,14 +858,14 @@
         }
       ]
     },
-  {
-    "id": "food-tech",
-    "name": "Food Technology Core",
+    {
+      "id": "food-tech",
+      "name": "Food Technology Core",
       "description": "Faculty material, notes, exam papers and recommended reading.",
       "accent": "teal",
       "layout": "core-resources",
-    "units": []
-  },
+      "units": []
+    },
     {
       "id": "biochemical-core",
       "name": "Biochemical Engineering Core",
@@ -933,167 +933,177 @@
         {
           "number": 1,
           "title": "Unit 1 Resources",
+          "pyqUrl": null,
+          "lectureUrl": "https://youtube.com/playlist?list=PLEWJyq4jotzs&si=BUJLEw9X-Fb-hL4E"
+        },
+        {
+          "number": 2,
+          "title": "Unit 2 Resources",
+          "pyqUrl": null,
+          "lectureUrl": "https://youtube.com/playlist?list=PLcMXdxKvBY30&si=JkP0M-D6z-b_fF6k"
+        },
+        {
+          "number": 3,
+          "title": "Unit 3 Resources",
+          "pyqUrl": null,
+          "lectureUrl": "https://youtube.com/playlist?list=PLXjrWWL7w8H0&si=9ye8zyZPLMFGSW4E"
+        },
+        {
+          "number": 4,
+          "title": "Unit 4 Resources",
+          "pyqUrl": null,
+          "lectureUrl": "https://youtube.com/playlist?list=PLVRxdzW1vw1Y&si=3tA64lUrbECSMsSF"
+        },
+        {
+          "number": 5,
+          "title": "Unit 5 Resources",
+          "pyqUrl": null,
+          "lectureUrl": "https://youtube.com/playlist?list=PLZBnz02ZtylA&si=hlSAdJV9bKhe27aW"
+        }
+      ]
+    },
+    {
+      "id": "bee",
+      "name": "Basic Electrical Engineering (BEE)",
+      "description": "Semester course resources for Basic Electrical Engineering.",
+      "accent": "yellow",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "units": [
+        {
+          "number": 1,
+          "title": "Unit 1 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLesTec-LwJao&si=aTi0nH0NRWr6ZwBi",
+          "pyqUrl": null,
+          "masterNotesUrl": "/uploads/pdf-e8fa33a70b5338b700ddf362.pdf"
+        },
+        {
+          "number": 2,
+          "title": "Unit 2 Resources",
+          "lectureUrl": "https://youtu.be/Aau_pyvDoWQ?si=gK1vRMW7n_a618AU",
+          "pyqUrl": null,
+          "masterNotesUrl": "/uploads/pdf-3455cb28b85e1f5ce56cb5f8.pdf"
+        },
+        {
+          "number": 3,
+          "title": "Unit 3 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PL4K9r9dYCOooO5s49HTN7Tavmg5q_Ufqn&si=6VwQfRklNGg7qmSJ",
+          "pyqUrl": null,
+          "masterNotesUrl": "/uploads/pdf-632906af4c4d636506b01db6.pdf"
+        },
+        {
+          "number": 4,
+          "title": "Unit 4 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLKgvfkus0315MDeBe-kU_T4qnsFHyDI8T&si=GHvk_6BezYSOrE6H",
+          "pyqUrl": null,
+          "masterNotesUrl": "/uploads/pdf-b9c918e2c460e0f97286c728.pdf"
+        },
+        {
+          "number": 5,
+          "title": "Unit 5 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PL8nVklgTzYNTJbHU9c2k8o9qb255QQMeF&si=iqlfgzcUXaaz4dl6",
+          "pyqUrl": null,
+          "masterNotesUrl": "/uploads/pdf-f0e2027d33ff50db21f42755.pdf"
+        }
+      ]
+    },
+    {
+      "id": "engineering-graphics",
+      "name": "Engineering Graphics",
+      "description": "Semester course resources for Engineering Graphics.",
+      "accent": "orange",
+      "lectureUrl": null,
+      "notesUrl": null,
+      "books": [
+        {
+          "title": "Engineering Graphics Recommended Book",
+          "description": "Recommended reference book for Engineering Graphics",
+          "url": "https://drive.google.com/file/d/1hY68Wif6LCQUipraYXIT_utPQvzsKK_F/view?usp=drivesdk"
+        }
+      ],
+      "units": [
+        {
+          "number": 1,
+          "title": "Unit 1 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLCK8xv2XE1O0&si=u-8ljNnR2f6kSeHc",
           "pyqUrl": null
         },
         {
           "number": 2,
           "title": "Unit 2 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLDN15nk5uLiBDV2tAMDlR1snIX8WdTVYR&si=mjFqju7be2JJI8FO",
           "pyqUrl": null
         },
         {
           "number": 3,
           "title": "Unit 3 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLDN15nk5uLiBrAkdOhEvkmVPs2UtwfGao&si=5L6z6UlOnBqnQHNj",
           "pyqUrl": null
         },
         {
           "number": 4,
           "title": "Unit 4 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLDN15nk5uLiCf-raL06kSCeqR8h61eYIC&si=xZNCwF9nP0gakk8n",
           "pyqUrl": null
         },
         {
           "number": 5,
           "title": "Unit 5 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLWv6RLxuaVQwedgeDeEkWKh3FFKpeZkaJ&si=Z8SNca4CrZ3eiDgN",
           "pyqUrl": null
         }
       ]
     },
-  {
-    "id": "bee",
-    "name": "Basic Electrical Engineering (BEE)",
-      "description": "Semester course resources for Basic Electrical Engineering.",
-      "accent": "yellow",
-      "lectureUrl": null,
-      "notesUrl": null,
-    "units": [
-      {
-        "number": 1,
-        "title": "Unit 1 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLesTec-LwJao&si=aTi0nH0NRWr6ZwBi",
-        "pyqUrl": null
-      },
-      {
-        "number": 2,
-        "title": "Unit 2 Resources",
-        "lectureUrl": "https://youtu.be/Aau_pyvDoWQ?si=gK1vRMW7n_a618AU",
-        "pyqUrl": null
-      },
-      {
-        "number": 3,
-        "title": "Unit 3 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PL4K9r9dYCOooO5s49HTN7Tavmg5q_Ufqn&si=6VwQfRklNGg7qmSJ",
-        "pyqUrl": null
-      },
-      {
-        "number": 4,
-        "title": "Unit 4 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLKgvfkus0315MDeBe-kU_T4qnsFHyDI8T&si=GHvk_6BezYSOrE6H",
-        "pyqUrl": null
-      },
-      {
-        "number": 5,
-        "title": "Unit 5 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PL8nVklgTzYNTJbHU9c2k8o9qb255QQMeF&si=iqlfgzcUXaaz4dl6",
-        "pyqUrl": null
-      }
-    ]
-    },
-  {
-    "id": "engineering-graphics",
-    "name": "Engineering Graphics",
-      "description": "Semester course resources for Engineering Graphics.",
-    "accent": "orange",
-    "lectureUrl": null,
-    "notesUrl": null,
-    "books": [
-      {
-        "title": "Engineering Graphics Recommended Book",
-        "description": "Recommended reference book for Engineering Graphics",
-        "url": "https://drive.google.com/file/d/1hY68Wif6LCQUipraYXIT_utPQvzsKK_F/view?usp=drivesdk"
-      }
-    ],
-    "units": [
-      {
-        "number": 1,
-        "title": "Unit 1 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLCK8xv2XE1O0&si=u-8ljNnR2f6kSeHc",
-        "pyqUrl": null
-      },
-      {
-        "number": 2,
-        "title": "Unit 2 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLDN15nk5uLiBDV2tAMDlR1snIX8WdTVYR&si=mjFqju7be2JJI8FO",
-        "pyqUrl": null
-      },
-      {
-        "number": 3,
-        "title": "Unit 3 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLDN15nk5uLiBrAkdOhEvkmVPs2UtwfGao&si=5L6z6UlOnBqnQHNj",
-        "pyqUrl": null
-      },
-      {
-        "number": 4,
-        "title": "Unit 4 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLDN15nk5uLiCf-raL06kSCeqR8h61eYIC&si=xZNCwF9nP0gakk8n",
-        "pyqUrl": null
-      },
-      {
-        "number": 5,
-        "title": "Unit 5 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLWv6RLxuaVQwedgeDeEkWKh3FFKpeZkaJ&si=Z8SNca4CrZ3eiDgN",
-        "pyqUrl": null
-      }
-    ]
-    },
-  {
-    "id": "engineering-physics",
-    "name": "Engineering Physics",
+    {
+      "id": "engineering-physics",
+      "name": "Engineering Physics",
       "description": "Semester course resources for Engineering Physics.",
       "accent": "sky",
       "lectureUrl": null,
       "notesUrl": null,
-    "units": [
-      {
-        "number": 1,
-        "title": "Unit 1 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLhSp9OSVmeyLA34TA4c6d511eqh9SLXE0&si=aupSTsSZ_arTbaVE",
-        "pyqUrl": null
-      },
-      {
-        "number": 2,
-        "title": "Unit 2 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLiB8y72k4nM4wRwfxLtcVnC3M24KiJ5Tm&si=0JDQfcT69I5Wshhw",
-        "pyqUrl": null
-      },
-      {
-        "number": 3,
-        "title": "Unit 3 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PL5zwY2E7i60UOvHJEOpJEw-lR2Zdmg2Ik&si=uMsw1bUq_6zkiCKu",
-        "pyqUrl": null
-      },
-      {
-        "number": 4,
-        "title": "Unit 4 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLSWDszNFa1Q3UD62D6WDpy1Hf5K0g61Vm&si=ZhRKGW7xZliC4OjV",
-        "pyqUrl": null
-      },
-      {
-        "number": 5,
-        "title": "Unit 5 Resources",
-        "lectureUrl": "https://youtube.com/playlist?list=PLeC3KBIV6CDg&si=qGe4TJRu91tpiu-b",
-        "pyqUrl": null
-      },
-      {
-        "number": "LAB",
-        "kind": "lab",
-        "sectionTitle": "Physics Lab",
-        "title": "Physics practicals and laboratory manual",
-        "labManualUrl": "https://drive.google.com/file/d/1YYafb_TK1gWabj3kRC34wUn_Rztt-piI/view?usp=drivesdk",
-        "experimentVideosUrl": null,
-        "vivaQuestionsUrl": null,
-        "endSemesterQuestionsUrl": null,
-        "pyqUrl": null
-      }
-    ]
+      "units": [
+        {
+          "number": 1,
+          "title": "Unit 1 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLhSp9OSVmeyLA34TA4c6d511eqh9SLXE0&si=aupSTsSZ_arTbaVE",
+          "pyqUrl": null
+        },
+        {
+          "number": 2,
+          "title": "Unit 2 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLiB8y72k4nM4wRwfxLtcVnC3M24KiJ5Tm&si=0JDQfcT69I5Wshhw",
+          "pyqUrl": null
+        },
+        {
+          "number": 3,
+          "title": "Unit 3 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PL5zwY2E7i60UOvHJEOpJEw-lR2Zdmg2Ik&si=uMsw1bUq_6zkiCKu",
+          "pyqUrl": null
+        },
+        {
+          "number": 4,
+          "title": "Unit 4 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLSWDszNFa1Q3UD62D6WDpy1Hf5K0g61Vm&si=ZhRKGW7xZliC4OjV",
+          "pyqUrl": null
+        },
+        {
+          "number": 5,
+          "title": "Unit 5 Resources",
+          "lectureUrl": "https://youtube.com/playlist?list=PLeC3KBIV6CDg&si=qGe4TJRu91tpiu-b",
+          "pyqUrl": null
+        },
+        {
+          "number": "LAB",
+          "kind": "lab",
+          "sectionTitle": "Physics Lab",
+          "title": "Physics practicals and laboratory manual",
+          "labManualUrl": "https://drive.google.com/file/d/1YYafb_TK1gWabj3kRC34wUn_Rztt-piI/view?usp=drivesdk",
+          "experimentVideosUrl": null,
+          "vivaQuestionsUrl": null,
+          "endSemesterQuestionsUrl": null,
+          "pyqUrl": null
+        }
+      ]
     },
     {
       "id": "uhv",
