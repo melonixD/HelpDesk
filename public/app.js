@@ -794,7 +794,8 @@ function renderMaterialFolder(material) {
 function openableResourceUrl(value) {
   const url = String(value || "");
   if (!url.startsWith("/uploads/")) return url;
-  return `${url}${url.includes("?") ? "&" : "?"}asset=20260906`;
+  const key = url.slice("/uploads/".length).split(/[?#]/, 1)[0];
+  return `/.netlify/functions/admin-asset?key=${encodeURIComponent(key)}`;
 }
 
 function renderMaterial(material) {
