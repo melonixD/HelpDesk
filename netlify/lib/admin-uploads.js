@@ -88,8 +88,8 @@ async function saveFinal(key, data, metadata) {
   if (isNetlifyRuntime()) {
     const assets = await blobStore(ASSET_STORE_NAME);
     const result = await assets.set(key, arrayBufferFrom(data), { metadata });
-    const saved = await assets.getMetadata(key);
-    if (!result.modified || !saved) {
+    const saved = await assets.getWithMetadata(key, { type: "arrayBuffer" });
+    if (!result.modified || !saved || saved.data.byteLength !== data.length) {
       throw Object.assign(new Error("The file could not be verified in permanent storage. Please upload it again."), { statusCode: 503 });
     }
     return result;
@@ -111,10 +111,13 @@ async function readStoredAsset(key) {
     [TEMP_STORE_NAME, key],
     [TEMP_STORE_NAME, `uploads/${key}`],
   ];
-  const results = await Promise.all(locations.map(async ([storeName, storedKey]) =>
-    (await blobStore(storeName)).getWithMetadata(storedKey, { type: "arrayBuffer" })));
-  const result = results.find(Boolean);
-  return result ? { data: Buffer.from(result.data), metadata: result.metadata || {} } : null;
+  for (const [storeName, storedKey] of locations) {
+    try {
+      const result = await (await blobStore(storeName)).getWithMetadata(storedKey, { type: "arrayBuffer" });
+      if (result) return { data: Buffer.from(result.data), metadata: result.metadata || {} };
+    } catch {}
+  }
+  return null;
 }
 
 async function readFinal(key) {

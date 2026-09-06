@@ -312,17 +312,28 @@
   }
 
   async function uploadFile(file, previousUrl, onProgress) {
-    const maximum = file.type === "application/pdf" ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
+    const extension = String(file.name || "").split(".").pop().toLowerCase();
+    const inferredTypes = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp" };
+    const contentType = String(file.type || inferredTypes[extension] || "").toLowerCase();
+    if (!contentType) throw new Error("HelpDesk could not identify this file type. Choose a PDF, PNG, JPEG or WebP file.");
+    const maximum = contentType === "application/pdf" ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
     if (!file.size || file.size > maximum) throw new Error(`File must be under ${maximum / 1024 / 1024} MB.`);
     const chunkSize = 1536 * 1024; const totalChunks = Math.ceil(file.size / chunkSize); const uploadId = crypto.randomUUID().replace(/-/g, "");
     for (let index = 0; index < totalChunks; index += 1) {
       const buffer = await file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize)).arrayBuffer();
       const bytes = new Uint8Array(buffer); let binary = "";
       for (let cursor = 0; cursor < bytes.length; cursor += 0x8000) binary += String.fromCharCode(...bytes.subarray(cursor, cursor + 0x8000));
-      await request("/api/admin/upload", { method: "POST", body: JSON.stringify({ action: "chunk", uploadId, name: file.name, contentType: file.type, size: file.size, totalChunks, index, data: btoa(binary) }) });
+      await request("/api/admin/upload", { method: "POST", body: JSON.stringify({ action: "chunk", uploadId, name: file.name, contentType, size: file.size, totalChunks, index, data: btoa(binary) }) });
       if (onProgress) onProgress(Math.round(((index + 1) / totalChunks) * 95));
     }
-    const result = await request("/api/admin/upload", { method: "POST", body: JSON.stringify({ action: "complete", uploadId, name: file.name, contentType: file.type, size: file.size, totalChunks, previousUrl }) });
+    const result = await request("/api/admin/upload", { method: "POST", body: JSON.stringify({ action: "complete", uploadId, name: file.name, contentType, size: file.size, totalChunks, previousUrl }) });
+    let verified = false;
+    for (let attempt = 0; attempt < 3 && !verified; attempt += 1) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+      const response = await fetch(result.url, { method: "HEAD", credentials: "same-origin", cache: "no-store" });
+      verified = response.ok;
+    }
+    if (!verified) throw new Error("The file was uploaded but its public link could not be verified. Please upload it again before saving the draft.");
     if (onProgress) onProgress(100);
     return result.url;
   }
@@ -379,6 +390,129 @@
       markDirty();
       renderResources();
       toast(`Applied ${source.name} to ${changed} selected section${changed === 1 ? "" : "s"}. Save the draft when ready.`);
+    });
+  }
+
+  const RESOURCE_URL_FIELDS = [
+    ["lectureUrl", "Main lecture"],
+    ["notesUrl", "General notes"],
+    ["handwrittenNotesUrl", "Handwritten notes"],
+    ["masterNotesUrl", "Master notes"],
+    ["pyqUrl", "PYQ file"],
+    ["practiceKey", "Practice source PDF"],
+    ["bookUrl", "Recommended book"],
+    ["workshopFileUrl", "Workshop file"],
+    ["classNotesUrl", "Class notes"],
+    ["labManualUrl", "Lab practical / manual"],
+    ["vivaQuestionsUrl", "Viva questions"],
+    ["endSemesterQuestionsUrl", "End-semester lab questions"],
+    ["experimentVideosUrl", "Experiment videos"],
+  ];
+
+  function canonicalResourceUrl(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    try {
+      const parsed = new URL(text, window.location.origin);
+      if (parsed.origin === window.location.origin) return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      return parsed.href;
+    } catch { return text; }
+  }
+
+  function subjectScopeLabels(resources, subjectId) {
+    const labels = [];
+    resources.branches.forEach((branch) => {
+      branch.semesters.forEach((semester) => {
+        if (semester.subjectIds.includes(subjectId)) labels.push(`${branch.name} · ${semester.name}`);
+      });
+    });
+    return labels;
+  }
+
+  function resourceUrlEntries(resources) {
+    const entries = [];
+    const addFields = (owner, subject, unit, scopes) => {
+      RESOURCE_URL_FIELDS.forEach(([field, label]) => {
+        if (typeof owner[field] !== "string" || !owner[field].trim()) return;
+        entries.push({
+          value: owner[field], subject, unit, label,
+          scopes,
+          remove() { if (typeof owner[field] !== "string") return false; owner[field] = null; return true; },
+        });
+      });
+    };
+    const addCollection = (items, collectionLabel, subject, unit, scopes) => {
+      if (!Array.isArray(items)) return;
+      items.forEach((item) => {
+        if (!item || typeof item.url !== "string" || !item.url.trim()) return;
+        entries.push({
+          value: item.url, subject, unit,
+          label: `${collectionLabel}${item.title ? ` · ${item.title}` : ""}`,
+          scopes,
+          remove() { const index = items.indexOf(item); if (index < 0) return false; items.splice(index, 1); return true; },
+        });
+      });
+    };
+    resources.unitCollections.forEach((subject) => {
+      const scopes = subjectScopeLabels(resources, subject.id);
+      addFields(subject, subject, null, scopes);
+      addCollection(subject.books, "Subject book", subject, null, scopes);
+      addCollection(subject.lectureItems, "Subject lecture", subject, null, scopes);
+      (subject.units || []).forEach((unit) => {
+        addFields(unit, subject, unit, scopes);
+        addCollection(unit.books, "Book", subject, unit, scopes);
+        addCollection(unit.lectureItems, "Lecture", subject, unit, scopes);
+      });
+    });
+    return entries;
+  }
+
+  function findResourceMatches(resources, wantedUrl) {
+    const wanted = canonicalResourceUrl(wantedUrl);
+    if (!wanted) return [];
+    return resourceUrlEntries(resources).filter((entry) => canonicalResourceUrl(entry.value) === wanted);
+  }
+
+  function removeResourceMatches(resources, wantedUrl) {
+    return findResourceMatches(resources, wantedUrl).reduce((removed, match) => removed + (match.remove() ? 1 : 0), 0);
+  }
+
+  function openRemoveResourceEverywhere() {
+    if (state.role !== "main") return;
+    const legacyCount = resourceUrlEntries(state.data.resources).filter((entry) => /^\/uploads\/pdf-(?!v2-)/.test(canonicalResourceUrl(entry.value))).length;
+    const modal = document.createElement("div");
+    modal.className = "request-modal";
+    modal.innerHTML = `<form class="request-modal-card remove-resource-card"><div class="quick-modal-head"><div><p class="eyebrow">Library cleanup</p><h2>Remove one resource everywhere</h2><p class="muted">Paste the exact link once. HelpDesk will find it across every branch, semester, subject, unit and special section before anything is removed.</p></div><button class="icon-button" type="button" data-cancel aria-label="Close">×</button></div>${legacyCount?`<div class="legacy-upload-note"><strong>${legacyCount} older uploaded-file reference${legacyCount===1?" is":"s are"} still in the library.</strong><span>If one opens as “Not found”, remove that exact link here and upload its original PDF again. New uploads are verified before they can be added to a draft.</span></div>`:""}<label class="field"><strong>Resource URL</strong><input name="resource-url" type="text" required autocomplete="off" placeholder="Paste the PDF, Drive or YouTube link"></label><button class="quiet-button" type="submit">Find everywhere</button><div class="remove-resource-results" data-remove-results hidden></div><p class="quick-help">Removal changes only the current draft. Review it, click <strong>Save draft</strong>, and click <strong>Publish changes</strong> when ready. The stored file itself is retained safely.</p><div class="management-actions"><button class="danger-button" type="button" data-remove-confirm hidden>Remove matches from draft</button><button class="quiet-button" type="button" data-cancel>Cancel</button></div></form>`;
+    document.body.appendChild(modal);
+    const form = $("form", modal); const input = $('[name="resource-url"]', modal);
+    const results = $("[data-remove-results]", modal); const removeButton = $("[data-remove-confirm]", modal);
+    let currentUrl = ""; let currentMatches = [];
+    const showMatches = () => {
+      currentUrl = input.value.trim(); currentMatches = findResourceMatches(state.data.resources, currentUrl);
+      results.hidden = false; removeButton.hidden = !currentMatches.length;
+      if (!currentMatches.length) {
+        results.innerHTML = `<p class="resource-empty">No exact match was found. Copy the complete link from the resource field and try again.</p>`;
+        return;
+      }
+      removeButton.textContent = `Remove ${currentMatches.length} match${currentMatches.length === 1 ? "" : "es"} from draft`;
+      results.innerHTML = `<div class="remove-result-summary"><strong>${currentMatches.length} exact match${currentMatches.length === 1 ? "" : "es"} found</strong><span>Nothing has been removed yet.</span></div><div class="remove-match-list">${currentMatches.map((match) => {
+        const unit = match.unit ? `${match.unit.number} · ${match.unit.title}` : "Subject-wide resource";
+        const scopes = match.scopes.length ? match.scopes : ["Unlinked library subject"];
+        const shown = scopes.slice(0, 4); const more = scopes.length - shown.length;
+        return `<div class="remove-match"><strong>${escape(match.subject.name)} · ${escape(unit)}</strong><span>${escape(match.label)}</span><small>${escape(shown.join(" · "))}${more > 0 ? ` · +${more} more sections` : ""}</small></div>`;
+      }).join("")}</div>`;
+    };
+    $$('[data-cancel]', modal).forEach((button) => button.addEventListener("click", () => modal.remove()));
+    input.addEventListener("input", () => { results.hidden = true; removeButton.hidden = true; currentMatches = []; });
+    form.addEventListener("submit", (event) => { event.preventDefault(); showMatches(); });
+    removeButton.addEventListener("click", () => {
+      if (!currentMatches.length) return;
+      if (!confirm(`Remove all ${currentMatches.length} matching references from the draft? This will not publish automatically.`)) return;
+      const removed = removeResourceMatches(state.data.resources, currentUrl);
+      modal.remove();
+      if (!removed) return toast("The matching references had already changed. Search again.");
+      markDirty(); renderResources();
+      toast(`Removed ${removed} resource reference${removed === 1 ? "" : "s"} everywhere. Save the draft, then publish when ready.`);
     });
   }
 
@@ -476,9 +610,10 @@
     const linkOptions = semester ? resources.unitCollections.filter((entry)=>!semester.subjectIds.includes(entry.id)).map((entry)=>`<option value="${escape(entry.id)}">${escape(entry.name)}</option>`).join("") : "";
     const banner=branchAdmin?`<div class="regular-banner branch-banner"><div><strong>Branch admin access</strong><p>You can publish resource attribute updates directly inside your governed sections. Structural changes still need a main admin.</p></div><span class="role-pill">${state.coins} coins</span></div>`:`<div class="regular-banner"><div><strong>Approval-only access</strong><p>You can draft changes only inside your assigned semesters. Approved contributions earn 1 coin.</p></div><span class="role-pill">${state.permissions.length} assigned</span></div>`;
     const structureTools = branchAdmin ? "" : `<details class="panel structure-tools"><summary><span><strong>Manage library structure</strong><small>Add or rename branches, semesters, subjects and sections.</small></span><span class="structure-chevron">⌄</span></summary><div class="structure-body">${main?`<div class="structure-group"><p>Branch</p><button class="mini-button" id="edit-branch">Rename / edit</button><button class="mini-button" id="add-branch">＋ New branch</button><button class="mini-button danger" id="delete-branch">Delete branch</button></div><div class="structure-group"><p>Semester</p><button class="mini-button" id="rename-semester">Rename</button><button class="mini-button" id="move-semester-up">↑ Move up</button><button class="mini-button" id="move-semester-down">↓ Move down</button><button class="mini-button" id="add-semester">＋ New semester</button><button class="mini-button danger" id="delete-semester">Delete semester</button></div>`:""}<div class="structure-group"><p>Subject</p><span class="structure-link"><select id="link-subject"><option value="">Choose existing subject…</option>${linkOptions}</select><button class="mini-button" id="link-subject-button">Link</button></span><button class="mini-button" id="add-subject">＋ ${main?"New subject":"Request new subject"}</button>${subject?`<button class="mini-button danger" id="unlink-subject">Remove from this semester</button>`:""}</div></div></details>`;
-    editor.innerHTML = `${main?"":banner}<div class="section-intro resource-intro"><div><h2>Resource editor</h2><p class="muted">Choose a location, add resources, save the batch, then publish it.</p></div><div class="resource-intro-actions"><button class="primary" id="quick-add-resource" ${subject&&subject.units.length?"":"disabled"}>＋ Quick add resource</button>${main?`<button class="quiet-button" id="fill-selected" ${subject?"":"disabled"}>Copy to selected sections…</button>`:""}</div></div><div class="workflow-strip" aria-label="Resource publishing workflow"><span><b>1</b> Choose location</span><i>›</i><span><b>2</b> Add resources</span><i>›</i><span><b>3</b> Save draft</span><i>›</i><span><b>4</b> Publish when ready</span></div><section class="panel resource-navigator" aria-label="Choose resource location"><label><span>1 · Branch</span><select id="branch-picker">${branchOptions}</select></label><i aria-hidden="true">›</i><label><span>2 · Semester</span><select id="semester-picker" ${semesters.length?"":"disabled"}>${semesterOptions||'<option>No semesters</option>'}</select></label><i aria-hidden="true">›</i><label><span>3 · Subject</span><select id="subject-picker" ${subjectOptions?"":"disabled"}>${subjectOptions||'<option>No subjects</option>'}</select></label></section>${structureTools}<article class="panel document resource-document" id="resource-document">${renderSubjectDocument(subject)}</article>`;
+    editor.innerHTML = `${main?"":banner}<div class="section-intro resource-intro"><div><h2>Resource editor</h2><p class="muted">Choose a location, add resources, save the batch, then publish it.</p></div><div class="resource-intro-actions"><button class="primary" id="quick-add-resource" ${subject&&subject.units.length?"":"disabled"}>＋ Quick add resource</button>${main?`<button class="quiet-button" id="fill-selected" ${subject?"":"disabled"}>Copy to selected sections…</button><button class="quiet-button global-remove-button" id="remove-resource-everywhere">Remove resource everywhere…</button>`:""}</div></div><div class="workflow-strip" aria-label="Resource publishing workflow"><span><b>1</b> Choose location</span><i>›</i><span><b>2</b> Add resources</span><i>›</i><span><b>3</b> Save draft</span><i>›</i><span><b>4</b> Publish when ready</span></div><section class="panel resource-navigator" aria-label="Choose resource location"><label><span>1 · Branch</span><select id="branch-picker">${branchOptions}</select></label><i aria-hidden="true">›</i><label><span>2 · Semester</span><select id="semester-picker" ${semesters.length?"":"disabled"}>${semesterOptions||'<option>No semesters</option>'}</select></label><i aria-hidden="true">›</i><label><span>3 · Subject</span><select id="subject-picker" ${subjectOptions?"":"disabled"}>${subjectOptions||'<option>No subjects</option>'}</select></label></section>${structureTools}<article class="panel document resource-document" id="resource-document">${renderSubjectDocument(subject)}</article>`;
     bindResourceTree(); bind($("#resource-document"), subject || {}); bindUnitActions();
     $("#fill-selected")?.addEventListener("click", openFillSelected);
+    $("#remove-resource-everywhere")?.addEventListener("click", openRemoveResourceEverywhere);
     $("#quick-add-resource")?.addEventListener("click", openQuickAddResource);
   }
 

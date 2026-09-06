@@ -755,6 +755,14 @@ test("admin UI and server enforce explicit draft/publish controls", async () => 
   assert.match(html, /id="publish-button"[^>]*>Publish changes</);
   assert.match(script, /Fill in selected/);
   assert.match(script, /data-fill-target/);
+  assert.match(script, /Remove one resource everywhere/);
+  assert.match(script, /id="remove-resource-everywhere"/);
+  assert.match(script, /findResourceMatches/);
+  assert.match(script, /removeResourceMatches/);
+  assert.match(script, /This will not publish automatically/);
+  assert.match(script, /if \(state\.role !== "main"\) return/);
+  assert.match(script, /public link could not be verified/);
+  assert.match(script, /method: "HEAD"/);
   assert.match(script, /id="branch-picker"/);
   assert.match(script, /id="semester-picker"/);
   assert.match(script, /id="subject-picker"/);
@@ -803,7 +811,8 @@ test("uploaded assets use permanent versioned keys and are not deleted when a fi
   const uploads = await fs.readFile(path.resolve(__dirname, "../netlify/lib/admin-uploads.js"), "utf8");
   assert.match(uploads, /ASSET_STORE_NAME = "helpdesk-public-assets"/);
   assert.match(uploads, /arrayBufferFrom\(data\)/);
-  assert.match(uploads, /getMetadata\(key\)/);
+  assert.match(uploads, /getWithMetadata\(key, \{ type: "arrayBuffer" \}\)/);
+  assert.match(uploads, /saved\.data\.byteLength !== data\.length/);
   assert.match(uploads, /`\$\{type\.kind\}-v2-\$\{digest\}\$\{type\.extension\}`/);
   assert.doesNotMatch(uploads, /previous && previous\[1\] !== key/);
   assert.match(uploads, /\[TEMP_STORE_NAME, `asset:\$\{key\}`\]/);
