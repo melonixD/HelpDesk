@@ -7,7 +7,10 @@ exports.handler = async function handler(event) {
   if (event.httpMethod !== "GET") return methodNotAllowed("GET");
   const resources = await loadPublished("resources");
   return json(200, filterResources(event.queryStringParameters || {}, resources), {
-    "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
-    "Netlify-CDN-Cache-Control": "public, durable, max-age=60, stale-while-revalidate=300",
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "CDN-Cache-Control": "no-store",
+    "Netlify-CDN-Cache-Control": "no-store",
+    Pragma: "no-cache",
+    Expires: "0",
   });
 };

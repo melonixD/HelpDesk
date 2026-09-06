@@ -804,3 +804,21 @@ test("Netlify functions reject unsupported methods", async () => {
   assert.equal(result.statusCode, 405);
   assert.equal(result.headers.Allow, "GET");
 });
+
+test("published resources bypass browser and Netlify CDN caches", async () => {
+  const result = await resources({ httpMethod: "GET", queryStringParameters: {} });
+  assert.equal(result.statusCode, 200);
+  assert.match(result.headers["Cache-Control"], /no-store/);
+  assert.equal(result.headers["Netlify-CDN-Cache-Control"], "no-store");
+});
+
+test("Blob content uses immutable version keys instead of stale mutable reads", async () => {
+  const [drafts, published] = await Promise.all([
+    fs.readFile(path.resolve(__dirname, "../netlify/lib/admin-drafts.js"), "utf8"),
+    fs.readFile(path.resolve(__dirname, "../netlify/lib/content-store.js"), "utf8"),
+  ]);
+  assert.match(drafts, /draft:\$\{target\}:v2:/);
+  assert.match(drafts, /onlyIfNew:\s*true/);
+  assert.match(published, /published:\$\{target\}:v2:/);
+  assert.match(published, /onlyIfNew:\s*true/);
+});

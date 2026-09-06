@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   }
   try {
     const result = await saveDraft(body.target, body.data, auth.session.sub);
-    return json(200, { saved: true, draft: true, deploying: false, updatedAt: result.updatedAt, updatedBy: result.updatedBy });
+    return json(200, { saved: true, draft: true, deploying: false, draftId: result.draftId || null, updatedAt: result.updatedAt, updatedBy: result.updatedBy });
   } catch (error) {
     const status = error instanceof ValidationError ? 400 : (error.statusCode || 500);
     return json(status, { error: error.message || "Could not save this change." });

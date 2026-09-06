@@ -156,7 +156,7 @@
       const result = await request("/api/admin/save", { method: "POST", body: JSON.stringify({ target: key, data: state.data[key] }) });
       if (!result.draft || result.deploying) throw new Error("Safety check failed: the server did not confirm a private draft-only save.");
       state.dirty = state.revision !== revision;
-      if (!state.dirty) state.drafts[key] = { updatedAt: result.updatedAt, updatedBy: result.updatedBy };
+      if (!state.dirty) state.drafts[key] = { draftId: result.draftId || null, updatedAt: result.updatedAt, updatedBy: result.updatedBy };
       status.textContent = state.dirty ? "Unsaved" : "Draft saved"; state.history[key] = result.historyUrl || state.history[key]; renderHistory();
       $$('.field[data-dirty="true"]').forEach((field) => {
         field.dataset.dirty = "false"; field.dataset.saved = "true";
@@ -182,7 +182,7 @@
     if (!confirm(`Publish the saved ${label} draft now? It will update the live website through Netlify Blobs without starting a production deployment.`)) return false;
     state.publishing = true; publishButton.disabled = true; publishButton.textContent = "Publishing…"; status.textContent = "Publishing";
     try {
-      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, message: `Publish saved ${label} content from HelpDesk admin` }) });
+      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, draftId: state.drafts[key].draftId || null, message: `Publish saved ${label} content from HelpDesk admin` }) });
       if (result.deploying) throw new Error("Safety check failed: content attempted to start a deployment.");
       delete state.drafts[key];
       state.published[key] = { publishedAt: result.publishedAt, publishedBy: result.publishedBy, version: result.version, delivery: result.delivery };
@@ -696,7 +696,7 @@
 
   async function runManagementAction(body, button) {
     const old=button&&button.textContent;if(button){button.disabled=true;button.textContent="Working…";}
-    try{const result=await request("/api/admin/management",{method:"POST",body:JSON.stringify(body)});if(result.draft&&result.target)state.drafts[result.target]={updatedAt:result.updatedAt,updatedBy:result.updatedBy};toast(result.draft?"Approved and saved as a private draft. Nothing was deployed.":(result.promoted?"Promoted to main admin. They must sign out and sign in again.":"Access settings updated."));state.management=await request("/api/admin/management",{method:"GET"});state.community=state.management.leaderboard||state.community;renderManagement();return result;}
+    try{const result=await request("/api/admin/management",{method:"POST",body:JSON.stringify(body)});if(result.draft&&result.target)state.drafts[result.target]={draftId:result.draftId||null,updatedAt:result.updatedAt,updatedBy:result.updatedBy};toast(result.draft?"Approved and saved as a private draft. Nothing was deployed.":(result.promoted?"Promoted to main admin. They must sign out and sign in again.":"Access settings updated."));state.management=await request("/api/admin/management",{method:"GET"});state.community=state.management.leaderboard||state.community;renderManagement();return result;}
     catch(error){toast(error.message);if(button){button.disabled=false;button.textContent=old;}return null;}
   }
 
