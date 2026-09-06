@@ -9,6 +9,8 @@ const MAX_PDF_BYTES = 20 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const LOCAL_DIR = path.join(os.tmpdir(), "helpdesk-admin-uploads");
 const PUBLIC_UPLOADS = path.resolve(__dirname, "../../public/uploads");
+const TEMP_STORE_NAME = "helpdesk-admin-uploads";
+const ASSET_STORE_NAME = "helpdesk-public-assets";
 const TYPES = {
   "application/pdf": { extension: ".pdf", kind: "pdf", maximum: MAX_PDF_BYTES },
   "image/jpeg": { extension: ".jpg", kind: "image", maximum: MAX_IMAGE_BYTES },
@@ -45,9 +47,13 @@ function verifyMagic(buffer, contentType) {
   return true;
 }
 
-async function blobStore() {
+async function blobStore(name = TEMP_STORE_NAME) {
   const { getStore } = require("@netlify/blobs");
-  return getStore("helpdesk-admin-uploads");
+  return getStore(name);
+}
+
+function arrayBufferFrom(buffer) {
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 }
 
 async function putTemporary(key, data, metadata) {
@@ -79,22 +85,42 @@ async function removeTemporary(key) {
 }
 
 async function saveFinal(key, data, metadata) {
-  if (isNetlifyRuntime()) return (await blobStore()).set(`asset:${key}`, data, { metadata });
+  if (isNetlifyRuntime()) {
+    const assets = await blobStore(ASSET_STORE_NAME);
+    const result = await assets.set(key, arrayBufferFrom(data), { metadata });
+    const saved = await assets.getMetadata(key);
+    if (!result.modified || !saved) {
+      throw Object.assign(new Error("The file could not be verified in permanent storage. Please upload it again."), { statusCode: 503 });
+    }
+    return result;
+  }
   await fs.mkdir(PUBLIC_UPLOADS, { recursive: true });
   await fs.writeFile(path.join(PUBLIC_UPLOADS, key), data);
 }
 
 async function removeFinal(key) {
   if (!/^[a-z0-9-]{10,100}\.(pdf|png|jpg|webp)$/.test(String(key || ""))) return;
-  if (isNetlifyRuntime()) return (await blobStore()).delete(`asset:${key}`);
+  if (isNetlifyRuntime()) return;
   await fs.unlink(path.join(PUBLIC_UPLOADS, key)).catch(() => {});
+}
+
+async function readStoredAsset(key) {
+  const locations = [
+    [ASSET_STORE_NAME, key],
+    [TEMP_STORE_NAME, `asset:${key}`],
+    [TEMP_STORE_NAME, key],
+    [TEMP_STORE_NAME, `uploads/${key}`],
+  ];
+  const results = await Promise.all(locations.map(async ([storeName, storedKey]) =>
+    (await blobStore(storeName)).getWithMetadata(storedKey, { type: "arrayBuffer" })));
+  const result = results.find(Boolean);
+  return result ? { data: Buffer.from(result.data), metadata: result.metadata || {} } : null;
 }
 
 async function readFinal(key) {
   if (!/^[a-z0-9-]{10,100}\.(pdf|png|jpg|webp)$/.test(String(key || ""))) return null;
   if (isNetlifyRuntime()) {
-    const result = await (await blobStore()).getWithMetadata(`asset:${key}`, { type: "arrayBuffer" });
-    return result ? { data: Buffer.from(result.data), metadata: result.metadata || {} } : null;
+    return readStoredAsset(key);
   }
   try {
     const data = await fs.readFile(path.join(PUBLIC_UPLOADS, key));
@@ -141,11 +167,11 @@ async function completeUpload(body) {
   const data = Buffer.concat(chunks);
   if (data.length !== size || !verifyMagic(data, contentType)) throw Object.assign(new Error("The uploaded file failed validation."), { statusCode: 400 });
   const digest = crypto.createHash("sha256").update(data).digest("hex").slice(0, 24);
-  const key = `${type.kind}-${digest}${type.extension}`;
+  const key = `${type.kind}-v2-${digest}${type.extension}`;
   const metadata = { contentType, name: String(body.name || "upload").slice(0, 180), size, uploadedAt: new Date().toISOString() };
   await saveFinal(key, data, metadata);
-  const previous = /^\/uploads\/([a-z0-9-]{10,100}\.(?:pdf|png|jpg|webp))$/.exec(String(body.previousUrl || ""));
-  if (previous && previous[1] !== key) await removeFinal(previous[1]);
+  // Uploaded URLs may be reused in several branches or sections. Never delete
+  // the previous object here; removing it would break every other reference.
   await Promise.all(chunks.map((_, index) => removeTemporary(`chunk:${uploadId}:${index}`)));
   return { uploaded: true, url: `/uploads/${key}`, name: metadata.name, size, contentType };
 }

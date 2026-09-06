@@ -799,6 +799,16 @@ test("admin PDF uploads are validated, assembled and publicly readable", async (
   }
 });
 
+test("uploaded assets use permanent versioned keys and are not deleted when a field is replaced", async () => {
+  const uploads = await fs.readFile(path.resolve(__dirname, "../netlify/lib/admin-uploads.js"), "utf8");
+  assert.match(uploads, /ASSET_STORE_NAME = "helpdesk-public-assets"/);
+  assert.match(uploads, /arrayBufferFrom\(data\)/);
+  assert.match(uploads, /getMetadata\(key\)/);
+  assert.match(uploads, /`\$\{type\.kind\}-v2-\$\{digest\}\$\{type\.extension\}`/);
+  assert.doesNotMatch(uploads, /previous && previous\[1\] !== key/);
+  assert.match(uploads, /\[TEMP_STORE_NAME, `asset:\$\{key\}`\]/);
+});
+
 test("Netlify functions reject unsupported methods", async () => {
   const result = await resources({ httpMethod: "POST", queryStringParameters: {} });
   assert.equal(result.statusCode, 405);
