@@ -1,7 +1,7 @@
 const { authorize, json, mainAdminDirectory } = require("../lib/admin-auth");
-const { historyUrls, readJson } = require("../lib/admin-content");
 const { draftDirectory, loadDraft } = require("../lib/admin-drafts");
 const { dashboardContext, filterResources } = require("../lib/admin-control");
+const { loadPublished, publishedDirectory } = require("../lib/content-store");
 const { connectNetlifyBlobs } = require("../lib/netlify-runtime");
 
 exports.handler = async (event) => {
@@ -10,10 +10,10 @@ exports.handler = async (event) => {
   const auth = authorize(event);
   if (!auth.ok) return auth.response;
   try {
-    const context = await dashboardContext(auth.session, mainAdminDirectory());
+    const liveResources = await loadPublished("resources");
+    const context = await dashboardContext(auth.session, mainAdminDirectory(), liveResources);
     const main = context.role === "main";
     const contributor = context.admin;
-    const liveResources = readJson("resources");
     const drafts = main ? await draftDirectory() : {};
     const resourceDraft = await loadDraft("resources");
     const [placementDraft, noticeDraft, scholarshipDraft] = main
@@ -28,11 +28,12 @@ exports.handler = async (event) => {
       permissions: contributor ? contributor.permissions : "all",
       coins: contributor ? Number(contributor.coins) || 0 : null,
       resources: main ? resources : filterResources(resources, contributor.permissions),
-      placements: main ? (placementDraft ? placementDraft.data : readJson("placements")) : null,
-      notices: main ? (noticeDraft ? noticeDraft.data : readJson("notices")) : null,
-      scholarships: main ? (scholarshipDraft ? scholarshipDraft.data : readJson("scholarships")) : null,
+      placements: main ? (placementDraft ? placementDraft.data : await loadPublished("placements")) : null,
+      notices: main ? (noticeDraft ? noticeDraft.data : await loadPublished("notices")) : null,
+      scholarships: main ? (scholarshipDraft ? scholarshipDraft.data : await loadPublished("scholarships")) : null,
       drafts,
-      history: main ? historyUrls() : {},
+      published: main ? await publishedDirectory() : {},
+      history: {},
       csrfToken: auth.session.csrf,
     });
   } catch (error) {

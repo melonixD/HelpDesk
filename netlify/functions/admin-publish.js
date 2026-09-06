@@ -14,10 +14,10 @@ exports.handler = async (event) => {
     const result = await publishDraft(body.target, auth.session.sub, body.message);
     let queuedRequestsPublished = 0;
     if (body.target === "resources") {
-      try { queuedRequestsPublished = await markResourcesDraftPublished(result.commitUrl, auth.session.sub); }
-      catch (error) { console.warn("Resource draft deployed, but contribution statuses could not be refreshed:", error.message); }
+      try { queuedRequestsPublished = await markResourcesDraftPublished(result.version, auth.session.sub); }
+      catch (error) { console.warn("Resources were published, but contribution statuses could not be refreshed:", error.message); }
     }
-    return json(200, { saved: true, deploying: true, published: true, queuedRequestsPublished, ...result });
+    return json(200, { saved: true, deploying: false, published: true, queuedRequestsPublished, ...result });
   } catch (error) {
     return json(error.statusCode || 500, { error: error.message || "Could not publish this draft." });
   }

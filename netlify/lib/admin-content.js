@@ -273,86 +273,9 @@ function readJson(target) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, file), "utf8"));
 }
 
-function githubConfig() {
-  const token = String(process.env.GITHUB_TOKEN || "").trim();
-  const repo = String(process.env.GITHUB_REPO || "").trim();
-  const branch = String(process.env.GITHUB_BRANCH || "main").trim();
-  if (!token || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !branch) {
-    const error = new Error("GitHub saving is not configured.");
-    error.statusCode = 503;
-    throw error;
-  }
-  return { token, repo, branch };
-}
-
-function githubHeaders(token) {
-  return {
-    Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "HelpDesk-Admin",
-  };
-}
-
-async function commitJson(target, value, message) {
-  const data = validateTarget(target, value);
-  const filePath = TARGETS[target];
-  const config = githubConfig();
-  const endpoint = `https://api.github.com/repos/${config.repo}/contents/${filePath}`;
-  const current = await fetch(`${endpoint}?ref=${encodeURIComponent(config.branch)}`, {
-    headers: githubHeaders(config.token),
-  });
-  if (!current.ok) {
-    const error = new Error(current.status === 404 ? `GitHub file ${filePath} was not found.` : "GitHub could not read the current file.");
-    error.statusCode = current.status === 404 ? 404 : 502;
-    throw error;
-  }
-  const currentFile = await current.json();
-  const commitMessage = String(message || `Update ${filePath} from HelpDesk admin`).slice(0, 120);
-  const saved = await fetch(endpoint, {
-    method: "PUT",
-    headers: githubHeaders(config.token),
-    body: JSON.stringify({
-      message: commitMessage,
-      content: Buffer.from(`${JSON.stringify(data, null, 2)}\n`, "utf8").toString("base64"),
-      sha: currentFile.sha,
-      branch: config.branch,
-    }),
-  });
-  if (!saved.ok) {
-    const error = new Error(saved.status === 409
-      ? "The file changed on GitHub. Reload the admin dashboard and try again."
-      : "GitHub could not save this change.");
-    error.statusCode = saved.status === 409 ? 409 : 502;
-    throw error;
-  }
-  const result = await saved.json();
-  return {
-    target,
-    path: filePath,
-    commitUrl: result.commit && result.commit.html_url,
-    historyUrl: `https://github.com/${config.repo}/commits/${encodeURIComponent(config.branch)}/${filePath}`,
-  };
-}
-
-function historyUrls() {
-  try {
-    const config = githubConfig();
-    return Object.fromEntries(Object.entries(TARGETS).map(([target, filePath]) => [
-      target,
-      `https://github.com/${config.repo}/commits/${encodeURIComponent(config.branch)}/${filePath}`,
-    ]));
-  } catch {
-    return {};
-  }
-}
-
 module.exports = {
   TARGETS,
   ValidationError,
-  commitJson,
-  historyUrls,
   readJson,
   validateNotices,
   validatePlacements,

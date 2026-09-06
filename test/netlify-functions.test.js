@@ -6,10 +6,12 @@ const path = require("node:path");
 
 const adminStatePath = path.join(os.tmpdir(), `helpdesk-admin-state-${process.pid}-${Date.now()}.json`);
 const adminDraftPath = path.join(os.tmpdir(), `helpdesk-admin-drafts-${process.pid}-${Date.now()}.json`);
+const publishedContentPath = path.join(os.tmpdir(), `helpdesk-published-content-${process.pid}-${Date.now()}.json`);
 process.env.ADMIN_STATE_PATH = adminStatePath;
 process.env.ADMIN_DRAFT_PATH = adminDraftPath;
+process.env.PUBLISHED_CONTENT_PATH = publishedContentPath;
 process.env.HELPDESK_LOCAL_STORAGE = "true";
-test.after(async () => { await Promise.all([fs.unlink(adminStatePath).catch(() => {}), fs.unlink(adminDraftPath).catch(() => {})]); });
+test.after(async () => { await Promise.all([fs.unlink(adminStatePath).catch(() => {}), fs.unlink(adminDraftPath).catch(() => {}), fs.unlink(publishedContentPath).catch(() => {})]); });
 
 const health = require("../netlify/functions/health").handler;
 const resources = require("../netlify/functions/resources").handler;
@@ -415,22 +417,16 @@ test("main admins can change their own password without a deployment", async () 
   }
 });
 
-test("main-admin drafts do not deploy until the explicit publish request", async () => {
+test("main-admin drafts publish through Blobs without a GitHub commit or deployment", async () => {
   const bcrypt = require("bcryptjs");
   const login = require("../netlify/functions/admin-login").handler;
   const save = require("../netlify/functions/admin-save").handler;
   const publish = require("../netlify/functions/admin-publish").handler;
-  const prior = {
-    username: process.env.ADMIN_USERNAME, hash: process.env.ADMIN_PASSWORD_HASH,
-    secret: process.env.SESSION_SECRET, token: process.env.GITHUB_TOKEN,
-    repo: process.env.GITHUB_REPO, branch: process.env.GITHUB_BRANCH,
-  };
+  const prior = { username: process.env.ADMIN_USERNAME, hash: process.env.ADMIN_PASSWORD_HASH, secret: process.env.SESSION_SECRET };
   process.env.ADMIN_USERNAME = "test-admin";
   process.env.ADMIN_PASSWORD_HASH = bcrypt.hashSync("test-password", 4);
   process.env.SESSION_SECRET = "0123456789abcdef0123456789abcdef";
-  process.env.GITHUB_TOKEN = "test-token";
-  process.env.GITHUB_REPO = "owner/repository";
-  process.env.GITHUB_BRANCH = "main";
+  await fs.unlink(publishedContentPath).catch(() => {});
   const loginResult = await login({
     httpMethod: "POST", body: JSON.stringify({ username: "test-admin", password: "test-password" }),
     headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.90" },
@@ -438,39 +434,37 @@ test("main-admin drafts do not deploy until the explicit publish request", async
   assert.equal(loginResult.statusCode, 200);
   const session = JSON.parse(loginResult.body);
   const cookie = loginResult.headers["Set-Cookie"].split(";")[0];
-  const previousFetch = global.fetch; let calls = 0;
-  global.fetch = async (_url, options) => {
-    calls += 1;
-    if (!options || !options.method) return new Response(JSON.stringify({ sha: "current-sha" }), { status: 200 });
-    return new Response(JSON.stringify({ commit: { html_url: "https://github.com/owner/repository/commit/abc" } }), { status: 200 });
-  };
   try {
+    const draftData = JSON.parse(JSON.stringify(require("../data/resources.json")));
+    draftData.meta.description = "Published from the Blob-backed admin test.";
     const result = await save({
       httpMethod: "POST",
-      body: JSON.stringify({ target: "resources", data: JSON.parse(JSON.stringify(require("../data/resources.json"))) }),
+      body: JSON.stringify({ target: "resources", data: draftData }),
       headers: { cookie, host: "localhost:3000", origin: "http://localhost:3000", "x-helpdesk-csrf": session.csrfToken },
     });
     assert.equal(result.statusCode, 200);
     assert.equal(JSON.parse(result.body).deploying, false);
     assert.equal(JSON.parse(result.body).draft, true);
-    assert.equal(calls, 0);
+    const beforePublish = JSON.parse((await resources({ httpMethod: "GET", queryStringParameters: {} })).body);
+    assert.notEqual(beforePublish.meta.description, draftData.meta.description);
     const published = await publish({
       httpMethod: "POST",
       body: JSON.stringify({ target: "resources", message: "Publish saved resources draft" }),
       headers: { cookie, host: "localhost:3000", origin: "http://localhost:3000", "x-helpdesk-csrf": session.csrfToken },
     });
     assert.equal(published.statusCode, 200);
-    assert.equal(JSON.parse(published.body).deploying, true);
-    assert.equal(calls, 2);
+    assert.equal(JSON.parse(published.body).deploying, false);
+    assert.equal(JSON.parse(published.body).delivery, "netlify-blobs");
+    const afterPublish = JSON.parse((await resources({ httpMethod: "GET", queryStringParameters: {} })).body);
+    assert.equal(afterPublish.meta.description, draftData.meta.description);
   } finally {
-    global.fetch = previousFetch;
     const restore = (key, value) => value === undefined ? delete process.env[key] : process.env[key] = value;
     restore("ADMIN_USERNAME", prior.username); restore("ADMIN_PASSWORD_HASH", prior.hash); restore("SESSION_SECRET", prior.secret);
-    restore("GITHUB_TOKEN", prior.token); restore("GITHUB_REPO", prior.repo); restore("GITHUB_BRANCH", prior.branch);
+    await fs.unlink(publishedContentPath).catch(() => {});
   }
 });
 
-test("all contributor changes stay drafted until a main admin explicitly deploys", async () => {
+test("all contributor changes stay drafted until a main admin explicitly publishes", async () => {
   const bcrypt = require("bcryptjs");
   const register = require("../netlify/functions/admin-register").handler;
   const login = require("../netlify/functions/admin-login").handler;
@@ -482,14 +476,13 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
   const changePassword = require("../netlify/functions/admin-password").handler;
   const directSave = require("../netlify/functions/admin-save").handler;
   const publish = require("../netlify/functions/admin-publish").handler;
-  const previousFetch = global.fetch;
   const prior = Object.fromEntries([
     "MAIN_ADMINS_JSON", "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "SESSION_SECRET",
-    "GITHUB_TOKEN", "GITHUB_REPO", "GITHUB_BRANCH",
   ].map((key) => [key, process.env[key]]));
   const restore = (key) => prior[key] === undefined ? delete process.env[key] : process.env[key] = prior[key];
   await fs.unlink(adminStatePath).catch(() => {});
   await fs.unlink(adminDraftPath).catch(() => {});
+  await fs.unlink(publishedContentPath).catch(() => {});
   process.env.MAIN_ADMINS_JSON = JSON.stringify([{
     username: "main-test",
     name: "Main Test",
@@ -498,9 +491,6 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
   delete process.env.ADMIN_USERNAME;
   delete process.env.ADMIN_PASSWORD_HASH;
   process.env.SESSION_SECRET = "0123456789abcdef0123456789abcdef";
-  process.env.GITHUB_TOKEN = "test-token";
-  process.env.GITHUB_REPO = "owner/repository";
-  process.env.GITHUB_BRANCH = "main";
 
   const authHeaders = (cookie, csrf) => ({
     cookie,
@@ -599,17 +589,6 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
     });
     assert.equal(forbiddenScope.statusCode, 403);
 
-    const committedDocuments = [];
-    global.fetch = async (_url, options) => {
-      if (!options || !options.method) {
-        return new Response(JSON.stringify({ sha: "current-sha" }), { status: 200 });
-      }
-      const payload = JSON.parse(options.body);
-      committedDocuments.push(JSON.parse(Buffer.from(payload.content, "base64").toString("utf8")));
-      return new Response(JSON.stringify({
-        commit: { html_url: "https://github.com/owner/repository/commit/reviewed" },
-      }), { status: 200 });
-    };
     const approvalDraftResult = await management({
       httpMethod: "POST",
       headers: authHeaders(mainCookie, mainSession.csrfToken),
@@ -618,7 +597,6 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
     assert.equal(approvalDraftResult.statusCode, 200);
     assert.equal(JSON.parse(approvalDraftResult.body).draft, true);
     assert.equal(JSON.parse(approvalDraftResult.body).deploying, false);
-    assert.equal(committedDocuments.length, 0);
 
     const snapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
     assert.equal(snapshotResult.statusCode, 200);
@@ -672,7 +650,6 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
     assert.equal(branchDraftResult.statusCode, 200);
     assert.equal(JSON.parse(branchDraftResult.body).draft, true);
     assert.equal(JSON.parse(branchDraftResult.body).deploying, false);
-    assert.equal(committedDocuments.length, 0);
 
     const structuralSemester = { ...governedSemester, subjectIds: governedSemester.subjectIds.slice(1) };
     const structuralResult = await scopedSave({
@@ -696,17 +673,17 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
     assert.equal(finalSnapshot.leaderboard[0].topContributor, true);
     assert.ok(finalSnapshot.changeRequests.some((item) => item.status === "drafted"));
 
-    const explicitDeployResult = await publish({
+    const explicitPublishResult = await publish({
       httpMethod: "POST",
       headers: authHeaders(mainCookie, mainSession.csrfToken),
-      body: JSON.stringify({ target: "resources", message: "Deploy reviewed resource draft" }),
+      body: JSON.stringify({ target: "resources", message: "Publish reviewed resource draft" }),
     });
-    assert.equal(explicitDeployResult.statusCode, 200);
-    assert.equal(JSON.parse(explicitDeployResult.body).deploying, true);
-    assert.equal(committedDocuments.length, 1);
-    const deployedSnapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
-    const deployedSnapshot = JSON.parse(deployedSnapshotResult.body);
-    assert.ok(deployedSnapshot.changeRequests.filter((item) => [requestId, finalSnapshot.changeRequests.find((item) => item.status === "drafted").id].includes(item.id)).every((item) => item.status === "published"));
+    assert.equal(explicitPublishResult.statusCode, 200);
+    assert.equal(JSON.parse(explicitPublishResult.body).deploying, false);
+    assert.equal(JSON.parse(explicitPublishResult.body).delivery, "netlify-blobs");
+    const publishedSnapshotResult = await management({ httpMethod: "GET", headers: { cookie: mainCookie } });
+    const publishedSnapshot = JSON.parse(publishedSnapshotResult.body);
+    assert.ok(publishedSnapshot.changeRequests.filter((item) => [requestId, finalSnapshot.changeRequests.find((item) => item.status === "drafted").id].includes(item.id)).every((item) => item.status === "published"));
 
     const mainPromotionResult = await management({
       httpMethod: "POST",
@@ -761,21 +738,21 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
     assert.equal(promotedNewLogin.statusCode, 200);
     assert.equal(JSON.parse(promotedNewLogin.body).role, "main");
   } finally {
-    global.fetch = previousFetch;
     Object.keys(prior).forEach(restore);
     await fs.unlink(adminStatePath).catch(() => {});
     await fs.unlink(adminDraftPath).catch(() => {});
+    await fs.unlink(publishedContentPath).catch(() => {});
   }
 });
 
-test("admin UI and server enforce explicit draft/deploy controls", async () => {
+test("admin UI and server enforce explicit draft/publish controls", async () => {
   const [html, script, control] = await Promise.all([
     fs.readFile(path.resolve(__dirname, "../public/admin/index.html"), "utf8"),
     fs.readFile(path.resolve(__dirname, "../public/admin/admin.js"), "utf8"),
     fs.readFile(path.resolve(__dirname, "../netlify/lib/admin-control.js"), "utf8"),
   ]);
   assert.match(html, /id="save-button"[^>]*>Save draft</);
-  assert.match(html, /id="publish-button"[^>]*>Deploy to website</);
+  assert.match(html, /id="publish-button"[^>]*>Publish changes</);
   assert.match(script, /Fill in selected/);
   assert.match(script, /data-fill-target/);
   assert.match(script, /id="branch-picker"/);
@@ -783,6 +760,8 @@ test("admin UI and server enforce explicit draft/deploy controls", async () => {
   assert.match(script, /id="subject-picker"/);
   assert.match(script, /Upload PDFs/);
   assert.match(script, /multiple data-upload-books/);
+  assert.match(script, /Quick add resource/);
+  assert.match(script, /Netlify Blobs without starting a production deployment/);
   assert.match(script, /Add a unit or section/);
   assert.match(script, /Lab section/);
   assert.match(script, /Make main admin/);

@@ -1,5 +1,6 @@
 const fallbackFeed = require("../../data/scholarships-fallback.json");
 const { isFresh, readCachedFeed, writeCachedFeed } = require("./feed-cache");
+const { loadPublished } = require("./content-store");
 
 const CACHE_KEY = "scholarships-daily-v1";
 const CACHE_MAX_AGE_MS = 26 * 60 * 60 * 1000;
@@ -118,14 +119,14 @@ async function fetchSource(source, fetchImpl) {
   }
 }
 
-function fallbackResult() {
-  return JSON.parse(JSON.stringify(fallbackFeed));
+async function fallbackResult() {
+  return JSON.parse(JSON.stringify(await loadPublished("scholarships").catch(() => fallbackFeed)));
 }
 
-function mergeScholarships(liveItems) {
+function mergeScholarships(liveItems, savedFeed) {
   const seenUrls = new Set();
   const merged = [];
-  [...liveItems, ...fallbackFeed.scholarships].forEach((item) => {
+  [...liveItems, ...(savedFeed.scholarships || [])].forEach((item) => {
     const fingerprint = String(item.url || "").replace(/\/$/, "").toLowerCase();
     if (!fingerprint || seenUrls.has(fingerprint)) return;
     seenUrls.add(fingerprint);
@@ -140,13 +141,14 @@ async function fetchLiveScholarshipFeed(fetchImpl) {
   const results = await Promise.allSettled(SOURCES.map((source) => fetchSource(source, request)));
   const liveItems = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   if (!liveItems.length) throw new Error("No current scholarship announcements could be identified");
-  const scholarships = mergeScholarships(liveItems);
+  const savedFeed = await loadPublished("scholarships").catch(() => fallbackFeed);
+  const scholarships = mergeScholarships(liveItems, savedFeed);
   return {
     source: "live",
-    sourceUrl: fallbackFeed.sourceUrl,
+    sourceUrl: savedFeed.sourceUrl,
     fetchedAt: new Date().toISOString(),
     newCount: liveItems.length,
-    featured: { ...fallbackFeed.featured },
+    featured: { ...savedFeed.featured },
     scholarships,
     sources: SOURCES.map((source) => ({ name: source.name, url: source.url })),
   };
@@ -160,7 +162,7 @@ async function refreshScholarshipFeed(fetchImpl) {
     return feed;
   } catch (error) {
     console.error("Scholarship refresh failed:", error && error.message ? error.message : error);
-    return cached || fallbackResult();
+    return cached || await fallbackResult();
   }
 }
 

@@ -15,7 +15,7 @@
   const publishButton = $("#publish-button");
   const status = $("#save-status");
   const historyLink = $("#history-link");
-  const state = { csrf: "", data: null, drafts: {}, history: {}, section: "resources", dirty: false, saving: false, publishing: false, selection: {}, role: null, user: null, permissions: [], management: null, profile: null, community: [], coins: 0 };
+  const state = { csrf: "", data: null, drafts: {}, published: {}, history: {}, section: "resources", dirty: false, saving: false, publishing: false, selection: {}, role: null, user: null, permissions: [], management: null, profile: null, community: [], coins: 0 };
   const titles = {
     resources: ["Content", "Resources"], syllabus: ["Academics", "Syllabus Citadel"], meta: ["Website", "Site details"], creators: ["People", "Creators"],
     placements: ["Outcomes", "Placements"], notices: ["Updates", "Notices"], scholarships: ["Funding", "Scholarships"], management: ["Security", "Access & approvals"],
@@ -83,7 +83,7 @@
     state.data = { resources: payload.resources, placements: payload.placements, notices: payload.notices, scholarships: payload.scholarships };
     state.role = payload.role; state.user = payload.user; state.permissions = payload.permissions || [];
     state.profile = payload.profile || { photoUrl: "" }; state.community = payload.community || []; state.coins = payload.coins || 0;
-    state.history = payload.history || {}; state.drafts = payload.drafts || {}; state.csrf = payload.csrfToken || state.csrf;
+    state.history = payload.history || {}; state.drafts = payload.drafts || {}; state.published = payload.published || {}; state.csrf = payload.csrfToken || state.csrf;
     const contributorSections = new Set(["resources", "community", "profile"]);
     $$('[data-section]').forEach((button) => { button.hidden = state.role !== "main" && !contributorSections.has(button.dataset.section); });
     $("#management-nav").hidden = state.role !== "main";
@@ -176,25 +176,26 @@
   }
   saveButton.addEventListener("click", saveChanges);
 
-  async function deploySavedDraft(key, label) {
+  async function publishSavedDraft(key, label) {
     if (state.role !== "main" || state.publishing) return false;
-    if (!state.drafts[key]) { toast("There is no saved draft to deploy."); return false; }
-    if (!confirm(`Deploy the saved ${label} draft to the public website? This is the only action that creates a GitHub commit and a Netlify deployment.`)) return false;
-    state.publishing = true; publishButton.disabled = true; publishButton.textContent = "Deploying…"; status.textContent = "Publishing";
+    if (!state.drafts[key]) { toast("There is no saved draft to publish."); return false; }
+    if (!confirm(`Publish the saved ${label} draft now? It will update the live website through Netlify Blobs without starting a production deployment.`)) return false;
+    state.publishing = true; publishButton.disabled = true; publishButton.textContent = "Publishing…"; status.textContent = "Publishing";
     try {
-      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, message: `Deploy saved ${label} draft from HelpDesk admin` }) });
+      const result = await request("/api/admin/publish", { method: "POST", body: JSON.stringify({ target: key, message: `Publish saved ${label} content from HelpDesk admin` }) });
+      if (result.deploying) throw new Error("Safety check failed: content attempted to start a deployment.");
       delete state.drafts[key];
-      state.history[key] = result.historyUrl || state.history[key];
-      status.textContent = "Deployment started";
+      state.published[key] = { publishedAt: result.publishedAt, publishedBy: result.publishedBy, version: result.version, delivery: result.delivery };
+      status.textContent = "Live via Blobs";
       renderHistory();
-      toast("Published to GitHub. Netlify is deploying the saved draft now.");
+      toast("Published instantly through Netlify Blobs. No production deployment was started.");
       return true;
     } catch (error) {
-      status.textContent = "Deploy failed";
+      status.textContent = "Publish failed";
       toast(error.message);
       return false;
     } finally {
-      state.publishing = false; publishButton.textContent = "Deploy to website";
+      state.publishing = false; publishButton.textContent = "Publish changes";
       publishButton.disabled = state.dirty || !state.drafts[key];
     }
   }
@@ -202,15 +203,15 @@
   async function publishChanges() {
     if (state.role !== "main" || state.publishing) return;
     const key = target();
-    if (state.dirty) return toast("Save the draft first, then deploy it.");
-    await deploySavedDraft(key, titles[state.section][1]);
+    if (state.dirty) return toast("Save the draft first, then publish it.");
+    await publishSavedDraft(key, titles[state.section][1]);
   }
   publishButton.addEventListener("click", publishChanges);
 
   function askChangeSummary(branchDraft = false) {
     return new Promise((resolve) => {
       const modal=document.createElement("div");modal.className="request-modal";
-      modal.innerHTML=`<form class="request-modal-card"><p class="eyebrow">${branchDraft?"Branch contribution":"Approval required"}</p><h2>Describe your ${branchDraft?"draft":"requested change"}</h2><p class="muted">${branchDraft?"This saves privately for a main admin to deploy later. It does not use a deployment credit.":"A main admin will review this draft before anything reaches the website."}</p><textarea required maxlength="500" placeholder="Example: Replace Unit 2 master notes and add a lecture link."></textarea><div class="management-actions"><button class="primary" type="submit">${branchDraft?"Save contribution draft":"Send for approval"}</button><button class="quiet-button" type="button" data-cancel>Keep editing</button></div></form>`;
+      modal.innerHTML=`<form class="request-modal-card"><p class="eyebrow">${branchDraft?"Branch contribution":"Approval required"}</p><h2>Describe your ${branchDraft?"draft":"requested change"}</h2><p class="muted">${branchDraft?"This saves privately for a main admin to publish later through Blobs. It does not use a deployment credit.":"A main admin will review this draft before anything reaches the website."}</p><textarea required maxlength="500" placeholder="Example: Replace Unit 2 master notes and add a lecture link."></textarea><div class="management-actions"><button class="primary" type="submit">${branchDraft?"Save contribution draft":"Send for approval"}</button><button class="quiet-button" type="button" data-cancel>Keep editing</button></div></form>`;
       document.body.appendChild(modal);const finish=(value)=>{modal.remove();resolve(value);};
       $("[data-cancel]",modal).addEventListener("click",()=>finish(null));
       $("form",modal).addEventListener("submit",(event)=>{event.preventDefault();finish($("textarea",modal).value.trim());});
@@ -264,7 +265,7 @@
     const editable=editableSection();saveButton.hidden=!editable;publishButton.hidden=!editable||state.role!=="main";status.hidden=!editable;
     saveButton.disabled = !state.dirty;
     publishButton.disabled = state.role!=="main"||state.dirty||!state.drafts[target()];
-    status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : "Unsaved") : (state.role === "regular" ? "No pending draft" : (state.role === "branch" ? `${state.coins} coins · drafts need main-admin deployment` : (state.drafts[target()] ? "Draft saved · not deployed" : "Live version"))); renderHistory();
+    status.textContent = state.dirty ? (state.role === "regular" ? "Draft only" : "Unsaved") : (state.role === "regular" ? "No pending draft" : (state.role === "branch" ? `${state.coins} coins · awaiting main-admin publish` : (state.drafts[target()] ? "Draft saved · not live" : "Live via Blobs"))); renderHistory();
     if (state.section === "resources") renderResources();
     else if (state.section === "syllabus") renderSyllabus();
     else if (state.section === "meta") renderMeta();
@@ -381,6 +382,86 @@
     });
   }
 
+  const QUICK_RESOURCE_TYPES = [
+    { value: "lecture", label: "Main lecture / playlist", field: "lectureUrl", acceptsFile: false },
+    { value: "lecture-item", label: "Extra named lecture", collection: "lectureItems", acceptsFile: false, needsTitle: true },
+    { value: "handwritten-notes", label: "Handwritten notes", field: "handwrittenNotesUrl" },
+    { value: "master-notes", label: "Master notes", field: "masterNotesUrl" },
+    { value: "notes", label: "General notes", field: "notesUrl" },
+    { value: "pyq", label: "Previous-year questions (PYQ)", field: "pyqUrl" },
+    { value: "book", label: "Recommended book", collection: "books", needsTitle: true, multiple: true },
+    { value: "workshop", label: "Workshop file", field: "workshopFileUrl" },
+    { value: "class-notes", label: "Class notes", field: "classNotesUrl" },
+    { value: "lab-manual", label: "Lab practical / manual", field: "labManualUrl" },
+    { value: "experiment-videos", label: "Experiment videos", field: "experimentVideosUrl", acceptsFile: false },
+    { value: "viva", label: "Viva questions", field: "vivaQuestionsUrl" },
+    { value: "lab-questions", label: "End-semester lab questions", field: "endSemesterQuestionsUrl" },
+  ];
+
+  function quickTypesFor(unit) {
+    const type = sectionType(unit);
+    if (type === "lab") return QUICK_RESOURCE_TYPES.filter((item) => ["lab-manual", "experiment-videos", "viva", "lab-questions", "book"].includes(item.value));
+    if (type === "shop") return QUICK_RESOURCE_TYPES.filter((item) => item.value === "workshop");
+    if (type === "class-notes") return QUICK_RESOURCE_TYPES.filter((item) => item.value === "class-notes");
+    return QUICK_RESOURCE_TYPES.filter((item) => ["lecture", "lecture-item", "handwritten-notes", "master-notes", "notes", "pyq", "book"].includes(item.value));
+  }
+
+  function openQuickAddResource() {
+    const subject = selectedSubject();
+    if (!subject) return toast("Choose a subject first.");
+    if (!subject.units.length) return toast("Add a unit or special section first.");
+    const initialIndex = Number.isInteger(state.selection.openUnitIndex) && subject.units[state.selection.openUnitIndex]
+      ? state.selection.openUnitIndex : 0;
+    const branch = selectedBranch(); const semester = selectedSemester();
+    const modal = document.createElement("div"); modal.className = "request-modal";
+    modal.innerHTML = `<form class="request-modal-card quick-add-card"><div class="quick-modal-head"><div><p class="eyebrow">Quick add</p><h2>Add a resource</h2><p class="muted">${escape(branch ? branch.name : "Library")} · ${escape(semester ? semester.name : "Semester")} · ${escape(subject.name)}</p></div><button class="icon-button" type="button" data-cancel aria-label="Close">×</button></div><div class="quick-step"><span>1</span><label class="field"><strong>Where should it go?</strong><select name="unit">${subject.units.map((unit,index)=>`<option value="${index}" ${index===initialIndex?"selected":""}>${escape(unit.number)} · ${escape(unit.title)}</option>`).join("")}</select></label></div><div class="quick-step"><span>2</span><label class="field"><strong>What are you adding?</strong><select name="type"></select></label></div><div class="quick-step"><span>3</span><div class="quick-source"><label class="field quick-title" hidden><strong>Display title</strong><input name="title" maxlength="250" placeholder="Example: Unit 2 recommended book"></label><label class="field"><strong>Paste a link</strong><input name="url" type="url" placeholder="YouTube, Google Drive or another direct link"></label><div class="quick-or"><span>or</span></div><label class="quick-file-drop"><strong>Upload PDF files</strong><small>Choose one file, or several books at once · 20 MB each</small><input name="files" type="file" accept=".pdf,application/pdf" multiple></label></div></div><p class="quick-help">This changes only the draft. Use <strong>Save draft</strong>, review it, then <strong>Publish changes</strong> when the batch is ready.</p><div class="management-actions"><button class="primary" type="submit">Add to draft</button><button class="quiet-button" type="button" data-cancel>Cancel</button></div></form>`;
+    document.body.appendChild(modal);
+    const unitSelect = $('[name="unit"]', modal); const typeSelect = $('[name="type"]', modal);
+    const titleField = $(".quick-title", modal); const filesInput = $('[name="files"]', modal);
+    const updateFields = () => {
+      const definition = QUICK_RESOURCE_TYPES.find((item)=>item.value===typeSelect.value);
+      titleField.hidden = !definition?.needsTitle;
+      filesInput.disabled = definition?.acceptsFile === false;
+      filesInput.closest(".quick-file-drop").classList.toggle("disabled", filesInput.disabled);
+    };
+    const updateTypes = () => {
+      const types = quickTypesFor(subject.units[Number(unitSelect.value)]);
+      typeSelect.innerHTML = types.map((item)=>`<option value="${escape(item.value)}">${escape(item.label)}</option>`).join("");
+      updateFields();
+    };
+    unitSelect.addEventListener("change", updateTypes); typeSelect.addEventListener("change", updateFields); updateTypes();
+    $$('[data-cancel]',modal).forEach((button)=>button.addEventListener("click",()=>modal.remove()));
+    $("form",modal).addEventListener("submit",async(event)=>{
+      event.preventDefault();
+      const unitIndex=Number(unitSelect.value);const unit=subject.units[unitIndex];
+      const definition=QUICK_RESOURCE_TYPES.find((item)=>item.value===typeSelect.value);
+      const url=String($('[name="url"]',modal).value||"").trim();const files=Array.from(filesInput.files||[]);
+      const title=String($('[name="title"]',modal).value||"").trim();
+      if(!definition)return;
+      if(!url&&!files.length)return toast("Paste a link or choose a PDF file.");
+      if(files.length>1&&!definition.multiple)return toast("Choose only one PDF for this resource type.");
+      if(definition.needsTitle&&!title&&files.length<1)return toast("Add a display title.");
+      const submit=event.submitter;submit.disabled=true;
+      try{
+        const additions=[];
+        if(url)additions.push({url,title:title||definition.label});
+        for(let index=0;index<files.length;index+=1){
+          submit.textContent=`Uploading ${index+1}/${files.length}…`;
+          const uploaded=await uploadFile(files[index],definition.field?unit[definition.field]||"":"",(percent)=>{submit.textContent=`Uploading ${index+1}/${files.length} · ${percent}%`;});
+          additions.push({url:uploaded,title:(files[index].name||definition.label).replace(/\.pdf$/i,"")});
+        }
+        if(definition.collection){
+          unit[definition.collection]=Array.isArray(unit[definition.collection])?unit[definition.collection]:[];
+          additions.forEach((item)=>unit[definition.collection].push({title:item.title||definition.label,description:definition.collection==="books"?"Recommended reading":"Video lesson",url:item.url}));
+        }else{
+          unit[definition.field]=additions.at(-1).url;
+        }
+        state.selection.openUnitIndex=unitIndex;markDirty();modal.remove();renderResources();
+        toast(`${additions.length} resource${additions.length===1?"":"s"} added to the draft.`);
+      }catch(error){toast(error.message);submit.disabled=false;submit.textContent="Add to draft";}
+    });
+  }
+
   function renderResources() {
     ensureSelection(); const resources = state.data.resources; const branch = selectedBranch(); const semester = selectedSemester(); const subject = selectedSubject();
     const main = state.role === "main";
@@ -395,9 +476,10 @@
     const linkOptions = semester ? resources.unitCollections.filter((entry)=>!semester.subjectIds.includes(entry.id)).map((entry)=>`<option value="${escape(entry.id)}">${escape(entry.name)}</option>`).join("") : "";
     const banner=branchAdmin?`<div class="regular-banner branch-banner"><div><strong>Branch admin access</strong><p>You can publish resource attribute updates directly inside your governed sections. Structural changes still need a main admin.</p></div><span class="role-pill">${state.coins} coins</span></div>`:`<div class="regular-banner"><div><strong>Approval-only access</strong><p>You can draft changes only inside your assigned semesters. Approved contributions earn 1 coin.</p></div><span class="role-pill">${state.permissions.length} assigned</span></div>`;
     const structureTools = branchAdmin ? "" : `<details class="panel structure-tools"><summary><span><strong>Manage library structure</strong><small>Add or rename branches, semesters, subjects and sections.</small></span><span class="structure-chevron">⌄</span></summary><div class="structure-body">${main?`<div class="structure-group"><p>Branch</p><button class="mini-button" id="edit-branch">Rename / edit</button><button class="mini-button" id="add-branch">＋ New branch</button><button class="mini-button danger" id="delete-branch">Delete branch</button></div><div class="structure-group"><p>Semester</p><button class="mini-button" id="rename-semester">Rename</button><button class="mini-button" id="move-semester-up">↑ Move up</button><button class="mini-button" id="move-semester-down">↓ Move down</button><button class="mini-button" id="add-semester">＋ New semester</button><button class="mini-button danger" id="delete-semester">Delete semester</button></div>`:""}<div class="structure-group"><p>Subject</p><span class="structure-link"><select id="link-subject"><option value="">Choose existing subject…</option>${linkOptions}</select><button class="mini-button" id="link-subject-button">Link</button></span><button class="mini-button" id="add-subject">＋ ${main?"New subject":"Request new subject"}</button>${subject?`<button class="mini-button danger" id="unlink-subject">Remove from this semester</button>`:""}</div></div></details>`;
-    editor.innerHTML = `${main?"":banner}<div class="section-intro resource-intro"><div><h2>Resource editor</h2><p class="muted">Choose where you want to work, then open a unit or section below.</p></div>${main?`<button class="quiet-button" id="fill-selected" ${subject?"":"disabled"}>Copy to selected sections…</button>`:""}</div><section class="panel resource-navigator" aria-label="Choose resource location"><label><span>1 · Branch</span><select id="branch-picker">${branchOptions}</select></label><i aria-hidden="true">›</i><label><span>2 · Semester</span><select id="semester-picker" ${semesters.length?"":"disabled"}>${semesterOptions||'<option>No semesters</option>'}</select></label><i aria-hidden="true">›</i><label><span>3 · Subject</span><select id="subject-picker" ${subjectOptions?"":"disabled"}>${subjectOptions||'<option>No subjects</option>'}</select></label></section>${structureTools}<article class="panel document resource-document" id="resource-document">${renderSubjectDocument(subject)}</article>`;
+    editor.innerHTML = `${main?"":banner}<div class="section-intro resource-intro"><div><h2>Resource editor</h2><p class="muted">Choose a location, add resources, save the batch, then publish it.</p></div><div class="resource-intro-actions"><button class="primary" id="quick-add-resource" ${subject&&subject.units.length?"":"disabled"}>＋ Quick add resource</button>${main?`<button class="quiet-button" id="fill-selected" ${subject?"":"disabled"}>Copy to selected sections…</button>`:""}</div></div><div class="workflow-strip" aria-label="Resource publishing workflow"><span><b>1</b> Choose location</span><i>›</i><span><b>2</b> Add resources</span><i>›</i><span><b>3</b> Save draft</span><i>›</i><span><b>4</b> Publish when ready</span></div><section class="panel resource-navigator" aria-label="Choose resource location"><label><span>1 · Branch</span><select id="branch-picker">${branchOptions}</select></label><i aria-hidden="true">›</i><label><span>2 · Semester</span><select id="semester-picker" ${semesters.length?"":"disabled"}>${semesterOptions||'<option>No semesters</option>'}</select></label><i aria-hidden="true">›</i><label><span>3 · Subject</span><select id="subject-picker" ${subjectOptions?"":"disabled"}>${subjectOptions||'<option>No subjects</option>'}</select></label></section>${structureTools}<article class="panel document resource-document" id="resource-document">${renderSubjectDocument(subject)}</article>`;
     bindResourceTree(); bind($("#resource-document"), subject || {}); bindUnitActions();
     $("#fill-selected")?.addEventListener("click", openFillSelected);
+    $("#quick-add-resource")?.addEventListener("click", openQuickAddResource);
   }
 
   function renderSubjectDocument(subject) {
@@ -625,13 +707,13 @@
     const pendingChanges=data.changeRequests.filter(item=>item.status==="pending"||item.status==="processing");
     const branchNames=new Map(data.permissionOptions.map(branch=>[branch.id,branch]));
     const scopeName=(scope)=>{const branch=branchNames.get(scope.branchId);const semester=branch&&branch.semesters.find(item=>item.id===scope.semesterId);return `${branch?branch.name:scope.branchId} · ${semester?semester.name:scope.semesterId}`;};
-    editor.innerHTML=`<div class="section-intro"><div><h2>Access & approvals</h2><p class="muted">Approve changes into a private draft. Only the separate Deploy button publishes them.</p></div><span class="role-pill">Main admins only</span></div><div class="access-grid">
-      ${state.drafts.resources?`<section class="panel data-group wide-panel"><div class="entry-head"><div><h2>Resource draft ready</h2><p class="muted">Saved privately. No GitHub commit or Netlify deployment has happened.</p></div><button class="primary" data-deploy-resource-draft>Deploy saved resource draft</button></div></section>`:""}
+    editor.innerHTML=`<div class="section-intro"><div><h2>Access & approvals</h2><p class="muted">Approve changes into a private draft, then publish them through Blobs without a production deployment.</p></div><span class="role-pill">Main admins only</span></div><div class="access-grid">
+      ${state.drafts.resources?`<section class="panel data-group wide-panel"><div class="entry-head"><div><h2>Resource draft ready</h2><p class="muted">Saved privately. Publishing updates the live database without a GitHub commit or Netlify deployment.</p></div><button class="primary" data-publish-resource-draft>Publish resource draft</button></div></section>`:""}
       <section class="panel data-group"><div class="data-group-head"><h2>Main admins</h2><span class="status-pill active">Full access</span></div>${data.mainAdmins.map(admin=>`<div class="entry-card admin-person-row"><img src="${escape(admin.photoUrl||"/favicon.svg")}" alt="" width="44" height="44"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>Everything</span>${admin.promoted?`<span>Promoted by ${escape(admin.promotedBy||"main admin")}</span>`:""}</div></div></div>`).join("")}</section>
       <section class="panel data-group"><div class="data-group-head"><h2>Pending registrations</h2><span class="status-pill ${pendingRegistrations.length?"pending":"active"}">${pendingRegistrations.length}</span></div>${pendingRegistrations.length?pendingRegistrations.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.name)}</strong><div class="person-meta"><span>${escape(item.branch)}</span><span>${escape(item.rollNumber)}</span><span>${escape(item.email)}</span></div></div><span class="status-pill pending">Pending</span></div><details><summary class="mini-button">Choose permissions</summary>${permissionChoices([],`registration:${item.id}`)}</details><div class="management-actions"><button class="primary" data-approve-registration="${escape(item.id)}">Approve account</button><button class="danger-button" data-reject-registration="${escape(item.id)}">Reject</button></div></div>`).join(""):'<p class="muted">No registration requests waiting.</p>'}</section>
       <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Contributor admins</h2><span class="role-pill">${data.regularAdmins.length} accounts</span></div>${data.regularAdmins.length?data.regularAdmins.map(admin=>`<div class="entry-card"><div class="entry-head"><div class="admin-person-row"><img src="${escape(admin.photoUrl||"/favicon.svg")}" alt="" width="52" height="52"><div><strong>${escape(admin.name)}</strong><div class="person-meta"><span>@${escape(admin.username)}</span><span>${escape(admin.branch)}</span><span>${escape(admin.rollNumber)}</span><span>${escape(admin.email)}</span><span>◉ ${admin.coins||0} coins</span></div></div></div><span class="status-pill ${admin.active!==false?"active":"disabled"}">${admin.active===false?"Disabled":(admin.role==="branch"?"Branch admin":"Regular admin")}</span></div><details><summary class="mini-button">Manage governed sections (${(admin.permissions||[]).length})</summary>${permissionChoices(admin.permissions,`regular:${admin.id}`)}<button class="primary" data-save-permissions="${escape(admin.id)}">Save permissions</button></details><div class="management-actions"><button class="quiet-button" data-reset-password="${escape(admin.id)}">Reset password</button><button class="quiet-button" data-contributor-role="${escape(admin.id)}" data-role="${admin.role==="branch"?"regular":"branch"}">${admin.role==="branch"?"Return to regular admin":"Promote to branch admin"}</button><button class="quiet-button" data-promote-main="${escape(admin.id)}" ${admin.active===false?"disabled":""}>Make main admin</button><button class="${admin.active!==false?"danger-button":"quiet-button"}" data-toggle-admin="${escape(admin.id)}" data-active="${admin.active===false}">${admin.active!==false?"Disable account":"Enable account"}</button></div></div>`).join(""):'<p class="muted">Approved contributor admins will appear here.</p>'}</section>
       <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Change requests</h2><span class="status-pill ${pendingChanges.length?"pending":"active"}">${pendingChanges.length} pending</span></div>${pendingChanges.length?pendingChanges.map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${escape(new Date(item.createdAt).toLocaleString())}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div><div class="proposal-preview">Subjects affected: ${escape((item.proposal.unitCollections||[]).map(subject=>`${subject.name} (${(subject.units||[]).length} items)`).join(", ")||"None")}</div>${item.status==="pending"?`<div class="management-actions"><button class="primary" data-approve-change="${escape(item.id)}">Approve to draft</button><button class="danger-button" data-reject-change="${escape(item.id)}">Reject</button></div>`:""}</div>`).join(""):'<p class="muted">No resource changes are waiting for approval.</p>'}</section>
-      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Recent contributions</h2></div>${data.changeRequests.filter(item=>["approved","approved-draft","drafted","rejected","published"].includes(item.status)).slice(0,10).map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${item.status==="published"?"Deployed by main admin":(item.status==="approved-draft"||item.status==="drafted"?"Saved privately · awaiting deployment":`Reviewed by ${escape(item.reviewedBy||"main admin")}`)}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div></div>`).join("")||'<p class="muted">No completed contributions yet.</p>'}</section>
+      <section class="panel data-group wide-panel"><div class="data-group-head"><h2>Recent contributions</h2></div>${data.changeRequests.filter(item=>["approved","approved-draft","drafted","rejected","published"].includes(item.status)).slice(0,10).map(item=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(item.summary)}</strong><div class="person-meta"><span>${escape(item.requestedBy)}</span><span>${escape(scopeName(item.scope))}</span><span>${item.status==="published"?"Published by main admin":(item.status==="approved-draft"||item.status==="drafted"?"Saved privately · awaiting publish":`Reviewed by ${escape(item.reviewedBy||"main admin")}`)}</span></div></div><span class="status-pill ${escape(item.status)}">${escape(item.status)}</span></div></div>`).join("")||'<p class="muted">No completed contributions yet.</p>'}</section>
     </div>`;
     $$('[data-approve-registration]').forEach(button=>button.addEventListener("click",async()=>{const item=data.registrations.find(entry=>entry.id===button.dataset.approveRegistration);const username=prompt("Choose a username for this regular admin",slug(`${item.name}-${item.rollNumber}`));if(!username)return;const password=prompt("Set a temporary password (minimum 8 characters). Share it with the applicant privately.");if(!password)return;const result=await runManagementAction({action:"approve-registration",registrationId:item.id,username,password,permissions:selectedPermissions(`registration:${item.id}`)},button);if(result&&result.approved)alert(`Account approved for ${item.name}.\n\nUsername: ${username}\nTemporary password: ${password}\n\nCopy these now and share them privately. The password is not shown again.`);}));
     $$('[data-reject-registration]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Reject this registration request?"))runManagementAction({action:"reject-registration",registrationId:button.dataset.rejectRegistration},button);}));
@@ -640,8 +722,8 @@
     $$('[data-reset-password]').forEach(button=>button.addEventListener("click",()=>{const password=prompt("Enter a new temporary password (minimum 8 characters)");if(password)runManagementAction({action:"reset-password",adminId:button.dataset.resetPassword,password},button);}));
     $$('[data-contributor-role]').forEach(button=>button.addEventListener("click",()=>{const role=button.dataset.role;const verb=role==="branch"?"promote this contributor to Branch Admin":"return this contributor to Regular Admin";if(confirm(`Are you sure you want to ${verb}?`))runManagementAction({action:"set-contributor-role",adminId:button.dataset.contributorRole,role},button);}));
     $$('[data-promote-main]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Make this person a main admin? They will receive full access to all content, users, approvals and deployments."))runManagementAction({action:"promote-main-admin",adminId:button.dataset.promoteMain},button);}));
-    $$('[data-deploy-resource-draft]').forEach(button=>button.addEventListener("click",async()=>{const deployed=await deploySavedDraft("resources","Resources");if(deployed){state.management=null;await loadDashboard();}}));
-    $$('[data-approve-change]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Approve this request into the private resource draft? Nothing will deploy until a main admin clicks Deploy."))runManagementAction({action:"approve-change",requestId:button.dataset.approveChange},button);}));
+    $$('[data-publish-resource-draft]').forEach(button=>button.addEventListener("click",async()=>{const published=await publishSavedDraft("resources","Resources");if(published){state.management=null;await loadDashboard();}}));
+    $$('[data-approve-change]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Approve this request into the private resource draft? Nothing becomes live until a main admin clicks Publish changes."))runManagementAction({action:"approve-change",requestId:button.dataset.approveChange},button);}));
     $$('[data-reject-change]').forEach(button=>button.addEventListener("click",()=>{const note=prompt("Optional reason for rejection","");if(note!==null)runManagementAction({action:"reject-change",requestId:button.dataset.rejectChange,note},button);}));
   }
 

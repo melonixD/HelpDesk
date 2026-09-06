@@ -7,3 +7,5 @@ data/admin-state.local.json
 data/admin-state.local.json.*.tmp
 data/admin-drafts.local.json
 data/admin-drafts.local.json.*.tmp
+data/published-content.local.json
+data/published-content.local.json.*.tmp

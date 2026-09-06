@@ -1,4 +1,4 @@
-# HelpDesk V19.1 · Main-admin password controls & explicit deploys
+# HelpDesk V20 · Blob-backed live content
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -34,7 +34,8 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Private responsive admin dashboard for resources, site details, creator cards, placements, notices and the saved scholarship directory
 - Dynamic branch → semester → subject → unit management with add, reorder and cascade-delete controls
 - Secure 8-hour signed sessions, CSRF checks, bcrypt login and login rate limiting
-- Netlify Blob drafts with a separate GitHub-backed **Deploy to website** action
+- Netlify Blob drafts with a separate **Publish changes** action that does not trigger a production deployment
+- Public resources, placements and curated fallback feeds served from Netlify Blobs with bundled JSON as a first-run/outage fallback
 - Chunked Netlify Blob uploads for PDFs (20 MB) and profile images (5 MB)
 - Four full-access main-admin accounts configured with bcrypt hashes
 - Public regular-admin applications with main-admin approval
@@ -45,7 +46,8 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - One contribution coin for every main-admin-approved request
 - Main-admin-controlled promotion from Regular Admin to Branch Admin
 - Main admins can promote approved Regular or Branch Admins to full Main Admin access
-- Branch admins can save scoped contribution drafts inside governed sections; only a main admin can deploy them
+- Branch admins can save scoped contribution drafts inside governed sections; only a main admin can publish them
+- Guided Quick Add workflow for links, PDFs, lectures, notes, PYQs, labs and multiple books
 - Automatic scope isolation so shared subjects are not unintentionally changed in other branches
 - Uploadable profile pictures for main, branch and regular admins
 - Secure self-service password changes for main admins, stored as bcrypt hashes in private Netlify Blobs
@@ -74,11 +76,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
    | `GEMINI_MODEL` | `gemini-3.6-flash` (optional) |
    | `MAIN_ADMINS_JSON` | The complete one-line JSON value from `.env.example` |
    | `SESSION_SECRET` | A random secret of at least 32 characters |
-   | `GITHUB_TOKEN` | Fine-grained GitHub token with Contents read/write access to this repository |
-   | `GITHUB_REPO` | `OWNER/REPOSITORY` |
-   | `GITHUB_BRANCH` | `main` |
-
-6. Trigger a new production deploy after saving the key.
+6. Trigger one production deploy after saving the variables.
 7. Check `https://YOUR-SITE.netlify.app/api/health`. It should return JSON with `"status":"ok"`.
 8. Open **Unlimited Practice**, choose a semester, subject and unit, then generate a question set.
 
@@ -86,7 +84,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 
 You can upload this complete ZIP at [Netlify Drop](https://app.netlify.com/drop) while signed in. Upload the project ZIP—not only the `public` folder—because the Netlify Functions and configuration are outside `public`. Add `GEMINI_API_KEY` in the project environment variables and redeploy once afterward.
 
-This project contains several PDFs and may be too large for a reliable browser drop. The GitHub method is recommended and enables the admin dashboard's explicit deployment button.
+This project contains several PDFs and may be too large for a reliable browser drop. The GitHub method is recommended for future code changes. Normal content publishing happens through Netlify Blobs and does not need a GitHub commit.
 
 ## Private admin dashboard
 
@@ -95,8 +93,8 @@ The admin route is `/admin`. It is also revealed in the hamburger menu after tap
 There are three roles:
 
 - **Main admin:** can edit and publish every website section, approve applicants, assign or remove regular-admin permissions, reset regular-admin passwords, disable accounts, approve or reject change requests, and promote approved contributors to Main Admin.
-- **Branch admin:** sees only assigned branch + semester combinations and can save edits to existing resource attributes as private contribution drafts. A main admin must explicitly deploy the combined resource draft. Creating or removing structural subjects/units still requires a main-admin-approved request.
-- **Regular admin:** sees only assigned branch + semester combinations. They can prepare a resource draft and submit it for approval, but cannot save directly to GitHub or publish anything.
+- **Branch admin:** sees only assigned branch + semester combinations and can save edits to existing resource attributes as private contribution drafts. A main admin must explicitly publish the combined resource draft. Creating or removing structural subjects/units still requires a main-admin-approved request.
+- **Regular admin:** sees only assigned branch + semester combinations. They can prepare a resource draft and submit it for approval, but cannot publish anything.
 
 The configured main-admin usernames are `Priyanshu`, `Akshat`, `racoon67` and `Utkarsh`. Passwords are never stored in source code; only their one-way bcrypt hashes are configured through `MAIN_ADMINS_JSON`.
 
@@ -110,14 +108,14 @@ Main admins can edit:
 
 Main-admin edits use two deliberate steps:
 
-1. **Save draft** validates the content and stores it privately in Netlify Blobs. It does not touch GitHub, start a Netlify deployment, or consume a deployment credit. There is no automatic save or automatic deployment.
-2. **Deploy to website** publishes the saved draft to GitHub. This is the only content action in HelpDesk that starts a Netlify deployment and consumes a deployment credit.
+1. **Save draft** validates the content and stores it privately in Netlify Blobs. It is not visible on the public site.
+2. **Publish changes** copies the reviewed draft into the public content Blob. The website begins reading it through `/api/resources`; no GitHub commit, production deployment, or deployment credit is used. CDN propagation can take about one minute.
 
-The same rule applies to contributor work: approving a Regular Admin request saves it into the private resource draft, and a Branch Admin's contribution also saves into that draft. Neither action touches GitHub. A main admin must click **Deploy saved resource draft** or open Resources and click **Deploy to website**.
+The same rule applies to contributor work: approving a Regular Admin request saves it into the private resource draft, and a Branch Admin's contribution also saves into that draft. A main admin publishes the complete reviewed batch when ready.
 
-In Resources, **Fill in selected…** lets a main admin reuse the currently selected subject in explicitly checked branch + semester sections. Unchecked sections are never changed. Save the resulting work as a draft, review it, and deploy it only when ready.
+In Resources, **Copy to selected sections…** lets a main admin reuse the currently selected subject in explicitly checked branch + semester sections. Unchecked sections are never changed. Save the resulting work as a draft, review it, and publish it only when ready.
 
-The V19 resource editor uses a guided **Branch → Semester → Subject** picker. Subject settings and structural controls stay collapsed until needed, while every unit opens focused upload groups for lectures, notes, PYQs and books. Books support any number of titled links as well as multi-PDF upload. **Add unit or special section** can create a standard unit, Physics/Chemistry-style Lab, workshop shop or class-notes section and immediately opens the new item for editing.
+The V20 resource editor uses a guided **Branch → Semester → Subject** picker and a four-step workflow strip. **Quick add resource** chooses a unit or special section, shows only the resource types that belong there, and accepts a pasted URL or a PDF upload. Books can be uploaded in batches. The full editor remains below for titles, descriptions, reordering and advanced fields. **Add unit or special section** creates a standard unit, Physics/Chemistry-style Lab, workshop shop or class-notes section and immediately opens the correct fields.
 
 Main admins can change their own password from **My profile → Change password**. The current password must be confirmed, the replacement must contain at least 10 characters, and the admin is signed out after a successful change. Only the bcrypt hash is saved in private Netlify Blobs. This does not create a GitHub commit, trigger Netlify or use a deployment credit.
 
@@ -132,16 +130,13 @@ Copy these values into Netlify. Keep `MAIN_ADMINS_JSON` on one line exactly as s
 ```dotenv
 MAIN_ADMINS_JSON=[{"username":"Priyanshu","name":"Priyanshu Dixit","passwordHash":"$2b$12$9DsaIlwzN45reAa8sSTcgOFl5chG7AV.totGf30xQbWQUZw.bQ/sS"},{"username":"Akshat","name":"Akshat Shukla","passwordHash":"$2b$12$KwyCWEvO24hKoQhTTwR0XeeSd4XxxpGJZ8zJVX1pWcxNjzgdcE5R."},{"username":"racoon67","name":"Shreyansh","passwordHash":"$2b$12$2qpnFwrJr6M0q1xxm2uHwuKZEFzqYscTGJxbdBY/ESSsdqsbnUP3O"},{"username":"Utkarsh","name":"Utkarsh","passwordHash":"$2b$12$gSoLCwjf4kELN2QHT6LNGujupjCP6.YHq67gYJm7coJrNEyn4QfWy"}]
 SESSION_SECRET=replace-with-the-output-of-openssl-rand-hex-32
-GITHUB_TOKEN=your-fine-grained-github-token
-GITHUB_REPO=YOUR_GITHUB_USERNAME/YOUR_REPOSITORY
-GITHUB_BRANCH=main
 ```
 
-Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts in V19.
+Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` variables remain supported as a migration fallback, but `MAIN_ADMINS_JSON` is the source of the four main accounts.
 
 Uploaded assets, unpublished main-admin drafts and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local drafts and registration data use ignored files under `data/`.
 
-V19.1 detects Netlify's Lambda runtime, initializes Blob access for every Lambda-compatible handler and uses the supported default consistency endpoint. This prevents read-only `/var/task`, missing Blob-context and missing `uncachedEdgeURL` errors.
+V20 detects Netlify's Lambda runtime and initializes Blob access for every Lambda-compatible handler. Drafts, published content, access control, profile images and uploaded resource files all live in Netlify Blobs. The bundled JSON remains available only until the first publish and as a resilient fallback.
 
 ### Regular-admin workflow
 
@@ -151,9 +146,9 @@ V19.1 detects Netlify's Lambda runtime, initializes Blob access for every Lambda
 4. The main admin shares those credentials privately with the applicant. This build does not email credentials automatically.
 5. The regular admin signs in and sees only the resource sections assigned to them.
 6. They edit an assigned section and choose **Submit request** with a short summary.
-7. A main admin reviews the request in **Access & approvals** and selects **Approve to draft**. This validates the change and adds it to the private resource draft without deploying.
+7. A main admin reviews the request in **Access & approvals** and selects **Approve to draft**. This validates the change and adds it to the private resource draft without publishing.
 8. Approval adds one coin to the contributor and stamps changed resources with **Provided by _name_**.
-9. When the batch is ready, a main admin clicks **Deploy saved resource draft**. That explicit action creates the GitHub commit and triggers Netlify once.
+9. When the batch is ready, a main admin clicks **Publish resource draft**. That updates the public Blob without a production deployment.
 
 All active contributors can open **Leaderboard** to see names, branches, governed sections, roles, approved contributions and coins. Private roll numbers and emails are never shown there. The highest-scoring contributor is highlighted, and a main admin can promote any eligible contributor to Branch Admin from **Access & approvals**.
 
@@ -161,7 +156,7 @@ Any main admin can also choose **Make main admin** on an active approved contrib
 
 Main admins can change permissions later, promote or demote branch admins, disable or re-enable an account, and set a replacement temporary password. Contributors can upload their own profile picture from **My profile**. Regular and branch admins never receive access to site details, syllabus administration, creators, placements, notices or access management.
 
-Branch-admin updates are limited to existing resource attributes. If a subject is shared by several branches, HelpDesk creates a scoped copy for the governed branch + semester so unrelated branches stay unchanged. Each successfully saved contribution draft earns one coin and receives contributor attribution; publication waits for a main admin's explicit deploy.
+Branch-admin updates are limited to existing resource attributes. If a subject is shared by several branches, HelpDesk creates a scoped copy for the governed branch + semester so unrelated branches stay unchanged. Each successfully saved contribution draft earns one coin and receives contributor attribution; publication waits for a main admin's explicit publish.
 
 ## Unlimited Practice
 
@@ -230,14 +225,16 @@ npm run build
 - `GET /api/resources?branch=mechanical&semester=semester-2`
 - `POST /api/practice/generate` with body `{ "pyqUrl": "/resources/pyqs/.../Unit_3_PYQs.pdf" }`
 - `GET /api/notices`
+- `GET /api/placements`
 - `GET /api/scholarships`
 - `POST /api/admin/login`, `GET /api/admin/session`, `POST /api/admin/logout`
-- `GET /api/admin/data`, `POST /api/admin/save` (private draft), `POST /api/admin/publish` (GitHub + Netlify deployment), `POST /api/admin/upload`
+- `GET /api/admin/data`, `POST /api/admin/save` (private Blob draft), `POST /api/admin/publish` (public Blob publish), `POST /api/admin/upload`
 - `POST /api/admin/register` (public application form)
 - `GET|POST /api/admin/management` (main admins only)
 - `POST /api/admin/change-request` (contributor approval requests)
 - `POST /api/admin/scoped-save` (branch-admin draft save inside assigned sections; never deploys)
 - `POST /api/admin/profile` (current admin profile picture)
+- `POST /api/admin/password` (main-admin password change)
 
 ## Structure
 
@@ -269,6 +266,7 @@ helpdesk/
 │       ├── admin-state.js
 │       ├── admin-control.js
 │       ├── admin-content.js
+│       ├── content-store.js
 │       └── admin-uploads.js
 ├── public/
 │   ├── app.js

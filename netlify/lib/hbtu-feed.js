@@ -1,5 +1,6 @@
 const fallbackFeed = require("../../data/notices-fallback.json");
 const { isFresh, readCachedFeed, writeCachedFeed } = require("./feed-cache");
+const { loadPublished } = require("./content-store");
 
 const HBTU_HOME = "https://hbtu.ac.in/";
 const FETCH_TIMEOUT_MS = 8000;
@@ -104,12 +105,13 @@ function parseNotices(html) {
   return notices;
 }
 
-function fallbackResult() {
-  const notices = fallbackFeed.notices.map((notice) => ({ ...notice }));
+async function fallbackResult() {
+  const saved = await loadPublished("notices").catch(() => fallbackFeed);
+  const notices = saved.notices.map((notice) => ({ ...notice }));
   return {
     source: "fallback",
-    sourceUrl: fallbackFeed.sourceUrl,
-    fetchedAt: fallbackFeed.fetchedAt,
+    sourceUrl: saved.sourceUrl,
+    fetchedAt: saved.fetchedAt,
     newCount: notices.filter((notice) => notice.isNew).length,
     notices,
   };
@@ -153,7 +155,7 @@ async function refreshNoticeFeed(fetchImpl) {
     return feed;
   } catch (error) {
     console.error("HBTU notice refresh failed:", error && error.message ? error.message : error);
-    return cached || fallbackResult();
+    return cached || await fallbackResult();
   }
 }
 

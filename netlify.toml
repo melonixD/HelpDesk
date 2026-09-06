@@ -29,6 +29,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/placements"
+  to = "/.netlify/functions/placements"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/practice/generate"
   to = "/.netlify/functions/practice-generate"
   status = 200

@@ -2,6 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { filterResources, generatePractice } = require("./netlify/lib/helpdesk-api");
+const { loadPublished } = require("./netlify/lib/content-store");
 const { getNoticeFeed } = require("./netlify/lib/hbtu-feed");
 const { getScholarshipFeed } = require("./netlify/lib/scholarship-feed");
 const adminLogin = require("./netlify/functions/admin-login").handler;
@@ -150,7 +151,12 @@ async function handleRequest(req, res) {
 
   if (url.pathname === "/api/resources") {
     if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET" });
-    return sendJson(res, 200, filterResources(Object.fromEntries(url.searchParams)));
+    return sendJson(res, 200, filterResources(Object.fromEntries(url.searchParams), await loadPublished("resources")));
+  }
+
+  if (url.pathname === "/api/placements") {
+    if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET" });
+    return sendJson(res, 200, await loadPublished("placements"));
   }
 
   if (url.pathname === "/api/practice/generate") {

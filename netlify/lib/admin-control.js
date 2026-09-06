@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const { id, loadState, mutateState, cleanRegularAdmin } = require("./admin-state");
 const { readJson, validateResources } = require("./admin-content");
 const { loadDraft, saveDraft } = require("./admin-drafts");
+const { loadPublished } = require("./content-store");
 
 class ControlError extends Error {
   constructor(message, statusCode = 400) { super(message); this.name = "ControlError"; this.statusCode = statusCode; }
@@ -111,9 +112,9 @@ function communityFromState(state, resources) {
   return entries.map((entry, index) => ({ ...entry, rank: index + 1, topContributor: index === 0 && entry.coins > 0 }));
 }
 
-async function dashboardContext(session, mainAdmins) {
+async function dashboardContext(session, mainAdmins, resourceData = null) {
   const state = await loadState();
-  const resources = readJson("resources");
+  const resources = resourceData || await loadPublished("resources");
   let admin = null;
   let role = "main";
   let fallbackPhoto = "";
@@ -231,9 +232,9 @@ async function registration(body) {
   });
 }
 
-async function managementSnapshot(mainAdmins) {
+async function managementSnapshot(mainAdmins, resourceData = null) {
   const state = await loadState();
-  const resources = readJson("resources");
+  const resources = resourceData || await loadPublished("resources");
   const promotedMainAdmins = state.regularAdmins.filter((admin) => admin.active !== false && admin.role === "main").map((admin) => ({
     username: admin.username,
     name: admin.name,
@@ -398,7 +399,7 @@ async function createChangeRequest(session, body) {
     proposal: clone(body.proposal), status: "pending", createdAt: new Date().toISOString(),
   };
   if (Buffer.byteLength(JSON.stringify(request)) > 1024 * 1024) throw new ControlError("This change request is too large.");
-  buildCandidate(request);
+  buildCandidate(request, null, await loadPublished("resources"));
   return mutateState((state) => {
     const active = state.regularAdmins.find((item) => item.id === admin.id);
     if (!isAllowed(active, branchId, semesterId)) throw new ControlError("This permission is no longer active.", 403);
@@ -416,7 +417,7 @@ async function approveChange(requestId, reviewer) {
   });
   try {
     const existingDraft = await loadDraft("resources");
-    const baseResources = existingDraft ? existingDraft.data : readJson("resources");
+    const baseResources = existingDraft ? existingDraft.data : await loadPublished("resources");
     const candidate = buildCandidate(request, { name: request.requestedBy, role: request.requestedRole || "regular" }, baseResources);
     const draft = await saveDraft("resources", candidate, reviewer);
     await mutateState((state) => {
@@ -445,7 +446,7 @@ async function saveScopedDraft(session, body) {
   };
   if (Buffer.byteLength(JSON.stringify(request)) > 1024 * 1024) throw new ControlError("This scoped update is too large.");
   const existingDraft = await loadDraft("resources");
-  const baseResources = existingDraft ? existingDraft.data : readJson("resources");
+  const baseResources = existingDraft ? existingDraft.data : await loadPublished("resources");
   assertAttributeOnly(request, baseResources);
   const candidate = buildCandidate(request, { name: admin.name, role: "branch" }, baseResources);
   const draft = await saveDraft("resources", candidate, admin.username);
@@ -462,24 +463,27 @@ async function saveScopedDraft(session, body) {
   return { saved: true, draft: true, deploying: false, target: "resources", updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
 }
 
-async function markResourcesDraftPublished(commitUrl, reviewer) {
+async function markResourcesDraftPublished(publishedVersion, reviewer) {
   return mutateState((state) => {
     let count = 0;
-    const deployedAt = new Date().toISOString();
+    const publishedAt = new Date().toISOString();
     state.changeRequests.forEach((request) => {
       if (!["approved-draft", "drafted"].includes(request.status)) return;
       request.status = "published";
-      request.commitUrl = commitUrl;
-      request.deployedAt = deployedAt;
-      request.deployedBy = reviewer;
+      delete request.commitUrl;
+      delete request.deployedAt;
+      delete request.deployedBy;
+      request.publishedVersion = publishedVersion;
+      request.publishedAt = publishedAt;
+      request.publishedBy = reviewer;
       count += 1;
     });
     return count;
   });
 }
 
-async function manage(action, body, reviewer, mainAdmins) {
-  const resources = readJson("resources");
+async function manage(action, body, reviewer, mainAdmins, resourceData = null) {
+  const resources = resourceData || await loadPublished("resources");
   if (action === "approve-change") return approveChange(text(body.requestId, "Request id", 80), reviewer);
   return mutateState(async (state) => {
     if (action === "approve-registration") {

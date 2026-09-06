@@ -25,14 +25,14 @@ function methodNotAllowed(allowed) {
   return json(405, { error: "Method not allowed." }, { Allow: allowed });
 }
 
-function filterResources(params) {
+function filterResources(params, sourceResources = resources) {
   const query = String((params && params.q) || "").trim().toLowerCase();
   const type = String((params && params.type) || "all").toLowerCase();
   const subject = String((params && params.subject) || "all").toLowerCase();
   const branchId = String((params && params.branch) || "all").toLowerCase();
   const semesterId = String((params && params.semester) || "all").toLowerCase();
 
-  const branches = resources.branches
+  const branches = sourceResources.branches
     .filter((branch) => branchId === "all" || branch.id === branchId)
     .map((branch) => ({
       ...branch,
@@ -45,7 +45,7 @@ function filterResources(params) {
   const collectionOrder = new Map(branches.flatMap((branch) =>
     branch.semesters.flatMap((semester) => semester.subjectIds)
   ).map((id, index) => [id, index]));
-  const unitCollections = resources.unitCollections.filter((collection) =>
+  const unitCollections = sourceResources.unitCollections.filter((collection) =>
     (!restrictCollections || referencedCollections.has(collection.id)) &&
     (subject === "all" || collection.id === subject) &&
     (!query || `${collection.name} ${collection.description} ${collection.units.map((unit) => unit.title).join(" ")}`.toLowerCase().includes(query))
@@ -53,7 +53,7 @@ function filterResources(params) {
     ? (collectionOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (collectionOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
     : 0);
 
-  const subjects = resources.subjects
+  const subjects = sourceResources.subjects
     .filter((item) => subject === "all" || item.id === subject)
     .map((item) => ({
       ...item,
@@ -69,7 +69,7 @@ function filterResources(params) {
       `${item.name} ${item.shortName}`.toLowerCase().includes(query)
     );
 
-  return { ...resources, branches, unitCollections, subjects };
+  return { ...sourceResources, branches, unitCollections, subjects };
 }
 
 function readRequestBody(event) {

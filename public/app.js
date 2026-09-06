@@ -147,9 +147,9 @@ function ensureResourceData() {
 }
 
 async function loadResourceData() {
-  // The same validated data is served from Netlify's CDN first, avoiding a
-  // function invocation on every page view. The API remains the fallback.
-  const sources = ["/resources.json", "/api/resources"];
+  // Published admin content lives in Netlify Blobs. The bundled JSON remains
+  // an outage-safe fallback for the first deploy and local static previews.
+  const sources = ["/api/resources", "/resources.json"];
   let lastError;
 
   for (const source of sources) {
@@ -1335,21 +1335,19 @@ function placementLoadingHtml() {
 
 async function loadPlacementData() {
   if (!placementDataPromise) {
-    placementDataPromise = fetch("/placements.json", { cache: "no-store" })
-      .then((response) => {
-        if (!response.ok) throw new Error("Placement data returned " + response.status);
-        return response.json();
-      })
-      .then((data) => {
-        if (!Array.isArray(data.latest) || !Array.isArray(data.history) || !Array.isArray(data.reports)) {
-          throw new Error("Placement data is incomplete");
-        }
-        return data;
-      })
-      .catch((error) => {
-        placementDataPromise = null;
-        throw error;
-      });
+    placementDataPromise = (async () => {
+      let lastError;
+      for (const source of ["/api/placements", "/placements.json"]) {
+        try {
+          const response = await fetch(source, { cache: "no-store" });
+          if (!response.ok) throw new Error("Placement data returned " + response.status);
+          const data = await response.json();
+          if (!Array.isArray(data.latest) || !Array.isArray(data.history) || !Array.isArray(data.reports)) throw new Error("Placement data is incomplete");
+          return data;
+        } catch (error) { lastError = error; }
+      }
+      throw lastError || new Error("Placement data could not load");
+    })().catch((error) => { placementDataPromise = null; throw error; });
   }
   return placementDataPromise;
 }

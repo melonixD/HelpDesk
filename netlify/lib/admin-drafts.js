@@ -1,6 +1,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { commitJson, TARGETS, validateTarget } = require("./admin-content");
+const { TARGETS, validateTarget } = require("./admin-content");
+const { publishContent } = require("./content-store");
 const { isNetlifyRuntime } = require("./netlify-runtime");
 
 const STORE_NAME = "helpdesk-admin-drafts";
@@ -84,9 +85,17 @@ async function publishDraft(target, author, message) {
     error.statusCode = 409;
     throw error;
   }
-  const result = await commitJson(target, draft.data, message || `Publish ${target} from HelpDesk admin`);
+  const result = await publishContent(target, draft.data, author);
   await removeDraft(target);
-  return { ...result, publishedAt: new Date().toISOString(), publishedBy: author };
+  return {
+    target,
+    publishedAt: result.publishedAt,
+    publishedBy: result.publishedBy,
+    version: result.version,
+    delivery: "netlify-blobs",
+    deploying: false,
+    message: String(message || "").slice(0, 120),
+  };
 }
 
 module.exports = { draftDirectory, loadDraft, publishDraft, removeDraft, saveDraft };
