@@ -426,7 +426,7 @@ async function approveChange(requestId, reviewer) {
       const admin = state.regularAdmins.find((entry) => entry.id === request.adminId);
       if (admin) { admin.coins = (Number(admin.coins) || 0) + 1; admin.contributions = (Number(admin.contributions) || 0) + 1; }
     });
-    return { approved: true, draft: true, deploying: false, target: "resources", updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
+    return { approved: true, draft: true, deploying: false, target: "resources", draftId: draft.draftId || null, updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
   } catch (error) {
     await mutateState((state) => { const item=state.changeRequests.find((entry)=>entry.id===requestId);if(item){item.status="pending";item.error=String(error.message||"Approval failed").slice(0,300);} });
     throw error;
@@ -460,7 +460,7 @@ async function saveScopedDraft(session, body) {
     if (current) { current.coins = (Number(current.coins) || 0) + 1; current.contributions = (Number(current.contributions) || 0) + 1; }
     state.changeRequests.unshift(request);
   });
-  return { saved: true, draft: true, deploying: false, target: "resources", updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
+  return { saved: true, draft: true, deploying: false, target: "resources", draftId: draft.draftId || null, updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
 }
 
 async function markResourcesDraftPublished(publishedVersion, reviewer) {

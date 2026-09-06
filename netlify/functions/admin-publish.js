@@ -11,7 +11,7 @@ exports.handler = async (event) => {
   const body = parseBody(event);
   if (!body || typeof body.target !== "string") return json(400, { error: "A content target is required." });
   try {
-    const result = await publishDraft(body.target, auth.session.sub, body.message);
+    const result = await publishDraft(body.target, auth.session.sub, body.message, body.draftId);
     let queuedRequestsPublished = 0;
     if (body.target === "resources") {
       try { queuedRequestsPublished = await markResourcesDraftPublished(result.version, auth.session.sub); }
