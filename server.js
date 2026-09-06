@@ -16,6 +16,7 @@ const adminManagement = require("./netlify/functions/admin-management").handler;
 const adminChangeRequest = require("./netlify/functions/admin-change-request").handler;
 const adminScopedSave = require("./netlify/functions/admin-scoped-save").handler;
 const adminProfile = require("./netlify/functions/admin-profile").handler;
+const adminPassword = require("./netlify/functions/admin-password").handler;
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
@@ -193,6 +194,7 @@ async function handleRequest(req, res) {
     "/api/admin/change-request": adminChangeRequest,
     "/api/admin/scoped-save": adminScopedSave,
     "/api/admin/profile": adminProfile,
+    "/api/admin/password": adminPassword,
   };
   if (adminRoutes[url.pathname]) {
     const body = ["POST", "PUT", "PATCH"].includes(req.method) ? await readBody(req) : "";

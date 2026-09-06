@@ -1,4 +1,4 @@
-# HelpDesk V19.0.3 · Easier admin uploads, reusable resources & explicit deploys
+# HelpDesk V19.1 · Main-admin password controls & explicit deploys
 
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
@@ -48,6 +48,7 @@ HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. T
 - Branch admins can save scoped contribution drafts inside governed sections; only a main admin can deploy them
 - Automatic scope isolation so shared subjects are not unintentionally changed in other branches
 - Uploadable profile pictures for main, branch and regular admins
+- Secure self-service password changes for main admins, stored as bcrypt hashes in private Netlify Blobs
 - Automatic “Provided by …” attribution on approved and branch-published resource updates
 - Renamed, simplified **Syllabus Citadel** public section
 
@@ -118,7 +119,9 @@ In Resources, **Fill in selected…** lets a main admin reuse the currently sele
 
 The V19 resource editor uses a guided **Branch → Semester → Subject** picker. Subject settings and structural controls stay collapsed until needed, while every unit opens focused upload groups for lectures, notes, PYQs and books. Books support any number of titled links as well as multi-PDF upload. **Add unit or special section** can create a standard unit, Physics/Chemistry-style Lab, workshop shop or class-notes section and immediately opens the new item for editing.
 
-The password itself is never stored in the source or sent to the browser. Generate a replacement hash locally with:
+Main admins can change their own password from **My profile → Change password**. The current password must be confirmed, the replacement must contain at least 10 characters, and the admin is signed out after a successful change. Only the bcrypt hash is saved in private Netlify Blobs. This does not create a GitHub commit, trigger Netlify or use a deployment credit.
+
+For initial setup, the password itself is never stored in the source or sent to the browser. Generate a replacement hash locally with:
 
 ```bash
 node -e "require('bcryptjs').hash(process.argv[1], 12).then(console.log)" 'YOUR_NEW_PASSWORD'
@@ -138,7 +141,7 @@ Generate a session secret with `openssl rand -hex 32`. The older `ADMIN_USERNAME
 
 Uploaded assets, unpublished main-admin drafts and the private access-control database use Netlify Blobs automatically when the dashboard runs in Netlify Functions; no separate Blob credential is needed there. Local dashboard uploads are placed in `public/uploads`, while local drafts and registration data use ignored files under `data/`.
 
-V19.0.3 detects Netlify's Lambda runtime, initializes Blob access for every Lambda-compatible handler and uses the supported default consistency endpoint. This prevents read-only `/var/task`, missing Blob-context and missing `uncachedEdgeURL` errors.
+V19.1 detects Netlify's Lambda runtime, initializes Blob access for every Lambda-compatible handler and uses the supported default consistency endpoint. This prevents read-only `/var/task`, missing Blob-context and missing `uncachedEdgeURL` errors.
 
 ### Regular-admin workflow
 

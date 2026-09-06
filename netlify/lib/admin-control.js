@@ -158,6 +158,59 @@ async function updateProfile(session, body, mainAdmins) {
   return { saved: true, profile: context.profile, community: context.community };
 }
 
+function password(value, label) {
+  if (typeof value !== "string" || !value || value.length > 200) {
+    throw new ControlError(`${label} is required and must be under 200 characters.`);
+  }
+  return value;
+}
+
+async function changeOwnPassword(session, body, mainAdmins) {
+  if (!session || session.role !== "main") throw new ControlError("Main admin permission is required.", 403);
+  const currentPassword = password(body && body.currentPassword, "Current password");
+  const newPassword = password(body && body.newPassword, "New password");
+  const confirmPassword = password(body && body.confirmPassword, "Password confirmation");
+  if (newPassword.length < 10) throw new ControlError("New password must contain at least 10 characters.");
+  if (newPassword !== confirmPassword) throw new ControlError("New password and confirmation do not match.");
+
+  return mutateState(async (state) => {
+    const usernameKey = String(session.sub || "").toLowerCase();
+    const configured = mainAdmins.find((admin) => String(admin.username).toLowerCase() === usernameKey);
+    const promoted = state.regularAdmins.find((admin) =>
+      admin.active !== false && admin.role === "main" &&
+      (admin.id === session.adminId || String(admin.username).toLowerCase() === usernameKey)
+    );
+    const override = state.mainPasswordOverrides.find((item) =>
+      String(item.usernameKey || item.username || "").toLowerCase() === usernameKey
+    );
+    const currentHash = configured ? (override && override.passwordHash) || configured.passwordHash : promoted && promoted.passwordHash;
+    if (!currentHash || !await bcrypt.compare(currentPassword, currentHash).catch(() => false)) {
+      throw new ControlError("Current password is incorrect.", 401);
+    }
+    if (await bcrypt.compare(newPassword, currentHash).catch(() => false)) {
+      throw new ControlError("Choose a password different from your current password.");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const updatedAt = new Date().toISOString();
+    if (configured) {
+      if (override) {
+        override.passwordHash = passwordHash;
+        override.updatedAt = updatedAt;
+      } else {
+        state.mainPasswordOverrides.push({ usernameKey, passwordHash, updatedAt });
+      }
+    } else if (promoted) {
+      promoted.passwordHash = passwordHash;
+      promoted.updatedAt = updatedAt;
+      promoted.updatedBy = session.sub;
+    } else {
+      throw new ControlError("This main-admin account is no longer active.", 403);
+    }
+    return { changed: true };
+  });
+}
+
 async function registration(body) {
   const applicant = {
     id: id("registration"),
@@ -485,6 +538,7 @@ module.exports = {
   ControlError,
   activeContributor,
   activeRegularAdmin,
+  changeOwnPassword,
   createChangeRequest,
   dashboardContext,
   filterResources,

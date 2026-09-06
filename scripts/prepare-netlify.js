@@ -24,11 +24,12 @@ validateScholarships(fallbackScholarships);
 const units = resources.unitCollections.flatMap((subject) => subject.units);
 const pyqUrls = units.map((unit) => unit.pyqUrl).filter(Boolean);
 const practiceKeys = units.map((unit) => unit.practiceKey || unit.pyqUrl).filter(Boolean);
-const localPracticeSources = practiceKeys.filter((url) => String(url).startsWith("/") && !String(url).startsWith("/uploads/"));
+const isBundledAsset = (url) => String(url).startsWith("/") && !String(url).startsWith("/uploads/");
+const localPracticeSources = practiceKeys.filter(isBundledAsset);
 const noteUrls = units.flatMap((unit) => [unit.handwrittenNotesUrl, unit.masterNotesUrl])
-  .filter((url) => url && String(url).startsWith("/"));
+  .filter((url) => url && isBundledAsset(url));
 const workshopUrls = units.flatMap((unit) => [unit.workshopFileUrl, unit.classNotesUrl])
-  .filter((url) => url && String(url).startsWith("/"));
+  .filter((url) => url && isBundledAsset(url));
 const publicPath = (url) => path.join(root, "public", String(url).replace(/^\/+/, ""));
 const missingBankEntries = practiceKeys.filter((url) => !String(url).startsWith("/uploads/") && !bank[url]);
 const missingPdfs = localPracticeSources.filter((url) => !fs.existsSync(publicPath(url)));

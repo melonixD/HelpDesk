@@ -350,6 +350,71 @@ test("admin login rejects bad credentials", async () => {
   }
 });
 
+test("main admins can change their own password without a deployment", async () => {
+  const bcrypt = require("bcryptjs");
+  const login = require("../netlify/functions/admin-login").handler;
+  const changePassword = require("../netlify/functions/admin-password").handler;
+  const prior = Object.fromEntries([
+    "MAIN_ADMINS_JSON", "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "SESSION_SECRET",
+  ].map((key) => [key, process.env[key]]));
+  const restore = (key) => prior[key] === undefined ? delete process.env[key] : process.env[key] = prior[key];
+  await fs.unlink(adminStatePath).catch(() => {});
+  process.env.MAIN_ADMINS_JSON = JSON.stringify([{
+    username: "password-test",
+    name: "Password Test",
+    passwordHash: bcrypt.hashSync("original-main-password", 4),
+  }]);
+  delete process.env.ADMIN_USERNAME;
+  delete process.env.ADMIN_PASSWORD_HASH;
+  process.env.SESSION_SECRET = "0123456789abcdef0123456789abcdef";
+  try {
+    const loginResult = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.201" },
+      body: JSON.stringify({ username: "password-test", password: "original-main-password" }),
+    });
+    assert.equal(loginResult.statusCode, 200);
+    const session = JSON.parse(loginResult.body);
+    const cookie = loginResult.headers["Set-Cookie"].split(";")[0];
+    const changed = await changePassword({
+      httpMethod: "POST",
+      headers: {
+        cookie,
+        host: "localhost:3000",
+        origin: "http://localhost:3000",
+        "x-helpdesk-csrf": session.csrfToken,
+      },
+      body: JSON.stringify({
+        currentPassword: "original-main-password",
+        newPassword: "replacement-main-password",
+        confirmPassword: "replacement-main-password",
+      }),
+    });
+    assert.equal(changed.statusCode, 200);
+    assert.equal(JSON.parse(changed.body).changed, true);
+    assert.match(changed.headers["Set-Cookie"], /Max-Age=0/);
+    const stored = await fs.readFile(adminStatePath, "utf8");
+    assert.doesNotMatch(stored, /replacement-main-password/);
+    assert.match(stored, /passwordHash/);
+
+    const oldLogin = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.202" },
+      body: JSON.stringify({ username: "password-test", password: "original-main-password" }),
+    });
+    assert.equal(oldLogin.statusCode, 401);
+    const newLogin = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.203" },
+      body: JSON.stringify({ username: "password-test", password: "replacement-main-password" }),
+    });
+    assert.equal(newLogin.statusCode, 200);
+  } finally {
+    Object.keys(prior).forEach(restore);
+    await fs.unlink(adminStatePath).catch(() => {});
+  }
+});
+
 test("main-admin drafts do not deploy until the explicit publish request", async () => {
   const bcrypt = require("bcryptjs");
   const login = require("../netlify/functions/admin-login").handler;
@@ -414,6 +479,7 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
   const changeRequest = require("../netlify/functions/admin-change-request").handler;
   const scopedSave = require("../netlify/functions/admin-scoped-save").handler;
   const profile = require("../netlify/functions/admin-profile").handler;
+  const changePassword = require("../netlify/functions/admin-password").handler;
   const directSave = require("../netlify/functions/admin-save").handler;
   const publish = require("../netlify/functions/admin-publish").handler;
   const previousFetch = global.fetch;
@@ -676,6 +742,24 @@ test("all contributor changes stay drafted until a main admin explicitly deploys
     assert.ok(promotedManagement.mainAdmins.some((admin) => admin.username === "regular-test"));
     assert.ok(!promotedManagement.regularAdmins.some((admin) => admin.username === "regular-test"));
     assert.ok(promotedManagement.mainAdmins.every((admin) => admin.passwordHash === undefined));
+
+    const promotedPasswordResult = await changePassword({
+      httpMethod: "POST",
+      headers: authHeaders(promotedCookie, promotedSession.csrfToken),
+      body: JSON.stringify({
+        currentPassword: "temporary-password",
+        newPassword: "promoted-main-password",
+        confirmPassword: "promoted-main-password",
+      }),
+    });
+    assert.equal(promotedPasswordResult.statusCode, 200);
+    const promotedNewLogin = await login({
+      httpMethod: "POST",
+      headers: { host: "localhost:3000", "x-forwarded-for": "192.0.2.124" },
+      body: JSON.stringify({ username: "regular-test", password: "promoted-main-password" }),
+    });
+    assert.equal(promotedNewLogin.statusCode, 200);
+    assert.equal(JSON.parse(promotedNewLogin.body).role, "main");
   } finally {
     global.fetch = previousFetch;
     Object.keys(prior).forEach(restore);
@@ -702,10 +786,18 @@ test("admin UI and server enforce explicit draft/deploy controls", async () => {
   assert.match(script, /Add a unit or section/);
   assert.match(script, /Lab section/);
   assert.match(script, /Make main admin/);
+  assert.match(script, /Change password/);
+  assert.match(script, /\/api\/admin\/password/);
   assert.match(script, /Approve to draft/);
   assert.match(script, /Save contribution draft/);
   assert.doesNotMatch(script, /setTimeout\(saveChanges,\s*1200\)/);
   assert.doesNotMatch(control, /commitJson/);
+});
+
+test("Netlify builds accept private Blob-backed upload URLs", async () => {
+  const buildScript = await fs.readFile(path.resolve(__dirname, "../scripts/prepare-netlify.js"), "utf8");
+  assert.match(buildScript, /isBundledAsset/);
+  assert.match(buildScript, /!String\(url\)\.startsWith\("\/uploads\/"\)/);
 });
 
 test("admin PDF uploads are validated, assembled and publicly readable", async () => {

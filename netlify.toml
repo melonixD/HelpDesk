@@ -119,6 +119,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/password"
+  to = "/.netlify/functions/admin-password"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/uploads/*"
   to = "/.netlify/functions/admin-asset?key=:splat"
   status = 200

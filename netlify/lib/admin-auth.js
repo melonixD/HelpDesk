@@ -1,6 +1,6 @@
 const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
-const { findRegularAdmin } = require("./admin-state");
+const { findMainPasswordOverride, findRegularAdmin } = require("./admin-state");
 
 const COOKIE_NAME = "helpdesk_admin";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -203,7 +203,10 @@ async function authenticate(event) {
   const requestedUsername = body.username.trim();
   const mainAdmin = mainAdmins.find((admin) => constantTimeEqual(requestedUsername.toLowerCase(), admin.username.toLowerCase()));
   let identity = null;
-  if (mainAdmin && await bcrypt.compare(body.password, mainAdmin.passwordHash).catch(() => false)) {
+  const mainPasswordHash = mainAdmin
+    ? (await findMainPasswordOverride(mainAdmin.username)) || mainAdmin.passwordHash
+    : null;
+  if (mainAdmin && await bcrypt.compare(body.password, mainPasswordHash).catch(() => false)) {
     identity = { id: `main:${mainAdmin.username}`, username: mainAdmin.username, name: mainAdmin.name, role: "main" };
   } else {
     const regular = await findRegularAdmin(requestedUsername);

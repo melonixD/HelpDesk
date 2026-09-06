@@ -61,9 +61,12 @@
     return result;
   }
 
-  function showLogin(message) {
+  function showLogin(message, success = false) {
     adminView.hidden = true; loginView.hidden = false;
-    if (message) { $("#login-error").textContent = message; $("#login-error").hidden = false; }
+    const notice = $("#login-error");
+    notice.classList.toggle("registration-success", success);
+    if (message) { notice.textContent = message; notice.hidden = false; }
+    else { notice.textContent = ""; notice.hidden = true; }
   }
 
   async function boot() {
@@ -93,7 +96,7 @@
   }
 
   $("#login-form").addEventListener("submit", async (event) => {
-    event.preventDefault(); const error = $("#login-error"); error.hidden = true;
+    event.preventDefault(); const error = $("#login-error"); error.hidden = true; error.classList.remove("registration-success");
     const submit = event.submitter; submit.disabled = true; submit.textContent = "Signing in…";
     try {
       const result = await request("/api/admin/login", { method: "POST", body: JSON.stringify({ username: $("#login-username").value, password: $("#login-password").value }) });
@@ -573,11 +576,25 @@
 
   function renderProfile() {
     const photo=(state.profile&&state.profile.photoUrl)||"/favicon.svg";
-    editor.innerHTML=`<div class="section-intro"><div><h2>Your contributor profile</h2><p class="muted">This picture appears beside your name in the community leaderboard and admin workspace.</p></div><span class="role-pill">${escape(roleLabel(state.role))}</span></div><section class="panel profile-editor"><img id="profile-preview" src="${escape(photo)}" alt="Profile preview" width="150" height="150"><div class="profile-editor-fields"><label class="field"><span>Profile picture URL</span><input id="profile-photo-url" type="url" value="${escape(photo==="/favicon.svg"?"":photo)}" placeholder="Upload a picture or paste an HTTPS URL"><small>Square photos work best.</small></label><div class="management-actions"><label class="quiet-button profile-upload">Upload picture<input id="profile-photo-file" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="primary" id="save-profile-picture">Save profile picture</button></div><p class="muted">Maximum upload size: 5 MB.</p></div></section>`;
+    editor.innerHTML=`<div class="section-intro"><div><h2>Your admin profile</h2><p class="muted">Manage your photo${state.role==="main"?" and secure your main-admin account":""}.</p></div><span class="role-pill">${escape(roleLabel(state.role))}</span></div><div class="account-stack"><section class="panel profile-editor"><img id="profile-preview" src="${escape(photo)}" alt="Profile preview" width="150" height="150"><div class="profile-editor-fields"><label class="field"><span>Profile picture URL</span><input id="profile-photo-url" type="url" value="${escape(photo==="/favicon.svg"?"":photo)}" placeholder="Upload a picture or paste an HTTPS URL"><small>Square photos work best.</small></label><div class="management-actions"><label class="quiet-button profile-upload">Upload picture<input id="profile-photo-file" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="primary" id="save-profile-picture">Save profile picture</button></div><p class="muted">Maximum upload size: 5 MB.</p></div></section>${state.role==="main"?`<section class="panel password-editor"><div><p class="eyebrow">Security</p><h2>Change password</h2><p class="muted">Confirm your current password, then choose a new password with at least 10 characters. You will be signed out when it changes.</p></div><form id="password-form" class="password-form"><label class="field"><span>Current password</span><input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required maxlength="200"></label><label class="field"><span>New password</span><input id="new-password" name="newPassword" type="password" autocomplete="new-password" required minlength="10" maxlength="200"><small>Use at least 10 characters and do not reuse your current password.</small></label><label class="field"><span>Confirm new password</span><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="10" maxlength="200"></label><div><button class="primary" type="submit">Change password</button></div></form></section>`:""}</div>`;
     const inputNode=$("#profile-photo-url");const preview=$("#profile-preview");
     inputNode.addEventListener("input",()=>{preview.src=inputNode.value.trim()||"/favicon.svg";});
     $("#profile-photo-file").addEventListener("change",async(event)=>{const file=event.target.files&&event.target.files[0];if(!file)return;const label=event.target.closest("label");const original=label.firstChild.textContent;label.firstChild.textContent="Uploading…";try{const url=await uploadFile(file,inputNode.value,(percent)=>{label.firstChild.textContent=`Uploading ${percent}%`;});inputNode.value=url;preview.src=url;toast("Picture uploaded. Save it to your profile.");}catch(error){toast(error.message);}finally{label.firstChild.textContent=original;event.target.value="";}});
     $("#save-profile-picture").addEventListener("click",async(event)=>{const button=event.currentTarget;const photoUrl=inputNode.value.trim();if(!photoUrl)return toast("Upload a picture or enter an HTTPS image URL.");button.disabled=true;button.textContent="Saving…";try{const result=await request("/api/admin/profile",{method:"POST",body:JSON.stringify({photoUrl})});state.profile=result.profile;state.community=result.community||state.community;$("#admin-avatar").src=result.profile.photoUrl;toast("Profile picture updated.");renderProfile();}catch(error){toast(error.message);button.disabled=false;button.textContent="Save profile picture";}});
+    const passwordForm=$("#password-form");
+    if(passwordForm)passwordForm.addEventListener("submit",async(event)=>{
+      event.preventDefault();
+      const button=event.submitter;const currentPassword=$("#current-password").value;const newPassword=$("#new-password").value;const confirmPassword=$("#confirm-password").value;
+      if(newPassword!==confirmPassword)return toast("New password and confirmation do not match.");
+      button.disabled=true;button.textContent="Changing…";
+      try{
+        await request("/api/admin/password",{method:"POST",body:JSON.stringify({currentPassword,newPassword,confirmPassword})});
+        const username=state.user&&state.user.username||"";
+        state.csrf="";state.data=null;state.role=null;state.profile=null;state.community=[];state.user=null;selectLoginTab("signin");
+        $("#login-username").value=username;$("#login-password").value="";
+        showLogin("Password changed successfully. Sign in with your new password.",true);
+      }catch(error){toast(error.message);button.disabled=false;button.textContent="Change password";}
+    });
   }
 
   function permissionChoices(selected, owner) {

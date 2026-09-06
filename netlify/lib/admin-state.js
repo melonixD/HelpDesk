@@ -9,17 +9,18 @@ const LOCAL_PATH = process.env.ADMIN_STATE_PATH || path.resolve(__dirname, "../.
 let localQueue = Promise.resolve();
 
 function emptyState() {
-  return { version: 2, registrations: [], regularAdmins: [], changeRequests: [], profiles: [] };
+  return { version: 3, registrations: [], regularAdmins: [], changeRequests: [], profiles: [], mainPasswordOverrides: [] };
 }
 
 function normalize(value) {
   const state = value && typeof value === "object" ? value : emptyState();
   return {
-    version: 2,
+    version: 3,
     registrations: Array.isArray(state.registrations) ? state.registrations : [],
     regularAdmins: Array.isArray(state.regularAdmins) ? state.regularAdmins : [],
     changeRequests: Array.isArray(state.changeRequests) ? state.changeRequests : [],
     profiles: Array.isArray(state.profiles) ? state.profiles : [],
+    mainPasswordOverrides: Array.isArray(state.mainPasswordOverrides) ? state.mainPasswordOverrides : [],
   };
 }
 
@@ -95,9 +96,20 @@ async function findRegularAdmin(username) {
   return state.regularAdmins.find((admin) => admin.active !== false && String(admin.username).toLowerCase() === wanted) || null;
 }
 
+async function findMainPasswordOverride(username) {
+  const wanted = String(username || "").toLowerCase();
+  const state = await loadState();
+  const override = state.mainPasswordOverrides.find((item) =>
+    String(item.usernameKey || item.username || "").toLowerCase() === wanted &&
+    typeof item.passwordHash === "string" && item.passwordHash.startsWith("$2")
+  );
+  return override ? override.passwordHash : null;
+}
+
 module.exports = {
   cleanRegularAdmin,
   emptyState,
+  findMainPasswordOverride,
   findRegularAdmin,
   id,
   loadState,
