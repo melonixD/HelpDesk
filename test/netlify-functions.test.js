@@ -846,3 +846,17 @@ test("main site renders note fields added by admins without a legacy subject fla
   const script = await fs.readFile(path.resolve(__dirname, "../public/app.js"), "utf8");
   assert.match(script, /subject\.splitNotes \|\| unit\.handwrittenNotesUrl \|\| unit\.masterNotesUrl/);
 });
+
+test("uploaded resource links bypass cached missing responses", async () => {
+  const [assetFunction, app] = await Promise.all([
+    fs.readFile(path.resolve(__dirname, "../netlify/functions/admin-asset.js"), "utf8"),
+    fs.readFile(path.resolve(__dirname, "../public/app.js"), "utf8"),
+  ]);
+  assert.match(assetFunction, /"Cache-Control": "no-store, no-cache, must-revalidate"/);
+  assert.match(assetFunction, /"Netlify-CDN-Cache-Control": "no-store"/);
+  assert.match(app, /function openableResourceUrl/);
+  assert.match(app, /startsWith\("\/uploads\/"\)/);
+  assert.match(app, /asset=20260906/);
+  assert.match(app, /data-pyq-url="' \+\s*escapeHtml\(material\.url\)/);
+  assert.match(app, /href="' \+ escapeHtml\(openableResourceUrl\(material\.url\)\)/);
+});

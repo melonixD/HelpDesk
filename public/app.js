@@ -791,6 +791,12 @@ function renderMaterialFolder(material) {
     '</div><span class="sr-only">' + available + ' folders available</span></details>';
 }
 
+function openableResourceUrl(value) {
+  const url = String(value || "");
+  if (!url.startsWith("/uploads/")) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}asset=20260906`;
+}
+
 function renderMaterial(material) {
   const isPractice = material.type === "practice";
   const actionLabel = material.url ? (isPractice ? "Generate" : "Open") : "Soon";
@@ -807,7 +813,7 @@ function renderMaterial(material) {
   }
 
   return material.url
-    ? '<a class="material-item" href="' + escapeHtml(material.url) +
+    ? '<a class="material-item" href="' + escapeHtml(openableResourceUrl(material.url)) +
       '" target="_blank" rel="noopener noreferrer">' + content + '</a>'
     : '<div class="material-item unavailable" aria-disabled="true">' + content + '</div>';
 }

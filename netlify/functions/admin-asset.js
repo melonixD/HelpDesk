@@ -6,7 +6,19 @@ exports.handler = async (event) => {
   if (!["GET", "HEAD"].includes(event.httpMethod)) return { statusCode: 405, headers: { Allow: "GET, HEAD" }, body: "" };
   const key = event.queryStringParameters && event.queryStringParameters.key;
   const result = await readFinal(key);
-  if (!result) return { statusCode: 404, headers: { "Content-Type": "text/plain; charset=utf-8" }, body: "Not found" };
+  if (!result) {
+    return {
+      statusCode: 404,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Netlify-CDN-Cache-Control": "no-store",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      body: "Not found",
+    };
+  }
   const total = result.data.length;
   const maximumResponse = 4 * 1024 * 1024;
   const rangeHeader = String((event.headers && (event.headers.range || event.headers.Range)) || "");
