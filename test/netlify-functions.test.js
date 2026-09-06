@@ -822,3 +822,8 @@ test("Blob content uses immutable version keys instead of stale mutable reads", 
   assert.match(published, /published:\$\{target\}:v2:/);
   assert.match(published, /onlyIfNew:\s*true/);
 });
+
+test("main site renders note fields added by admins without a legacy subject flag", async () => {
+  const script = await fs.readFile(path.resolve(__dirname, "../public/app.js"), "utf8");
+  assert.match(script, /subject\.splitNotes \|\| unit\.handwrittenNotesUrl \|\| unit\.masterNotesUrl/);
+});

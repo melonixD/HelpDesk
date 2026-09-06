@@ -612,7 +612,8 @@ function renderUnit(subject, unit, index) {
         url: item.url,
       }))
     : null;
-  const notesChildren = subject.splitNotes && !isLab ? [
+  const hasSplitNotes = subject.splitNotes || unit.handwrittenNotesUrl || unit.masterNotesUrl;
+  const notesChildren = hasSplitNotes && !isLab ? [
     {
       type: "notes",
       title: "Handwritten Notes",
