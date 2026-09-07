@@ -160,6 +160,30 @@ async function updateProfile(session, body, mainAdmins) {
   return { saved: true, profile: context.profile, community: context.community };
 }
 
+async function overlayCreatorProfiles(resources, mainAdmins) {
+  if (!resources || !Array.isArray(resources.creators)) return resources;
+  let state;
+  try { state = await loadState(); }
+  catch { return resources; }
+  let changed = false;
+  const creators = resources.creators.map((creator) => {
+    const creatorId = String(creator.id || "").toLowerCase();
+    const creatorName = String(creator.name || "").trim().toLowerCase();
+    const admin = (mainAdmins || []).find((item) =>
+      String(item.username || "").toLowerCase() === creatorId ||
+      String(item.name || "").trim().toLowerCase() === creatorName
+    );
+    if (!admin) return creator;
+    const saved = savedProfileUrl(state, `main:${String(admin.username).toLowerCase()}`, "");
+    // A photo explicitly uploaded in Creator settings remains authoritative.
+    // Saved admin avatars replace only bundled/default creator images.
+    if (!saved || (creator.photoUrl && !String(creator.photoUrl).startsWith("/images/"))) return creator;
+    changed = true;
+    return { ...creator, photoUrl: saved };
+  });
+  return changed ? { ...resources, creators } : resources;
+}
+
 function password(value, label) {
   if (typeof value !== "string" || !value || value.length > 200) {
     throw new ControlError(`${label} is required and must be under 200 characters.`);
@@ -578,6 +602,7 @@ module.exports = {
   managementSnapshot,
   manage,
   markResourcesDraftPublished,
+  overlayCreatorProfiles,
   saveScopedDraft,
   registration,
   updateProfile,

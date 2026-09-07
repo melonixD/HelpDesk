@@ -96,7 +96,7 @@ function cacheElements() {
     "placements-open", "notices-open", "placement-hub", "placement-hub-close", "placement-hub-heading", "placement-hub-body",
     "placement-tab-stats", "placement-tab-notices", "notice-tab-count",
     "scholarships-open", "scholarship-hub", "scholarship-hub-close", "scholarship-hub-heading", "scholarship-hub-body",
-    "contact-grid", "hero-copy", "hero-credit", "hero-institution", "brand-name",
+    "contact-grid", "whatsapp-group-card", "hero-copy", "hero-credit", "hero-institution", "brand-name",
     "admin-reveal-trigger", "admin-menu-link", "admin-logout",
   ].forEach((id) => { elements[id] = document.getElementById(id); });
 }
@@ -118,6 +118,7 @@ async function initialise() {
     state.data = await ensureResourceData();
     applySiteMeta();
     initialiseContacts();
+    initialiseWhatsappGroup();
     renderBrowser();
     renderSyllabi();
     updateStats();
@@ -243,22 +244,43 @@ function formatWhatsapp(value) {
   return digits ? "+" + digits : "Not added";
 }
 
+const contactIcons = {
+  whatsapp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5Z"/><path d="M8.3 7.7c.3-.3.7-.2.9.1l1 1.7c.1.3.1.6-.1.8l-.7.7c.5 1.2 1.5 2.2 2.7 2.7l.7-.7c.2-.2.5-.2.8-.1l1.7 1c.3.2.4.6.1.9-.6.8-1.5 1.2-2.5 1-3.3-.7-5.9-3.3-6.6-6.6-.2-1 .2-1.9 1-2.5Z"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.4" cy="6.8" r="1" class="social-icon-dot"/></svg>',
+  linkedin: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7.3v.2M11.5 17v-7M11.5 13.1c.8-2 4.5-2.2 4.5 1.1V17"/></svg>',
+};
+
+function safeHttpsUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    return url.protocol === "https:" ? url.href : "";
+  } catch { return ""; }
+}
+
 function initialiseContacts() {
   const creators = Array.isArray(state.data.creators) ? state.data.creators : [];
   if (elements["contact-grid"] && creators.length) {
     elements["contact-grid"].innerHTML = creators.map((creator) => {
       const id = String(creator.id || creator.name).replace(/[^a-z0-9-]/gi, "-").toLowerCase();
       const digits = String(creator.whatsapp || "").replace(/\D/g, "");
+      const instagram = safeHttpsUrl(creator.instagramUrl);
+      const linkedin = safeHttpsUrl(creator.linkedinUrl);
+      const whatsapp = digits
+        ? '<a class="contact-method contact-whatsapp" href="https://wa.me/' + escapeHtml(digits) + '" target="_blank" rel="noopener noreferrer"><span class="contact-method-label"><span class="social-icon whatsapp">' + contactIcons.whatsapp + '</span><em>WhatsApp</em></span><span class="contact-method-value">' + escapeHtml(formatWhatsapp(digits)) + ' <i>↗</i></span></a>'
+        : '<div class="contact-method contact-whatsapp"><span class="contact-method-label"><span class="social-icon whatsapp">' + contactIcons.whatsapp + '</span><em>WhatsApp</em></span><span class="contact-method-value">Not added</span></div>';
+      const socials = [
+        instagram && '<a class="creator-social-link instagram" href="' + escapeHtml(instagram) + '" target="_blank" rel="noopener noreferrer"><span class="social-icon">' + contactIcons.instagram + '</span><span>Instagram</span><i>↗</i></a>',
+        linkedin && '<a class="creator-social-link linkedin" href="' + escapeHtml(linkedin) + '" target="_blank" rel="noopener noreferrer"><span class="social-icon">' + contactIcons.linkedin + '</span><span>LinkedIn</span><i>↗</i></a>',
+      ].filter(Boolean).join("");
       return '<article class="contact-card"><button class="profile-trigger" type="button" ' +
         'data-contact-trigger="' + escapeHtml(id) + '" aria-expanded="false" aria-controls="contact-' + escapeHtml(id) + '">' +
         '<img src="' + escapeHtml(creator.photoUrl || "/favicon.svg") + '" alt="' + escapeHtml(creator.name) +
         '" width="92" height="108" loading="lazy" decoding="async" />' +
         '<span class="profile-copy"><strong>' + escapeHtml(creator.name) + '</strong><small>' +
-        escapeHtml(creator.role || "Creator") + ' · tap for WhatsApp</small></span>' +
+        escapeHtml(creator.role || "Creator") + ' · tap for contacts</small></span>' +
         '<span class="profile-arrow" aria-hidden="true">＋</span></button>' +
-        '<div class="contact-reveal" id="contact-' + escapeHtml(id) + '" hidden><span>WhatsApp</span>' +
-        (digits ? '<a href="https://wa.me/' + escapeHtml(digits) + '" target="_blank" rel="noopener noreferrer">' +
-          escapeHtml(formatWhatsapp(digits)) + ' <i>↗</i></a>' : '<span>Not added</span>') + '</div></article>';
+        '<div class="contact-reveal" id="contact-' + escapeHtml(id) + '" hidden>' + whatsapp +
+        (socials ? '<div class="creator-social-links">' + socials + '</div>' : '') + '</div></article>';
     }).join("");
   }
 
@@ -271,12 +293,25 @@ function initialiseContacts() {
         String(creator.id || creator.name).replace(/[^a-z0-9-]/gi, "-").toLowerCase() === button.dataset.contactTrigger
       );
       button.querySelector("small").textContent = open
-        ? ((role && role.role) || "Creator") + " · tap for WhatsApp"
-        : "WhatsApp contact";
+        ? ((role && role.role) || "Creator") + " · tap for contacts"
+        : "Contact links";
       button.querySelector(".profile-arrow").textContent = open ? "＋" : "−";
       panel.hidden = open;
     });
   });
+}
+
+function initialiseWhatsappGroup() {
+  const card = elements["whatsapp-group-card"];
+  if (!card) return;
+  const meta = state.data.meta || {};
+  const url = safeHttpsUrl(meta.whatsappGroupUrl);
+  const action = url
+    ? '<a class="whatsapp-group-action" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer"><span>Join group</span><i>↗</i></a>'
+    : '<span class="whatsapp-group-status">WhatsApp group<br><strong>Coming soon</strong></span>';
+  card.innerHTML = '<span class="whatsapp-group-logo" aria-hidden="true">' + contactIcons.whatsapp + '</span>' +
+    '<div><p class="overline">WHATSAPP COMMUNITY</p><h2 id="whatsapp-group-title">Join the HelpDesk WhatsApp group</h2>' +
+    '<p>Get resource updates, important notices and HelpDesk announcements in one place.</p></div>' + action;
 }
 
 let adminSessionCsrf = "";

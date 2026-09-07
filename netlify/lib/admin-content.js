@@ -61,6 +61,7 @@ function validateResources(value) {
   text(meta.title, "resources.meta.title", { maximum: 100 });
   text(meta.institution, "resources.meta.institution", { maximum: 100 });
   text(meta.description, "resources.meta.description", { maximum: 500 });
+  optionalText(meta.whatsappGroupUrl, "resources.meta.whatsappGroupUrl", 2000);
   array(meta.creators, "resources.meta.creators").forEach((name, index) =>
     text(name, `resources.meta.creators[${index}]`, { maximum: 100 })
   );
@@ -74,6 +75,8 @@ function validateResources(value) {
       throw new ValidationError(`resources.creators[${index}].whatsapp must contain 8 to 15 digits.`);
     }
     text(creator.photoUrl, `resources.creators[${index}].photoUrl`, { maximum: 2000 });
+    optionalText(creator.instagramUrl, `resources.creators[${index}].instagramUrl`, 2000);
+    optionalText(creator.linkedinUrl, `resources.creators[${index}].linkedinUrl`, 2000);
   });
 
   const collections = array(data.unitCollections, "resources.unitCollections");

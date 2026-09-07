@@ -1,13 +1,41 @@
 (function () {
   "use strict";
 
-  try {
-    const savedTheme = JSON.parse(localStorage.getItem("helpdesk-theme"));
-    if (savedTheme === "dark") document.documentElement.dataset.theme = "dark";
-  } catch {}
+  const ADMIN_THEME_KEY = "helpdesk-admin-theme";
+  function storedTheme() {
+    try {
+      const own = localStorage.getItem(ADMIN_THEME_KEY);
+      const shared = localStorage.getItem("helpdesk-theme");
+      const value = own || shared || "";
+      if (value === "dark" || value === "light") return value;
+      const parsed = JSON.parse(value || "null");
+      return parsed === "dark" || parsed === "light" ? parsed : null;
+    } catch { return null; }
+  }
+  const initialAdminTheme = storedTheme() || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.dataset.theme = initialAdminTheme;
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  function setAdminTheme(theme, persist = false) {
+    const next = theme === "dark" ? "dark" : "light";
+    document.documentElement.dataset.theme = next;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = next === "dark" ? "#000000" : "#f5f5f3";
+    $$('[data-admin-theme-toggle]').forEach((button) => {
+      button.setAttribute("aria-label", `Switch to ${next === "dark" ? "light" : "dark"} mode`);
+      const icon = $("[data-theme-icon]", button); const label = $("[data-theme-label]", button);
+      if (icon) icon.textContent = next === "dark" ? "☀" : "◐";
+      if (label) label.textContent = next === "dark" ? "Light mode" : "Dark mode";
+    });
+    if (persist) {
+      try { localStorage.setItem(ADMIN_THEME_KEY, next); } catch {}
+    }
+  }
+  $$('[data-admin-theme-toggle]').forEach((button) => button.addEventListener("click", () => {
+    setAdminTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
+  }));
+  setAdminTheme(initialAdminTheme);
   const loginView = $("#login-view");
   const adminView = $("#admin-view");
   const editor = $("#editor");
@@ -731,7 +759,7 @@
 
   function renderMeta() {
     const meta=state.data.resources.meta;
-    editor.innerHTML=`<div class="section-intro"><div><h2>Site identity</h2><p class="muted">Edit the public title and introduction.</p></div></div><section class="panel form-section"><div class="grid">${input("Website title","title",meta.title,{required:true})}${input("Institution","institution",meta.institution,{required:true})}${input("Description","description",meta.description,{type:"textarea",full:true,required:true})}${input("Last updated","lastUpdated",meta.lastUpdated||"",{type:"date"})}</div></section>`; bind(editor,meta);
+    editor.innerHTML=`<div class="section-intro"><div><h2>Site identity</h2><p class="muted">Edit the public title, introduction and community links.</p></div></div><section class="panel form-section"><div class="grid">${input("Website title","title",meta.title,{required:true})}${input("Institution","institution",meta.institution,{required:true})}${input("Description","description",meta.description,{type:"textarea",full:true,required:true})}${input("Last updated","lastUpdated",meta.lastUpdated||"",{type:"date"})}</div></section><section class="panel form-section community-settings"><div><p class="eyebrow">Community</p><h3>WhatsApp group</h3><p class="muted">Leave this empty to show “WhatsApp group coming soon.” Add the invite link later to activate the Join button automatically.</p></div><div class="grid">${input("WhatsApp group invite URL","whatsappGroupUrl",meta.whatsappGroupUrl||"",{type:"url",full:true,help:"Use a complete https://chat.whatsapp.com/… invite link."})}</div></section>`; bind(editor,meta);
   }
 
   function renderSyllabus() {
@@ -748,8 +776,10 @@
 
   function renderCreators() {
     const creators=state.data.resources.creators;
-    editor.innerHTML=`<div class="section-intro"><div><h2>Creator profiles</h2><p class="muted">Names, roles, profile photos and WhatsApp contacts.</p></div><button class="quiet-button" id="add-creator">＋ Add creator</button></div><div class="collection-stack">${creators.map((creator,index)=>`<section class="panel creator-card"><img class="creator-photo" src="${escape(creator.photoUrl)}" alt=""><div class="creator-fields">${input("Name",`${index}.name`,creator.name,{required:true})}${input("Role",`${index}.role`,creator.role,{required:true})}${input("WhatsApp number",`${index}.whatsapp`,creator.whatsapp,{help:"Include country code, digits only."})}${urlInput("Profile photo",`${index}.photoUrl`,creator.photoUrl,"image/png,image/jpeg,image/webp")}</div><button class="danger-button" data-delete-creator="${index}">Remove</button></section>`).join("")}</div>`;
-    bind(editor,creators); $("#add-creator").addEventListener("click",()=>{creators.push({id:uniqueId("creator",creators),name:"New creator",role:"Contributor",whatsapp:"910000000000",photoUrl:"/favicon.svg"});markDirty();renderCreators();});
+    editor.innerHTML=`<div class="section-intro"><div><h2>Creator profiles</h2><p class="muted">Edit public photos and contact links. Save the Resources draft and publish it when ready.</p></div><button class="quiet-button" id="add-creator">＋ Add creator</button></div><div class="collection-stack">${creators.map((creator,index)=>`<section class="panel creator-card"><img class="creator-photo" data-creator-photo="${index}" src="${escape(creator.photoUrl||"/favicon.svg")}" alt="${escape(creator.name)} preview"><div class="creator-fields">${input("Name",`${index}.name`,creator.name,{required:true})}${input("Role",`${index}.role`,creator.role,{required:true})}${input("WhatsApp number",`${index}.whatsapp`,creator.whatsapp,{help:"Include country code, digits only."})}${urlInput("Profile photo",`${index}.photoUrl`,creator.photoUrl,"image/png,image/jpeg,image/webp")}${input("Instagram profile URL",`${index}.instagramUrl`,creator.instagramUrl||"",{type:"url",full:true,help:"Optional — hidden from the public site until a link is added."})}${input("LinkedIn profile URL",`${index}.linkedinUrl`,creator.linkedinUrl||"",{type:"url",full:true,help:"Optional — hidden from the public site until a link is added."})}</div><button class="danger-button" data-delete-creator="${index}">Remove</button></section>`).join("")}</div>`;
+    bind(editor,creators);
+    creators.forEach((creator,index)=>{const photoInput=$(`[data-bind="${CSS.escape(`${index}.photoUrl`)}"]`,editor);const preview=$(`[data-creator-photo="${index}"]`,editor);if(photoInput&&preview){photoInput.addEventListener("input",()=>{preview.src=photoInput.value.trim()||"/favicon.svg";});preview.addEventListener("error",()=>{if(preview.src.endsWith("/favicon.svg"))return;preview.src="/favicon.svg";});}});
+    $("#add-creator").addEventListener("click",()=>{creators.push({id:uniqueId("creator",creators),name:"New creator",role:"Contributor",whatsapp:"910000000000",photoUrl:"/favicon.svg",instagramUrl:"",linkedinUrl:""});markDirty();renderCreators();});
     $$('[data-delete-creator]').forEach(node=>node.addEventListener("click",()=>{const index=Number(node.dataset.deleteCreator);if(requireDelete(creators[index].name)){creators.splice(index,1);markDirty();renderCreators();}}));
   }
 

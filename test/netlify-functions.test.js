@@ -23,6 +23,7 @@ const scholarships = require("../netlify/functions/scholarships").handler;
 const { parseNotices } = require("../netlify/lib/hbtu-feed");
 const { parseScholarships, SOURCES } = require("../netlify/lib/scholarship-feed");
 const { connectNetlifyBlobs, isNetlifyRuntime } = require("../netlify/lib/netlify-runtime");
+const { overlayCreatorProfiles, updateProfile } = require("../netlify/lib/admin-control");
 
 test("Netlify runtime detection recognizes the deployed Lambda file system", () => {
   const previousLocal = process.env.HELPDESK_LOCAL_STORAGE;
@@ -66,6 +67,25 @@ test("Netlify resources function preserves API filtering", async () => {
   assert.equal(body.subjects[0].resources.length, 1);
   assert.equal(body.subjects[0].resources[0].id, "chem-spectroscopy");
   assert.equal(body.branches.length, 14);
+});
+
+test("a saved main-admin avatar updates its matching bundled Creator profile", async () => {
+  const admins = [{ username: "Priyanshu", name: "Priyanshu Dixit", role: "main", photoUrl: "" }];
+  await updateProfile(
+    { role: "main", sub: "Priyanshu" },
+    { photoUrl: "/uploads/image-v2-0123456789abcdef.png" },
+    admins
+  );
+  const resourcesData = {
+    creators: [{ id: "priyanshu", name: "Priyanshu Dixit", photoUrl: "/images/priyanshu-dixit.png" }],
+  };
+  const overlaid = await overlayCreatorProfiles(resourcesData, admins);
+  assert.equal(overlaid.creators[0].photoUrl, "/uploads/image-v2-0123456789abcdef.png");
+
+  const creatorUpload = await overlayCreatorProfiles({
+    creators: [{ id: "priyanshu", name: "Priyanshu Dixit", photoUrl: "/uploads/image-v2-creator-choice.png" }],
+  }, admins);
+  assert.equal(creatorUpload.creators[0].photoUrl, "/uploads/image-v2-creator-choice.png");
 });
 
 test("HBTU notice parser keeps official announcement links", () => {

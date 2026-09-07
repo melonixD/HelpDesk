@@ -36,6 +36,8 @@ test("private admin route serves the login application and hides data without a 
   assert.match(html, /Contributor leaderboard|Leaderboard/);
   assert.match(html, /My profile/);
   assert.match(html, /data-section="scholarships"/);
+  assert.match(html, /data-admin-theme-toggle/);
+  assert.match(html, /Dark mode/);
   assert.match(html, /main admin creates your username and temporary password/i);
   const data = await fetch(`${baseUrl}/api/admin/data`);
   assert.equal(data.status, 401);
@@ -430,6 +432,14 @@ test("help section includes both supplied profiles and revealable WhatsApp conta
   assert.match(html, /87870 16664/);
   assert.match(html, /wa\.me\/919305819589/);
   assert.match(html, /93058 19589/);
+  assert.match(html, /id="whatsapp-group-card"/);
+  assert.match(html, /Join the HelpDesk WhatsApp group/);
+  assert.match(html, /Coming soon/);
+
+  const script = await (await fetch(`${baseUrl}/app.js`)).text();
+  assert.match(script, /instagramUrl/);
+  assert.match(script, /linkedinUrl/);
+  assert.match(script, /initialiseWhatsappGroup/);
 
   const image = await fetch(`${baseUrl}/images/akshat-shukla.png`);
   assert.equal(image.status, 200);
