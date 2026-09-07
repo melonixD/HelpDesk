@@ -74,7 +74,11 @@ async function loadDraft(target, draftId) {
 }
 
 async function saveDraft(target, data, author) {
-  const validated = validateTarget(target, data);
+  const previous = target === "resources" ? await loadDraft(target) : null;
+  const published = target === "resources" && !previous ? await loadPublishedRecord(target) : null;
+  const candidate = target === "resources" ? require("./subject-recovery").recoverMaths(data, null,
+    previous ? previous.data : published && published.data) : data;
+  const validated = validateTarget(target, candidate);
   const draft = {
     draftId: createDraftId(),
     target,
@@ -129,7 +133,7 @@ async function saveMergedDraft(target, data, author, baseline = {}) {
   const draft = await saveDraft(target, merged, author);
   return {
     ...draft,
-    data: merged,
+    data: draft.data,
     previousData: currentData,
     merged: JSON.stringify(merged) !== JSON.stringify(incoming),
   };

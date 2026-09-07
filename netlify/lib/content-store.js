@@ -105,7 +105,10 @@ async function loadPublishedVersion(target, version) {
 }
 
 async function publishContent(target, data, author) {
-  const validated = validateTarget(target, data);
+  const previous = target === "resources" ? await loadPublishedRecord(target) : null;
+  const candidate = target === "resources"
+    ? require("./subject-recovery").recoverMaths(data, null, previous && previous.data) : data;
+  const validated = validateTarget(target, candidate);
   const record = {
     recordId: createRecordId(),
     target,

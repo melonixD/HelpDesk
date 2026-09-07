@@ -21,7 +21,7 @@ test("incident recovery restores Mathematics in all fourteen expected semesters"
     assert.ok(branch.semesters.find(s => s.id === id).subjectIds.includes("maths-1"));
   });
   assert.deepEqual(recoverMaths(restored), restored);
-  assert.equal(recoverMaths(deletedMaths(), "2099-01-01").unitCollections.some(s => s.id === "maths-1"), false);
+  assert.equal(recoverMaths(deletedMaths(), "2099-01-01").unitCollections.some(s => s.id === "maths-1"), true);
 });
 test("whole subject snapshots restore custom notes and all placements", () => {
   const before = clone(canonical);

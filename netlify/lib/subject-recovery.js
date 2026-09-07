@@ -1,7 +1,7 @@
 "use strict";
 const clone = (value) => JSON.parse(JSON.stringify(value));
-// Recover the reported incident only; later intentional deletions remain possible.
-const INCIDENT_CUTOFF = 1788776329757;
+// Mathematics is required in Engineering S1 and Technology S2.
+// Repair both persisted content and reads; publishing must never disable recovery.
 function placements(data, id) {
   return (data.branches || []).flatMap(branch => (branch.semesters || []).flatMap(semester => {
     const index = (semester.subjectIds || []).indexOf(id);
@@ -25,13 +25,17 @@ function restoreSubject(data, descriptor) {
   }
   return next;
 }
-function recoverMaths(data, timestamp) {
-  if (timestamp && Number(new Date(timestamp)) > INCIDENT_CUTOFF) return data;
+function recoverMaths(data, timestamp, previous) {
   const canonical = require("../../data/resources.json");
-  const subject = canonical.unitCollections.find(item => item.id === "maths-1");
+  const subject = (previous && previous.unitCollections || []).find(item => item.id === "maths-1")
+    || canonical.unitCollections.find(item => item.id === "maths-1");
   if (!subject) return data;
-  const locations = placements(canonical, subject.id).filter(location => (data.branches || []).some(branch =>
-    branch.id === location.branchId && branch.semesters.some(semester => semester.id === location.semesterId)));
-  return restoreSubject(data, { type: "placement", subject, index: canonical.unitCollections.indexOf(subject), placements: locations });
+  const locations = (data.branches || []).flatMap(branch => {
+    const semesterId = branch.group === "engineering" ? "semester-1" : branch.group === "technology" ? "semester-2" : null;
+    return (branch.semesters || []).filter(semester => semester.id === semesterId).map(semester => ({
+      branchId: branch.id, semesterId: semester.id, index: 0,
+    }));
+  });
+  return restoreSubject(data, { type: "placement", subject, index: 0, placements: locations });
 }
 module.exports = { placements, restoreSubject, recoverMaths };
