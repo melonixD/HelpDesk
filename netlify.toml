@@ -107,6 +107,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/activity"
+  to = "/.netlify/functions/admin-activity"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/admin/change-request"
   to = "/.netlify/functions/admin-change-request"
   status = 200

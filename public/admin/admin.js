@@ -15,11 +15,11 @@
   const publishButton = $("#publish-button");
   const status = $("#save-status");
   const historyLink = $("#history-link");
-  const state = { csrf: "", data: null, drafts: {}, published: {}, history: {}, section: "resources", dirty: false, saving: false, publishing: false, selection: {}, role: null, user: null, permissions: [], management: null, profile: null, community: [], coins: 0 };
+  const state = { csrf: "", data: null, drafts: {}, published: {}, baselines: {}, history: {}, activity: null, section: "resources", dirty: false, saving: false, publishing: false, selection: {}, role: null, user: null, permissions: [], management: null, profile: null, community: [], coins: 0 };
   const titles = {
     resources: ["Content", "Resources"], syllabus: ["Academics", "Syllabus Citadel"], meta: ["Website", "Site details"], creators: ["People", "Creators"],
     placements: ["Outcomes", "Placements"], notices: ["Updates", "Notices"], scholarships: ["Funding", "Scholarships"], management: ["Security", "Access & approvals"],
-    community: ["Community", "Contributor leaderboard"], profile: ["Account", "My profile"],
+    community: ["Community", "Contributor leaderboard"], profile: ["Account", "My profile"], activity: ["Safety", "Admin activity"],
   };
 
   function roleLabel(role) {
@@ -29,7 +29,7 @@
   }
 
   function editableSection() {
-    return !["community", "profile", "management"].includes(state.section);
+    return !["community", "profile", "management", "activity"].includes(state.section);
   }
 
   function escape(value) {
@@ -83,10 +83,11 @@
     state.data = { resources: payload.resources, placements: payload.placements, notices: payload.notices, scholarships: payload.scholarships };
     state.role = payload.role; state.user = payload.user; state.permissions = payload.permissions || [];
     state.profile = payload.profile || { photoUrl: "" }; state.community = payload.community || []; state.coins = payload.coins || 0;
-    state.history = payload.history || {}; state.drafts = payload.drafts || {}; state.published = payload.published || {}; state.csrf = payload.csrfToken || state.csrf;
+    state.history = payload.history || {}; state.drafts = payload.drafts || {}; state.published = payload.published || {}; state.baselines = payload.baselines || {}; state.activity = null; state.csrf = payload.csrfToken || state.csrf;
     const contributorSections = new Set(["resources", "community", "profile"]);
     $$('[data-section]').forEach((button) => { button.hidden = state.role !== "main" && !contributorSections.has(button.dataset.section); });
     $("#management-nav").hidden = state.role !== "main";
+    $("#activity-nav").hidden = state.role !== "main";
     if (state.role !== "main" && !contributorSections.has(state.section)) state.section = "resources";
     $("#admin-identity").textContent = `${state.user.name || state.user.username} · ${roleLabel(state.role)}`;
     $("#admin-avatar").src = state.profile.photoUrl || "/favicon.svg";
@@ -153,10 +154,15 @@
     const key = target(); const revision = state.revision;
     if (key === "resources") state.data.resources.meta.creators = state.data.resources.creators.map((creator) => creator.name);
     try {
-      const result = await request("/api/admin/save", { method: "POST", body: JSON.stringify({ target: key, data: state.data[key] }) });
+      const baseline = state.baselines[key] || {};
+      const result = await request("/api/admin/save", { method: "POST", body: JSON.stringify({ target: key, data: state.data[key], baseDraftId: baseline.baseDraftId || null, basePublishedVersion: baseline.basePublishedVersion }) });
       if (!result.draft || result.deploying) throw new Error("Safety check failed: the server did not confirm a private draft-only save.");
       state.dirty = state.revision !== revision;
-      if (!state.dirty) state.drafts[key] = { draftId: result.draftId || null, updatedAt: result.updatedAt, updatedBy: result.updatedBy };
+      if (!state.dirty) {
+        state.drafts[key] = { draftId: result.draftId || null, updatedAt: result.updatedAt, updatedBy: result.updatedBy };
+        state.baselines[key] = { ...(state.baselines[key] || {}), baseDraftId: result.draftId || null };
+        if (result.data) state.data[key] = result.data;
+      }
       status.textContent = state.dirty ? "Unsaved" : "Draft saved"; state.history[key] = result.historyUrl || state.history[key]; renderHistory();
       $$('.field[data-dirty="true"]').forEach((field) => {
         field.dataset.dirty = "false"; field.dataset.saved = "true";
@@ -186,6 +192,7 @@
       if (result.deploying) throw new Error("Safety check failed: content attempted to start a deployment.");
       delete state.drafts[key];
       state.published[key] = { publishedAt: result.publishedAt, publishedBy: result.publishedBy, version: result.version, delivery: result.delivery };
+      state.baselines[key] = { baseDraftId: null, basePublishedVersion: result.version };
       status.textContent = "Live via Blobs";
       renderHistory();
       toast("Published instantly through Netlify Blobs. No production deployment was started.");
@@ -236,7 +243,7 @@
     const summary=await askChangeSummary();if(!summary)return;
     state.saving=true;saveButton.disabled=true;saveButton.textContent="Submitting…";status.textContent="Sending for approval";
     try{
-      await request("/api/admin/change-request",{method:"POST",body:JSON.stringify({scope:{branchId:branch.id,semesterId:semester.id},summary,proposal})});
+      const baseline=state.baselines.resources||{};await request("/api/admin/change-request",{method:"POST",body:JSON.stringify({scope:{branchId:branch.id,semesterId:semester.id},summary,proposal,baseDraftId:baseline.baseDraftId||null,basePublishedVersion:baseline.basePublishedVersion})});
       state.dirty=false;status.textContent="Pending approval";toast("Change request sent to the main admins.");await loadDashboard();
     }catch(error){status.textContent="Request failed";toast(error.message);}
     finally{state.saving=false;saveButton.textContent="Submit request";saveButton.disabled=!state.dirty;}
@@ -247,7 +254,7 @@
     const summary=await askChangeSummary(true);if(!summary)return;
     state.saving=true;saveButton.disabled=true;saveButton.textContent="Saving…";status.textContent="Validating scope";
     try{
-      const result=await request("/api/admin/scoped-save",{method:"POST",body:JSON.stringify({scope:{branchId:scoped.branch.id,semesterId:scoped.semester.id},summary,proposal:scoped.proposal})});
+      const baseline=state.baselines.resources||{};const result=await request("/api/admin/scoped-save",{method:"POST",body:JSON.stringify({scope:{branchId:scoped.branch.id,semesterId:scoped.semester.id},summary,proposal:scoped.proposal,baseDraftId:baseline.baseDraftId||null,basePublishedVersion:baseline.basePublishedVersion})});
       if(!result.draft||result.deploying)throw new Error("Safety check failed: contribution was not stored as a private draft.");
       state.dirty=false;status.textContent="Draft saved · awaiting main admin";toast("Contribution saved as a draft. Nothing was deployed. You earned 1 coin.");await loadDashboard();
     }catch(error){status.textContent="Save failed";toast(error.message);}
@@ -273,6 +280,7 @@
     else if (state.section === "placements") renderPlacements();
     else if (state.section === "scholarships") renderScholarships();
     else if (state.section === "management") renderManagement();
+    else if (state.section === "activity") renderActivity();
     else if (state.section === "community") renderCommunity();
     else if (state.section === "profile") renderProfile();
     else renderNotices();
@@ -860,6 +868,66 @@
     $$('[data-publish-resource-draft]').forEach(button=>button.addEventListener("click",async()=>{const published=await publishSavedDraft("resources","Resources");if(published){state.management=null;await loadDashboard();}}));
     $$('[data-approve-change]').forEach(button=>button.addEventListener("click",()=>{if(confirm("Approve this request into the private resource draft? Nothing becomes live until a main admin clicks Publish changes."))runManagementAction({action:"approve-change",requestId:button.dataset.approveChange},button);}));
     $$('[data-reject-change]').forEach(button=>button.addEventListener("click",()=>{const note=prompt("Optional reason for rejection","");if(note!==null)runManagementAction({action:"reject-change",requestId:button.dataset.rejectChange,note},button);}));
+  }
+
+  function activityValue(value) {
+    if (value === null || typeof value === "undefined") return "";
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object") return value.title || value.url || JSON.stringify(value);
+    return String(value);
+  }
+
+  async function loadActivity() {
+    try {
+      const result = await request("/api/admin/activity?limit=160", { method: "GET" });
+      state.activity = result.activity || [];
+      if (state.section === "activity") renderActivity();
+    } catch (error) {
+      state.activity = [];
+      if (state.section === "activity") {
+        editor.innerHTML = '<div class="panel activity-empty"><h2>Activity could not load</h2><p class="muted">' + escape(error.message) + '</p><button class="quiet-button" id="retry-activity">Try again</button></div>';
+        $("#retry-activity")?.addEventListener("click", () => { state.activity = null; renderActivity(); });
+      }
+    }
+  }
+
+  function renderActivity() {
+    if (state.role !== "main") { editor.innerHTML = '<div class="empty-state">Main-admin access is required.</div>'; return; }
+    if (state.activity === null) {
+      editor.innerHTML = '<div class="panel activity-empty"><p class="muted">Loading admin activity…</p></div>';
+      loadActivity(); return;
+    }
+    const events = state.activity;
+    const resourceChanges = events.reduce((total, item) => total + (item.changes || []).length, 0);
+    const deletions = events.reduce((total, item) => total + (item.changes || []).filter((change) => change.kind === "removed" && !change.restored).length, 0);
+    editor.innerHTML = '<div class="section-intro"><div><h2>Admin activity</h2><p class="muted">A permanent record of content edits, approvals, publishing and account actions.</p></div><button class="quiet-button" id="refresh-activity">Refresh</button></div>' +
+      '<div class="activity-stats"><div class="panel"><strong>' + events.length + '</strong><span>Recent actions</span></div><div class="panel"><strong>' + resourceChanges + '</strong><span>Resource edits</span></div><div class="panel"><strong>' + deletions + '</strong><span>Restorable removals</span></div></div>' +
+      (events.length ? '<div class="activity-timeline">' + events.map((item) => {
+        const changes = item.changes || [];
+        return '<article class="panel activity-entry"><div class="activity-entry-head"><div><span class="activity-action">' + escape(item.action.replace(/-/g, " ")) + '</span><h3>' + escape(item.summary) + '</h3></div><div class="activity-who"><strong>@' + escape(item.actor) + '</strong><time>' + escape(new Date(item.createdAt).toLocaleString()) + '</time></div></div>' +
+          (changes.length ? '<div class="activity-changes">' + changes.map((change) => {
+            const value = activityValue(change.kind === "removed" ? change.before : change.after);
+            const restorable = change.kind === "removed" && change.restore && !change.restored;
+            return '<div class="activity-change ' + escape(change.kind) + '"><span class="change-kind">' + escape(change.kind) + '</span><div><strong>' + escape(change.label) + '</strong><small>' + escape(change.location) + '</small>' + (value ? '<code>' + escape(value) + '</code>' : '') + '</div>' +
+              (restorable ? '<button class="mini-button" data-restore-activity="' + escape(item.id) + '" data-restore-change="' + escape(change.id) + '">Restore to draft</button>' : (change.restored ? '<span class="status-pill active">Restored</span>' : '')) + '</div>';
+          }).join("") + '</div>' : '') + '</article>';
+      }).join("") + '</div>' : '<div class="panel activity-empty"><h3>No activity recorded yet</h3><p class="muted">New edits and approvals will appear here after this update.</p></div>');
+    $("#refresh-activity")?.addEventListener("click", () => { state.activity = null; renderActivity(); });
+    $$('[data-restore-activity]').forEach((button) => button.addEventListener("click", async () => {
+      if (!confirm("Restore this deleted resource into the private Resources draft? It will not become live until you publish.")) return;
+      button.disabled = true; button.textContent = "Restoring…";
+      try {
+        const result = await request("/api/admin/activity", { method: "POST", body: JSON.stringify({
+          action: "restore-resource", activityId: button.dataset.restoreActivity, changeId: button.dataset.restoreChange,
+        }) });
+        state.data.resources = result.data;
+        state.drafts.resources = { draftId: result.draftId, updatedAt: result.updatedAt, updatedBy: result.updatedBy };
+        state.baselines.resources = { ...(state.baselines.resources || {}), baseDraftId: result.draftId };
+        state.activity = null;
+        toast("Resource restored to the private draft. Review it, then publish when ready.");
+        renderActivity();
+      } catch (error) { button.disabled = false; button.textContent = "Restore to draft"; toast(error.message); }
+    }));
   }
 
   window.addEventListener("beforeunload",(event)=>{if(state.dirty){event.preventDefault();event.returnValue="";}});

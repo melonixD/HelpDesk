@@ -482,7 +482,7 @@ function renderBrowser(changeType) {
   elements["course-status"].textContent = collectionCountLabel(subject) + (pdfCount ? " · " + pdfCount + " PYQ sets" : "");
   renderSubjectSyllabus(branch, subject);
   elements["unit-list"].innerHTML = subject.layout === "core-resources"
-    ? renderCoreResources()
+    ? renderCoreResources(subject)
     : subject.units.map((unit, index) => renderUnit(subject, unit, index)).join("");
 
   elements["unit-list"].querySelectorAll(".unit-row").forEach((details) => {
@@ -738,14 +738,53 @@ function renderUnit(subject, unit, index) {
     ).join("") + '</div></details>';
 }
 
-function renderCoreResources() {
-  const resources = [
-    { type: "notes", title: "Notes", description: "Coming soon", url: null },
-    { type: "pyq", title: "PYQs", description: "Coming soon", url: null },
-    { type: "book", title: "Books", description: "Coming soon", url: null },
-  ];
+function renderCoreResources(subject) {
+  const units = Array.isArray(subject.units) ? subject.units : [];
+  const uniqueByUrl = (items) => items
+    .filter((item) => item && item.url)
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.url === item.url) === index);
+  const unitLabel = (unit) => unit && unit.title
+    ? (String(unit.number || "").trim() ? "Unit " + unit.number + " · " : "") + unit.title
+    : "Core resource";
+
+  const notes = uniqueByUrl([
+    subject.notesUrl && { type: "notes", title: "Shared Notes", description: subject.name + " notes", url: subject.notesUrl },
+    subject.handwrittenNotesUrl && { type: "notes", title: "Handwritten Notes", description: subject.name + " handwritten notes", url: subject.handwrittenNotesUrl },
+    ...units.flatMap((unit) => [
+      unit.handwrittenNotesUrl && { type: "notes", title: unitLabel(unit) + " · Handwritten Notes", description: "Student-friendly study notes", url: unit.handwrittenNotesUrl },
+      unit.masterNotesUrl && { type: "notes", title: unitLabel(unit) + " · Master Notes", description: "Complete exam-ready notes", url: unit.masterNotesUrl },
+      unit.notesUrl && { type: "notes", title: unitLabel(unit) + " · Notes", description: "Study notes", url: unit.notesUrl },
+      unit.classNotesUrl && { type: "notes", title: unitLabel(unit) + " · Class Notes", description: "Class notes", url: unit.classNotesUrl },
+    ]),
+  ]);
+  const pyqs = uniqueByUrl(units.flatMap((unit) => [
+    unit.pyqUrl && { type: "pyq", title: unitLabel(unit) + " · PYQs", description: "Previous-year questions", url: unit.pyqUrl },
+    unit.endSemesterQuestionsUrl && { type: "pyq", title: unitLabel(unit) + " · End-Semester Questions", description: "End-semester questions", url: unit.endSemesterQuestionsUrl },
+    unit.vivaQuestionsUrl && { type: "pyq", title: unitLabel(unit) + " · Viva Questions", description: "Viva preparation", url: unit.vivaQuestionsUrl },
+  ]));
+  const books = uniqueByUrl([
+    ...(Array.isArray(subject.books) ? subject.books : []).map((book) => ({
+      type: "book", title: book.title || "Recommended Book", description: book.description || "Recommended reading", url: book.url,
+    })),
+    subject.booksUrl && { type: "book", title: "Recommended Book", description: "Recommended reading", url: subject.booksUrl },
+    ...units.flatMap((unit) => [
+      ...(Array.isArray(unit.books) ? unit.books : []).map((book) => ({
+        type: "book", title: book.title || unitLabel(unit) + " · Book", description: book.description || "Recommended reading", url: book.url,
+      })),
+      unit.bookUrl && { type: "book", title: unitLabel(unit) + " · Recommended Book", description: "Recommended reading", url: unit.bookUrl },
+    ]),
+  ]);
+
+  const section = (type, title, items) => {
+    if (!items.length) return renderMaterial({ type, title, description: "Coming soon", url: null });
+    if (items.length === 1) return renderMaterial({ ...items[0], title });
+    return renderMaterialFolder({ type, title, description: items.length + " files available", children: items });
+  };
   return '<div class="material-list core-resource-list" aria-label="Technology core resources">' +
-    resources.map(renderMaterial).join("") + '</div>';
+    section("notes", "Notes", notes) +
+    section("pyq", "PYQs", pyqs) +
+    section("book", "Books", books) +
+    '</div>';
 }
 
 function renderWorkshopSection(unit, index) {

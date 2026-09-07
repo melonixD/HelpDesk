@@ -1,6 +1,7 @@
 const { authorize, clearCookie, configuredMainAdmins, json, parseBody } = require("../lib/admin-auth");
 const { changeOwnPassword } = require("../lib/admin-control");
 const { connectNetlifyBlobs } = require("../lib/netlify-runtime");
+const { appendActivity } = require("../lib/admin-activity");
 
 exports.handler = async (event) => {
   connectNetlifyBlobs(event);
@@ -11,6 +12,8 @@ exports.handler = async (event) => {
   if (!body) return json(400, { error: "Request body must be valid JSON." });
   try {
     const result = await changeOwnPassword(auth.session, body, configuredMainAdmins());
+    try { await appendActivity({ actor: auth.session.sub, action: "password-changed", summary: "Changed their main-admin password", target: "administration" }); }
+    catch (activityError) { console.warn("Password changed, but activity logging failed:", activityError.message); }
     return json(200, result, { "Set-Cookie": clearCookie(event) });
   } catch (error) {
     return json(error.statusCode || 500, { error: error.message || "Password could not be changed." });

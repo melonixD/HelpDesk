@@ -1,7 +1,7 @@
 const { authorize, json, mainAdminDirectory } = require("../lib/admin-auth");
 const { draftDirectory, loadDraft } = require("../lib/admin-drafts");
 const { dashboardContext, filterResources } = require("../lib/admin-control");
-const { loadPublished, publishedDirectory } = require("../lib/content-store");
+const { loadPublished, loadPublishedRecord, publishedDirectory } = require("../lib/content-store");
 const { connectNetlifyBlobs } = require("../lib/netlify-runtime");
 
 exports.handler = async (event) => {
@@ -10,7 +10,7 @@ exports.handler = async (event) => {
   const auth = authorize(event);
   if (!auth.ok) return auth.response;
   try {
-    const liveResources = await loadPublished("resources");
+    const [liveResources, liveResourceRecord] = await Promise.all([loadPublished("resources"), loadPublishedRecord("resources")]);
     const context = await dashboardContext(auth.session, mainAdminDirectory(), liveResources);
     const main = context.role === "main";
     const contributor = context.admin;
@@ -20,6 +20,21 @@ exports.handler = async (event) => {
       ? await Promise.all(["placements", "notices", "scholarships"].map(loadDraft))
       : [null, null, null];
     const resources = resourceDraft ? resourceDraft.data : liveResources;
+    const published = main ? await publishedDirectory() : {};
+    const baselines = {
+      resources: {
+        baseDraftId: resourceDraft ? resourceDraft.draftId : null,
+        basePublishedVersion: published.resources ? published.resources.version : (liveResourceRecord ? liveResourceRecord.version : null),
+      },
+      ...(main ? {
+        placements: { baseDraftId: placementDraft ? placementDraft.draftId : null,
+          basePublishedVersion: published.placements ? published.placements.version : null },
+        notices: { baseDraftId: noticeDraft ? noticeDraft.draftId : null,
+          basePublishedVersion: published.notices ? published.notices.version : null },
+        scholarships: { baseDraftId: scholarshipDraft ? scholarshipDraft.draftId : null,
+          basePublishedVersion: published.scholarships ? published.scholarships.version : null },
+      } : {}),
+    };
     return json(200, {
       role: context.role,
       user: { username: auth.session.sub, name: contributor ? contributor.name : auth.session.name },
@@ -32,7 +47,8 @@ exports.handler = async (event) => {
       notices: main ? (noticeDraft ? noticeDraft.data : await loadPublished("notices")) : null,
       scholarships: main ? (scholarshipDraft ? scholarshipDraft.data : await loadPublished("scholarships")) : null,
       drafts,
-      published: main ? await publishedDirectory() : {},
+      published,
+      baselines,
       history: {},
       csrfToken: auth.session.csrf,
     });

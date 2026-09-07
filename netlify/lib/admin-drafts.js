@@ -2,7 +2,8 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { TARGETS, validateTarget } = require("./admin-content");
-const { publishContent } = require("./content-store");
+const { loadPublished, loadPublishedRecord, loadPublishedVersion, publishContent } = require("./content-store");
+const { mergeContent } = require("./content-merge");
 const { isNetlifyRuntime } = require("./netlify-runtime");
 
 const STORE_NAME = "helpdesk-admin-drafts";
@@ -99,6 +100,41 @@ async function saveDraft(target, data, author) {
   return operation;
 }
 
+async function saveMergedDraft(target, data, author, baseline = {}) {
+  const incoming = validateTarget(target, data);
+  const currentDraft = await loadDraft(target);
+  const currentPublished = currentDraft ? null : await loadPublishedRecord(target);
+  const currentData = currentDraft ? currentDraft.data : (currentPublished ? currentPublished.data : await loadPublished(target));
+
+  let baseData = currentData;
+  if (baseline.baseDraftId) {
+    const baseDraft = await loadDraft(target, baseline.baseDraftId);
+    if (!baseDraft) {
+      const error = new Error("This draft changed while you were editing. Reload the dashboard and review the newest version.");
+      error.statusCode = 409;
+      throw error;
+    }
+    baseData = baseDraft.data;
+  } else if (baseline.basePublishedVersion !== null && typeof baseline.basePublishedVersion !== "undefined") {
+    const baseRecord = await loadPublishedVersion(target, baseline.basePublishedVersion);
+    if (!baseRecord) {
+      const error = new Error("The published version you edited is no longer available. Reload the dashboard.");
+      error.statusCode = 409;
+      throw error;
+    }
+    baseData = baseRecord.data;
+  }
+
+  const merged = mergeContent(baseData, incoming, currentData);
+  const draft = await saveDraft(target, merged, author);
+  return {
+    ...draft,
+    data: merged,
+    previousData: currentData,
+    merged: JSON.stringify(merged) !== JSON.stringify(incoming),
+  };
+}
+
 async function removeDraft(target, author, publishedDraftId) {
   if (!TARGETS[target]) return;
   if (isNetlifyRuntime()) {
@@ -156,4 +192,4 @@ async function publishDraft(target, author, message, draftId) {
   };
 }
 
-module.exports = { draftDirectory, loadDraft, publishDraft, removeDraft, saveDraft };
+module.exports = { draftDirectory, loadDraft, publishDraft, removeDraft, saveDraft, saveMergedDraft };

@@ -2,8 +2,9 @@ const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const { id, loadState, mutateState, cleanRegularAdmin } = require("./admin-state");
 const { readJson, validateResources } = require("./admin-content");
-const { loadDraft, saveDraft } = require("./admin-drafts");
-const { loadPublished } = require("./content-store");
+const { loadDraft, saveMergedDraft } = require("./admin-drafts");
+const { loadPublished, loadPublishedVersion } = require("./content-store");
+const { logContentActivity } = require("./admin-activity");
 
 class ControlError extends Error {
   constructor(message, statusCode = 400) { super(message); this.name = "ControlError"; this.statusCode = statusCode; }
@@ -387,19 +388,35 @@ function assertAttributeOnly(request, baseResources = null) {
   }
 }
 
+async function resourcesAtBaseline(baseline) {
+  if (baseline && baseline.baseDraftId) {
+    const draft = await loadDraft("resources", baseline.baseDraftId);
+    if (!draft) throw new ControlError("This draft changed while you were editing. Reload the dashboard.", 409);
+    return draft.data;
+  }
+  if (baseline && baseline.basePublishedVersion !== null && typeof baseline.basePublishedVersion !== "undefined") {
+    const record = await loadPublishedVersion("resources", baseline.basePublishedVersion);
+    if (!record) throw new ControlError("The published resources changed while you were editing. Reload the dashboard.", 409);
+    return record.data;
+  }
+  const currentDraft = await loadDraft("resources");
+  return currentDraft ? currentDraft.data : loadPublished("resources");
+}
+
 async function createChangeRequest(session, body) {
   const admin = await activeContributor(session);
   const branchId = text(body && body.scope && body.scope.branchId, "Branch", 80);
   const semesterId = text(body && body.scope && body.scope.semesterId, "Semester", 80);
   if (!isAllowed(admin, branchId, semesterId)) throw new ControlError("You do not have access to this branch and semester.", 403);
   if (!body || !body.proposal || typeof body.proposal !== "object") throw new ControlError("A proposed resource change is required.");
+  const baseline = { baseDraftId: body.baseDraftId || null, basePublishedVersion: body.basePublishedVersion };
   const request = {
     id: id("change"), adminId: admin.id, requestedBy: admin.name, username: admin.username, requestedRole: contributorRole(admin),
     scope: { branchId, semesterId }, summary: text(body && body.summary, "Change summary", 500),
-    proposal: clone(body.proposal), status: "pending", createdAt: new Date().toISOString(),
+    proposal: clone(body.proposal), baseline, status: "pending", createdAt: new Date().toISOString(),
   };
   if (Buffer.byteLength(JSON.stringify(request)) > 1024 * 1024) throw new ControlError("This change request is too large.");
-  buildCandidate(request, null, await loadPublished("resources"));
+  buildCandidate(request, null, await resourcesAtBaseline(baseline));
   return mutateState((state) => {
     const active = state.regularAdmins.find((item) => item.id === admin.id);
     if (!isAllowed(active, branchId, semesterId)) throw new ControlError("This permission is no longer active.", 403);
@@ -416,17 +433,23 @@ async function approveChange(requestId, reviewer) {
     request.status = "processing"; request.reviewedBy = reviewer; request.reviewedAt = new Date().toISOString();
   });
   try {
-    const existingDraft = await loadDraft("resources");
-    const baseResources = existingDraft ? existingDraft.data : await loadPublished("resources");
+    const baseResources = await resourcesAtBaseline(request.baseline);
     const candidate = buildCandidate(request, { name: request.requestedBy, role: request.requestedRole || "regular" }, baseResources);
-    const draft = await saveDraft("resources", candidate, reviewer);
+    const draft = await saveMergedDraft("resources", candidate, reviewer, request.baseline || {});
+    try {
+      await logContentActivity(draft.previousData, draft.data, request.username || request.requestedBy, {
+        target: "resources", action: "contribution-approved", summary: request.requestedBy + " requested: " + request.summary,
+        metadata: { approvedBy: reviewer, requestId: request.id },
+      });
+    } catch (activityError) { console.warn("Contribution saved, but activity logging failed:", activityError.message); }
     await mutateState((state) => {
       const item = state.changeRequests.find((entry) => entry.id === requestId);
       if (item) { item.status = "approved-draft"; item.draftUpdatedAt = draft.updatedAt; item.coinAwarded = true; delete item.commitUrl; delete item.error; }
       const admin = state.regularAdmins.find((entry) => entry.id === request.adminId);
       if (admin) { admin.coins = (Number(admin.coins) || 0) + 1; admin.contributions = (Number(admin.contributions) || 0) + 1; }
     });
-    return { approved: true, draft: true, deploying: false, target: "resources", draftId: draft.draftId || null, updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
+    return { approved: true, draft: true, deploying: false, target: "resources", draftId: draft.draftId || null,
+      updatedAt: draft.updatedAt, updatedBy: draft.updatedBy, requestedBy: request.requestedBy, changeSummary: request.summary };
   } catch (error) {
     await mutateState((state) => { const item=state.changeRequests.find((entry)=>entry.id===requestId);if(item){item.status="pending";item.error=String(error.message||"Approval failed").slice(0,300);} });
     throw error;
@@ -445,11 +468,17 @@ async function saveScopedDraft(session, body) {
     proposal: clone(body && body.proposal), status: "drafted", createdAt: new Date().toISOString(),
   };
   if (Buffer.byteLength(JSON.stringify(request)) > 1024 * 1024) throw new ControlError("This scoped update is too large.");
-  const existingDraft = await loadDraft("resources");
-  const baseResources = existingDraft ? existingDraft.data : await loadPublished("resources");
+  request.baseline = { baseDraftId: body.baseDraftId || null, basePublishedVersion: body.basePublishedVersion };
+  const baseResources = await resourcesAtBaseline(request.baseline);
   assertAttributeOnly(request, baseResources);
   const candidate = buildCandidate(request, { name: admin.name, role: "branch" }, baseResources);
-  const draft = await saveDraft("resources", candidate, admin.username);
+  const draft = await saveMergedDraft("resources", candidate, admin.username, request.baseline);
+  try {
+    await logContentActivity(draft.previousData, draft.data, admin.username, {
+      target: "resources", action: "branch-contribution", summary: admin.name + ": " + request.summary,
+      metadata: { requestId: request.id },
+    });
+  } catch (activityError) { console.warn("Contribution saved, but activity logging failed:", activityError.message); }
   request.status = "drafted";
   request.draftUpdatedAt = draft.updatedAt;
   request.reviewedBy = admin.username;
@@ -506,7 +535,7 @@ async function manage(action, body, reviewer, mainAdmins, resourceData = null) {
     }
     if (action === "reject-registration") {
       const application=state.registrations.find((item)=>item.id===body.registrationId&&item.status==="pending");if(!application)throw new ControlError("This application is no longer pending.",409);
-      application.status="rejected";application.reviewedAt=new Date().toISOString();application.reviewedBy=reviewer;return { rejected:true };
+      application.status="rejected";application.reviewedAt=new Date().toISOString();application.reviewedBy=reviewer;return { rejected:true,applicationName:application.name };
     }
     if (["update-permissions","set-regular-status","reset-password","set-contributor-role","promote-main-admin"].includes(action)) {
       const admin=state.regularAdmins.find((item)=>item.id===body.adminId);if(!admin)throw new ControlError("Regular admin not found.",404);
@@ -532,7 +561,7 @@ async function manage(action, body, reviewer, mainAdmins, resourceData = null) {
     }
     if (action === "reject-change") {
       const request=state.changeRequests.find((item)=>item.id===body.requestId&&item.status==="pending");if(!request)throw new ControlError("This change request is no longer pending.",409);
-      request.status="rejected";request.reviewedAt=new Date().toISOString();request.reviewedBy=reviewer;request.reviewNote=String(body.note||"").slice(0,500);return { rejected:true };
+      request.status="rejected";request.reviewedAt=new Date().toISOString();request.reviewedBy=reviewer;request.reviewNote=String(body.note||"").slice(0,500);return { rejected:true,requestedBy:request.requestedBy,changeSummary:request.summary };
     }
     throw new ControlError("Unknown management action.");
   });

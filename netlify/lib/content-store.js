@@ -84,6 +84,25 @@ async function loadPublished(target) {
   return record ? record.data : readJson(target);
 }
 
+async function loadPublishedVersion(target, version) {
+  if (!TARGETS[target] || version === null || typeof version === "undefined") return null;
+  if (isNetlifyRuntime()) {
+    const storage = await store();
+    const listing = await storage.list({ prefix: recordPrefix(target) });
+    for (const item of listing.blobs) {
+      const result = await storage.getWithMetadata(item.key, { type: "json" });
+      const record = result && result.data;
+      if (record && record.target === target && String(record.version) === String(version) && record.data) {
+        validateTarget(target, record.data);
+        return record;
+      }
+    }
+    return null;
+  }
+  const current = await loadPublishedRecord(target);
+  return current && String(current.version) === String(version) ? current : null;
+}
+
 async function publishContent(target, data, author) {
   const validated = validateTarget(target, data);
   const record = {
@@ -134,6 +153,7 @@ module.exports = {
   STORE_NAME,
   loadPublished,
   loadPublishedRecord,
+  loadPublishedVersion,
   publishContent,
   publishedDirectory,
 };

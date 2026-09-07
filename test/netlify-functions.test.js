@@ -7,11 +7,13 @@ const path = require("node:path");
 const adminStatePath = path.join(os.tmpdir(), `helpdesk-admin-state-${process.pid}-${Date.now()}.json`);
 const adminDraftPath = path.join(os.tmpdir(), `helpdesk-admin-drafts-${process.pid}-${Date.now()}.json`);
 const publishedContentPath = path.join(os.tmpdir(), `helpdesk-published-content-${process.pid}-${Date.now()}.json`);
+const adminActivityPath = path.join(os.tmpdir(), `helpdesk-admin-activity-${process.pid}-${Date.now()}.json`);
 process.env.ADMIN_STATE_PATH = adminStatePath;
 process.env.ADMIN_DRAFT_PATH = adminDraftPath;
 process.env.PUBLISHED_CONTENT_PATH = publishedContentPath;
+process.env.ADMIN_ACTIVITY_PATH = adminActivityPath;
 process.env.HELPDESK_LOCAL_STORAGE = "true";
-test.after(async () => { await Promise.all([fs.unlink(adminStatePath).catch(() => {}), fs.unlink(adminDraftPath).catch(() => {}), fs.unlink(publishedContentPath).catch(() => {})]); });
+test.after(async () => { await Promise.all([fs.unlink(adminStatePath).catch(() => {}), fs.unlink(adminDraftPath).catch(() => {}), fs.unlink(publishedContentPath).catch(() => {}), fs.unlink(adminActivityPath).catch(() => {})]); });
 
 const health = require("../netlify/functions/health").handler;
 const resources = require("../netlify/functions/resources").handler;
@@ -860,4 +862,36 @@ test("uploaded resource links bypass the unreliable uploads redirect", async () 
   assert.match(app, /encodeURIComponent\(key\)/);
   assert.match(app, /data-pyq-url="' \+\s*escapeHtml\(material\.url\)/);
   assert.match(app, /href="' \+ escapeHtml\(openableResourceUrl\(material\.url\)\)/);
+});
+
+test("concurrent admin edits merge unrelated resources and reject same-field collisions", () => {
+  const { mergeContent, MergeConflictError } = require("../netlify/lib/content-merge");
+  const base = { unitCollections: [{ id: "pps", books: [] }, { id: "uhv", books: [] }] };
+  const ppsEdit = JSON.parse(JSON.stringify(base));
+  ppsEdit.unitCollections[0].books.push({ title: "PPS", url: "https://example.com/pps.pdf" });
+  const uhvEdit = JSON.parse(JSON.stringify(base));
+  uhvEdit.unitCollections[1].books.push({ title: "UHV", url: "https://example.com/uhv.pdf" });
+  const merged = mergeContent(base, ppsEdit, uhvEdit);
+  assert.equal(merged.unitCollections[0].books.length, 1);
+  assert.equal(merged.unitCollections[1].books.length, 1);
+  assert.throws(() => mergeContent({ value: "old" }, { value: "admin-a" }, { value: "admin-b" }),
+    (error) => error instanceof MergeConflictError && error.statusCode === 409);
+});
+
+test("resource history identifies deletions and restores them into a draft", () => {
+  const { resourceChanges, restoreInto } = require("../netlify/lib/admin-activity");
+  const before = { unitCollections: [{ id: "food-tech", name: "Food Technology Core",
+    books: [{ title: "Food Book", description: "Reference", url: "/uploads/food.pdf" }], units: [] }] };
+  const after = { unitCollections: [{ id: "food-tech", name: "Food Technology Core", books: [], units: [] }] };
+  const removal = resourceChanges(before, after).find((change) => change.kind === "removed");
+  assert.ok(removal);
+  const restored = restoreInto(after, removal);
+  assert.equal(restored.unitCollections[0].books[0].url, "/uploads/food.pdf");
+});
+
+test("Technology Core renders every published book instead of hard-coded placeholders", async () => {
+  const app = await fs.readFile(path.resolve(__dirname, "../public/app.js"), "utf8");
+  assert.match(app, /renderCoreResources\(subject\)/);
+  assert.match(app, /Array\.isArray\(subject\.books\)/);
+  assert.match(app, /section\("book", "Books", books\)/);
 });
