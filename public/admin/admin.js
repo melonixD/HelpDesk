@@ -939,12 +939,13 @@
             const value = activityValue(change.kind === "removed" ? change.before : change.after);
             const restorable = change.kind === "removed" && change.restore && !change.restored;
             return '<div class="activity-change ' + escape(change.kind) + '"><span class="change-kind">' + escape(change.kind) + '</span><div><strong>' + escape(change.label) + '</strong><small>' + escape(change.location) + '</small>' + (value ? '<code>' + escape(value) + '</code>' : '') + '</div>' +
-              (restorable ? '<button class="mini-button" data-restore-activity="' + escape(item.id) + '" data-restore-change="' + escape(change.id) + '">Restore to draft</button>' : (change.restored ? '<span class="status-pill active">Restored</span>' : '')) + '</div>';
+              (restorable ? '<button class="mini-button" data-restore-activity="' + escape(item.id) + '" data-restore-change="' + escape(change.id) + '">' + (change.restore.subject ? 'Restore section to draft' : 'Restore to draft') + '</button>' : (change.restored ? '<span class="status-pill active">Restored</span>' : '')) + '</div>';
           }).join("") + '</div>' : '') + '</article>';
       }).join("") + '</div>' : '<div class="panel activity-empty"><h3>No activity recorded yet</h3><p class="muted">New edits and approvals will appear here after this update.</p></div>');
     $("#refresh-activity")?.addEventListener("click", () => { state.activity = null; renderActivity(); });
     $$('[data-restore-activity]').forEach((button) => button.addEventListener("click", async () => {
-      if (!confirm("Restore this deleted resource into the private Resources draft? It will not become live until you publish.")) return;
+      if (state.dirty) return toast("Save your unsaved changes before restoring a section.");
+      if (!confirm("Restore this deleted resource or whole section, including its original semester links, into the private Resources draft? It will not become live until you publish.")) return;
       button.disabled = true; button.textContent = "Restoring…";
       try {
         const result = await request("/api/admin/activity", { method: "POST", body: JSON.stringify({

@@ -81,7 +81,8 @@ async function loadPublishedRecord(target) {
 
 async function loadPublished(target) {
   const record = await loadPublishedRecord(target);
-  return record ? record.data : readJson(target);
+  const data = record ? record.data : readJson(target);
+  return target === "resources" ? require("./subject-recovery").recoverMaths(data, record && record.publishedAt) : data;
 }
 
 async function loadPublishedVersion(target, version) {

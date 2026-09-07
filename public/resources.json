@@ -934,31 +934,42 @@
           "number": 1,
           "title": "Unit 1 Resources",
           "pyqUrl": null,
-          "lectureUrl": "https://youtube.com/playlist?list=PLEWJyq4jotzs&si=BUJLEw9X-Fb-hL4E"
+          "lectureUrl": "https://youtube.com/playlist?list=PLFhGIlEFajZY&si=jUBHwwoKz4iYfVRg"
         },
         {
           "number": 2,
           "title": "Unit 2 Resources",
           "pyqUrl": null,
-          "lectureUrl": "https://youtube.com/playlist?list=PLcMXdxKvBY30&si=JkP0M-D6z-b_fF6k"
+          "lectureUrl": "https://youtube.com/playlist?list=PLQ6WKSk6FexU&si=h_m1KtDNRxkYYyBb"
         },
         {
           "number": 3,
           "title": "Unit 3 Resources",
           "pyqUrl": null,
-          "lectureUrl": "https://youtube.com/playlist?list=PLXjrWWL7w8H0&si=9ye8zyZPLMFGSW4E"
+          "lectureUrl": "https://youtube.com/playlist?list=PLabCjf5e-Czg&si=euBge9HpXdhePm6Y"
         },
         {
           "number": 4,
           "title": "Unit 4 Resources",
           "pyqUrl": null,
-          "lectureUrl": "https://youtube.com/playlist?list=PLVRxdzW1vw1Y&si=3tA64lUrbECSMsSF"
+          "lectureUrl": "https://youtube.com/playlist?list=PLDw3ZfblKWvs&si=DtX0lzhAAGo1vXPz"
         },
         {
           "number": 5,
           "title": "Unit 5 Resources",
           "pyqUrl": null,
           "lectureUrl": "https://youtube.com/playlist?list=PLZBnz02ZtylA&si=hlSAdJV9bKhe27aW"
+        },
+        {
+          "number": "6",
+          "title": "Book (BS Grewal)",
+          "books": [
+            {
+              "title": "Book",
+              "description": "Refer This Book For Math 1",
+              "url": "https://drive.google.com/file/d/1_ofPrUVZXyrwggNv8WeJTX1DeoHMqldX/view?usp=drivesdk"
+            }
+          ]
         }
       ]
     },

@@ -19,7 +19,9 @@ exports.handler = async (event) => {
     const [placementDraft, noticeDraft, scholarshipDraft] = main
       ? await Promise.all(["placements", "notices", "scholarships"].map(loadDraft))
       : [null, null, null];
-    const resources = resourceDraft ? resourceDraft.data : liveResources;
+    const resources = resourceDraft
+      ? require("../lib/subject-recovery").recoverMaths(resourceDraft.data, resourceDraft.updatedAt)
+      : liveResources;
     const published = main ? await publishedDirectory() : {};
     const baselines = {
       resources: {

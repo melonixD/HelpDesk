@@ -114,7 +114,21 @@ function resourceMap(data) {
 
 function resourceChanges(before, after) {
   const oldItems = resourceMap(before); const newItems = resourceMap(after); const changes = [];
+  const { placements } = require("./subject-recovery");
+  const deleted = new Set();
+  (before.unitCollections || []).forEach((subject, index) => {
+    const exists = (after.unitCollections || []).some(item => item.id === subject.id);
+    const remaining = new Set(placements(after, subject.id).map(item => item.branchId + "/" + item.semesterId));
+    const removed = placements(before, subject.id).filter(item => !remaining.has(item.branchId + "/" + item.semesterId));
+    if (exists && !removed.length) return;
+    if (!exists) deleted.add(subject.id);
+    const restore = { type: exists ? "placement" : "subject", subject: clone(subject), index, placements: removed };
+    changes.push({ id: crypto.randomBytes(12).toString("hex"), kind: "removed", label: subject.name,
+      location: exists ? "Removed semester links" : "Deleted whole subject",
+      before: `${(subject.units || []).length} units/sections · ${removed.length} semester links`, after: null, restore });
+  });
   for (const [key, previous] of oldItems) {
+    if (deleted.has(previous.restore.subjectId)) continue;
     const next = newItems.get(key);
     if (next && JSON.stringify(previous.value) === JSON.stringify(next.value)) continue;
     if (next) {
@@ -149,6 +163,7 @@ function findUnit(subject, descriptor) {
 function restoreInto(data, change) {
   const next = clone(data); const descriptor = change && change.restore;
   if (!descriptor) throw Object.assign(new Error("This activity item cannot be restored."), { statusCode: 400 });
+  if (descriptor.subject) return require("./subject-recovery").restoreSubject(data, descriptor);
   const subject = (next.unitCollections || []).find((item) => item.id === descriptor.subjectId);
   if (!subject) throw Object.assign(new Error("The original subject no longer exists."), { statusCode: 409 });
   const target = findUnit(subject, descriptor.unit);
