@@ -5,6 +5,7 @@ const { readJson, validateResources } = require("./admin-content");
 const { loadDraft, saveMergedDraft } = require("./admin-drafts");
 const { loadPublished, loadPublishedVersion } = require("./content-store");
 const { logContentActivity } = require("./admin-activity");
+const { creatorWithProfilePhoto } = require("./creator-photos");
 
 class ControlError extends Error {
   constructor(message, statusCode = 400) { super(message); this.name = "ControlError"; this.statusCode = statusCode; }
@@ -155,9 +156,10 @@ async function updateProfile(session, body, mainAdmins) {
     }
     profile.photoUrl = photoUrl;
     profile.updatedAt = new Date().toISOString();
+    profile.photoUpdatedAt = profile.updatedAt;
   });
   const context = await dashboardContext(session, mainAdmins);
-  return { saved: true, profile: context.profile, community: context.community };
+  return { saved: true, profile: { ...context.profile, photoUrl }, community: context.community };
 }
 
 async function overlayCreatorProfiles(resources, mainAdmins) {
@@ -165,21 +167,20 @@ async function overlayCreatorProfiles(resources, mainAdmins) {
   let state;
   try { state = await loadState(); }
   catch { return resources; }
+  const directory = [...(mainAdmins || []), ...state.regularAdmins.filter((admin) => admin.active !== false && admin.role === "main")];
   let changed = false;
   const creators = resources.creators.map((creator) => {
     const creatorId = String(creator.id || "").toLowerCase();
     const creatorName = String(creator.name || "").trim().toLowerCase();
-    const admin = (mainAdmins || []).find((item) =>
+    const admin = directory.find((item) =>
       String(item.username || "").toLowerCase() === creatorId ||
       String(item.name || "").trim().toLowerCase() === creatorName
     );
     if (!admin) return creator;
-    const saved = savedProfileUrl(state, `main:${String(admin.username).toLowerCase()}`, "");
-    // A photo explicitly uploaded in Creator settings remains authoritative.
-    // Saved admin avatars replace only bundled/default creator images.
-    if (!saved || (creator.photoUrl && !String(creator.photoUrl).startsWith("/images/"))) return creator;
-    changed = true;
-    return { ...creator, photoUrl: saved };
+    const profile = state.profiles.find((item) => item.ownerKey === `main:${String(admin.username).toLowerCase()}`);
+    const resolved = creatorWithProfilePhoto(creator, profile);
+    if (resolved !== creator) changed = true;
+    return resolved;
   });
   return changed ? { ...resources, creators } : resources;
 }

@@ -108,12 +108,16 @@ async function publishContent(target, data, author) {
   const previous = target === "resources" ? await loadPublishedRecord(target) : null;
   const candidate = target === "resources"
     ? require("./subject-recovery").recoverMaths(data, null, previous && previous.data) : data;
-  const validated = validateTarget(target, candidate);
+  const publishedAt = new Date().toISOString();
+  const prepared = target === "resources"
+    ? require("./creator-photos").stampCreatorPhotos(candidate, previous ? previous.data : readJson("resources"), publishedAt)
+    : candidate;
+  const validated = validateTarget(target, prepared);
   const record = {
     recordId: createRecordId(),
     target,
     data: validated,
-    publishedAt: new Date().toISOString(),
+    publishedAt,
     publishedBy: String(author || "main-admin").slice(0, 100),
     version: Date.now(),
   };

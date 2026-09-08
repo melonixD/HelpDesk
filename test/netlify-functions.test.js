@@ -69,7 +69,7 @@ test("Netlify resources function preserves API filtering", async () => {
   assert.equal(body.branches.length, 14);
 });
 
-test("a saved main-admin avatar updates its matching bundled Creator profile", async () => {
+test("a saved main-admin avatar updates its Creator photo until a newer Creator photo is published", async () => {
   const admins = [{ username: "Priyanshu", name: "Priyanshu Dixit", role: "main", photoUrl: "" }];
   await updateProfile(
     { role: "main", sub: "Priyanshu" },
@@ -82,8 +82,13 @@ test("a saved main-admin avatar updates its matching bundled Creator profile", a
   const overlaid = await overlayCreatorProfiles(resourcesData, admins);
   assert.equal(overlaid.creators[0].photoUrl, "/uploads/image-v2-0123456789abcdef.png");
 
+  const oldUpload = await overlayCreatorProfiles({
+    creators: [{ id: "priyanshu", name: "Priyanshu Dixit", photoUrl: "/uploads/image-v2-older-choice.png" }],
+  }, admins);
+  assert.equal(oldUpload.creators[0].photoUrl, "/uploads/image-v2-0123456789abcdef.png");
+
   const creatorUpload = await overlayCreatorProfiles({
-    creators: [{ id: "priyanshu", name: "Priyanshu Dixit", photoUrl: "/uploads/image-v2-creator-choice.png" }],
+    creators: [{ id: "priyanshu", name: "Priyanshu Dixit", photoUrl: "/uploads/image-v2-creator-choice.png", photoUpdatedAt: new Date(Date.now() + 1).toISOString() }],
   }, admins);
   assert.equal(creatorUpload.creators[0].photoUrl, "/uploads/image-v2-creator-choice.png");
 });

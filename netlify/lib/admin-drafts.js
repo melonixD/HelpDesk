@@ -192,6 +192,7 @@ async function publishDraft(target, author, message, draftId) {
     version: result.version,
     delivery: "netlify-blobs",
     deploying: false,
+    data: result.data,
     message: String(message || "").slice(0, 120),
   };
 }

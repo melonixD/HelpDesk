@@ -1,7 +1,9 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { filterResources, generatePractice } = require("./netlify/lib/helpdesk-api");
+const { generatePractice } = require("./netlify/lib/helpdesk-api");
+const publicResources = require("./netlify/functions/resources").handler;
+const adminAsset = require("./netlify/functions/admin-asset").handler;
 const { loadPublished } = require("./netlify/lib/content-store");
 const { getNoticeFeed } = require("./netlify/lib/hbtu-feed");
 const { getScholarshipFeed } = require("./netlify/lib/scholarship-feed");
@@ -58,7 +60,7 @@ function sendJson(res, statusCode, payload, extraHeaders) {
 
 function relayFunctionResponse(res, result) {
   res.writeHead(result.statusCode || 200, result.headers || {});
-  res.end(result.body || "");
+  res.end(result.isBase64Encoded ? Buffer.from(result.body || "", "base64") : result.body || "");
 }
 
 function readBody(req) {
@@ -150,8 +152,11 @@ async function handleRequest(req, res) {
   }
 
   if (url.pathname === "/api/resources") {
-    if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET" });
-    return sendJson(res, 200, filterResources(Object.fromEntries(url.searchParams), await loadPublished("resources")));
+    return relayFunctionResponse(res, await publicResources({ httpMethod: req.method, queryStringParameters: Object.fromEntries(url.searchParams) }));
+  }
+
+  if (url.pathname === "/.netlify/functions/admin-asset") {
+    return relayFunctionResponse(res, await adminAsset({ httpMethod: req.method, headers: req.headers, queryStringParameters: Object.fromEntries(url.searchParams) }));
   }
 
   if (url.pathname === "/api/placements") {

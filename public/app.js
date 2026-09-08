@@ -54,6 +54,7 @@ let resourceDataPromise = null;
 let placementDataPromise = null;
 let noticeDataPromise = null;
 let scholarshipDataPromise = null;
+let liveRefreshPromise = null;
 const placementHubState = { tab: "stats" };
 
 function readStorage(key, fallback) {
@@ -113,6 +114,12 @@ async function initialise() {
   initialisePlacements();
   initialiseScholarships();
   bindBrowserControls();
+  window.addEventListener("focus", refreshPublishedContent);
+  window.addEventListener("pageshow", (event) => { if (event.persisted) refreshPublishedContent(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublishedContent(); });
+  window.addEventListener("storage", (event) => {
+    if (event.key === "helpdesk-content-updated" && !document.hidden) refreshPublishedContent();
+  });
 
   try {
     state.data = await ensureResourceData();
@@ -147,10 +154,10 @@ function ensureResourceData() {
   return resourceDataPromise;
 }
 
-async function loadResourceData() {
+async function loadResourceData(allowFallback = true) {
   // Published admin content lives in Netlify Blobs. The bundled JSON remains
   // an outage-safe fallback for the first deploy and local static previews.
-  const sources = ["/api/resources", "/resources.json"];
+  const sources = allowFallback ? ["/api/resources", "/resources.json"] : ["/api/resources"];
   let lastError;
 
   for (const source of sources) {
@@ -170,6 +177,24 @@ async function loadResourceData() {
   }
 
   throw lastError || new Error("Resources could not be loaded");
+}
+
+function refreshPublishedContent() {
+  if (!state.data || document.hidden) return Promise.resolve();
+  if (liveRefreshPromise) return liveRefreshPromise;
+  // Refresh when a reader returns from the admin tab; no background polling.
+  liveRefreshPromise = loadResourceData(false).then((data) => {
+    if (JSON.stringify(data) === JSON.stringify(state.data)) return;
+    state.data = data;
+    applySiteMeta();
+    initialiseContacts();
+    initialiseWhatsappGroup();
+    renderBrowser();
+    renderSyllabi();
+    updateStats();
+  }).catch((error) => console.warn("Could not refresh published content:", error.message))
+    .finally(() => { liveRefreshPromise = null; });
+  return liveRefreshPromise;
 }
 
 function initialiseTheme() {
@@ -259,7 +284,7 @@ function safeHttpsUrl(value) {
 
 function initialiseContacts() {
   const creators = Array.isArray(state.data.creators) ? state.data.creators : [];
-  if (elements["contact-grid"] && creators.length) {
+  if (elements["contact-grid"]) {
     elements["contact-grid"].innerHTML = creators.map((creator) => {
       const id = String(creator.id || creator.name).replace(/[^a-z0-9-]/gi, "-").toLowerCase();
       const digits = String(creator.whatsapp || "").replace(/\D/g, "");
@@ -274,7 +299,7 @@ function initialiseContacts() {
       ].filter(Boolean).join("");
       return '<article class="contact-card"><button class="profile-trigger" type="button" ' +
         'data-contact-trigger="' + escapeHtml(id) + '" aria-expanded="false" aria-controls="contact-' + escapeHtml(id) + '">' +
-        '<img src="' + escapeHtml(creator.photoUrl || "/favicon.svg") + '" alt="' + escapeHtml(creator.name) +
+        '<img src="' + escapeHtml(openableResourceUrl(creator.photoUrl || "/favicon.svg")) + '" alt="' + escapeHtml(creator.name) +
         '" width="92" height="108" loading="lazy" decoding="async" />' +
         '<span class="profile-copy"><strong>' + escapeHtml(creator.name) + '</strong><small>' +
         escapeHtml(creator.role || "Creator") + ' · tap for contacts</small></span>' +
@@ -866,10 +891,7 @@ function renderMaterialFolder(material) {
 }
 
 function openableResourceUrl(value) {
-  const url = String(value || "");
-  if (!url.startsWith("/uploads/")) return url;
-  const key = url.slice("/uploads/".length).split(/[?#]/, 1)[0];
-  return `/.netlify/functions/admin-asset?key=${encodeURIComponent(key)}`;
+  return HelpDeskAssets.assetUrl(value, window.location.origin);
 }
 
 function renderMaterial(material) {
