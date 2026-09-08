@@ -62,6 +62,15 @@ function validateResources(value) {
   text(meta.institution, "resources.meta.institution", { maximum: 100 });
   text(meta.description, "resources.meta.description", { maximum: 500 });
   optionalText(meta.whatsappGroupUrl, "resources.meta.whatsappGroupUrl", 2000);
+  optionalText(meta.holidayListUrl, "resources.meta.holidayListUrl", 2000);
+  if (meta.holidayListUrl && meta.holidayListUrl.trim()) {
+    let valid = false;
+    try {
+      const url = new URL(meta.holidayListUrl.trim());
+      valid = url.protocol === "https:" && ["drive.google.com", "docs.google.com"].includes(url.hostname) && !url.username && !url.password;
+    } catch {}
+    if (!valid) throw new ValidationError("Holiday list must be an HTTPS Google Drive or Google Docs link, or left empty for Coming soon.");
+  }
   array(meta.creators, "resources.meta.creators").forEach((name, index) =>
     text(name, `resources.meta.creators[${index}]`, { maximum: 100 })
   );

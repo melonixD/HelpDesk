@@ -1,6 +1,8 @@
-# Creator photos and Mathematics recovery update
+# Holiday list, Creator photos and Mathematics recovery update
 
 Copy the contents of this folder into your existing HelpDesk GitHub checkout, replacing matching files. Do not delete your existing repository. Commit and push once, then allow Netlify to deploy.
+
+Holiday list: the hamburger menu now includes a direct link, with no intermediate page. Open **Admin → Site details → Holiday list**, paste your Google Drive share link, then **Save draft → Publish changes**. No link has been supplied yet, so the menu shows Coming soon. Clearing the field restores Coming soon. Make the Drive file viewable by anyone with the link. Once this code update is deployed, editing this link uses Blobs without another deployment.
 
 Creator photos: after this code deploy, reload the admin page. Under **Creators**, upload or choose the correct photo, click **Save draft**, then **Publish changes**. Repeat this once for any photo which was only visible in the old editor: the previous editor could show a new preview while sending the previous data after an earlier save. A successful save now reconnects every field to the merged draft, so repeated edits are included.
 

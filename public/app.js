@@ -98,7 +98,7 @@ function cacheElements() {
     "placement-tab-stats", "placement-tab-notices", "notice-tab-count",
     "scholarships-open", "scholarship-hub", "scholarship-hub-close", "scholarship-hub-heading", "scholarship-hub-body",
     "contact-grid", "whatsapp-group-card", "hero-copy", "hero-credit", "hero-institution", "brand-name",
-    "admin-reveal-trigger", "admin-menu-link", "admin-logout",
+    "admin-reveal-trigger", "admin-menu-link", "admin-logout", "holiday-list-link",
   ].forEach((id) => { elements[id] = document.getElementById(id); });
 }
 
@@ -224,7 +224,10 @@ function initialiseNavigation() {
     setMenu(open);
   });
   elements["menu-backdrop"].addEventListener("click", closeMenu);
-  elements["mobile-menu"].querySelectorAll(".drawer-nav a").forEach((link) => link.addEventListener("click", closeMenu));
+  elements["mobile-menu"].querySelectorAll(".drawer-nav a").forEach((link) => link.addEventListener("click", (event) => {
+    if (link.getAttribute("aria-disabled") === "true") { event.preventDefault(); return; }
+    closeMenu();
+  }));
 }
 
 function setMenu(open) {
@@ -259,6 +262,24 @@ function applySiteMeta() {
   }
   const description = document.querySelector('meta[name="description"]');
   if (description && meta.description) description.content = meta.description;
+  const holidayLink = elements["holiday-list-link"];
+  if (holidayLink) {
+    let url = null;
+    try {
+      const candidate = new URL(String(meta.holidayListUrl || "").trim());
+      if (candidate.protocol === "https:" && ["drive.google.com", "docs.google.com"].includes(candidate.hostname) && !candidate.username && !candidate.password) url = candidate.href;
+    } catch {}
+    holidayLink.querySelector("span").textContent = url ? "↗" : "Coming soon";
+    if (url) {
+      holidayLink.href = url;
+      holidayLink.removeAttribute("aria-disabled");
+      holidayLink.removeAttribute("tabindex");
+    } else {
+      holidayLink.removeAttribute("href");
+      holidayLink.setAttribute("aria-disabled", "true");
+      holidayLink.setAttribute("tabindex", "-1");
+    }
+  }
 }
 
 function formatWhatsapp(value) {
