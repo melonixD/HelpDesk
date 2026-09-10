@@ -516,6 +516,11 @@
       addFields(subject, subject, null, scopes);
       addCollection(subject.books, "Subject book", subject, null, scopes);
       addCollection(subject.lectureItems, "Subject lecture", subject, null, scopes);
+      (subject.yearWisePyqs || []).forEach(year => HelpDeskYearPyqs.papers.forEach(([field, label]) => {
+        if (!year[field]) return;
+        entries.push({ value: year[field], subject, unit: null, label: `Year-Wise-PYQs · ${year.year} · ${label}`, scopes,
+          remove() { if (!year[field]) return false; year[field] = ""; return true; } });
+      }));
       (subject.units || []).forEach((unit) => {
         addFields(unit, subject, unit, scopes);
         addCollection(unit.books, "Book", subject, unit, scopes);
@@ -669,7 +674,7 @@
     const banner=branchAdmin?`<div class="regular-banner branch-banner"><div><strong>Branch admin access</strong><p>You can publish resource attribute updates directly inside your governed sections. Structural changes still need a main admin.</p></div><span class="role-pill">${state.coins} coins</span></div>`:`<div class="regular-banner"><div><strong>Approval-only access</strong><p>You can draft changes only inside your assigned semesters. Approved contributions earn 1 coin.</p></div><span class="role-pill">${state.permissions.length} assigned</span></div>`;
     const structureTools = branchAdmin ? "" : `<details class="panel structure-tools"><summary><span><strong>Manage library structure</strong><small>Add or rename branches, semesters, subjects and sections.</small></span><span class="structure-chevron">⌄</span></summary><div class="structure-body">${main?`<div class="structure-group"><p>Branch</p><button class="mini-button" id="edit-branch">Rename / edit</button><button class="mini-button" id="add-branch">＋ New branch</button><button class="mini-button danger" id="delete-branch">Delete branch</button></div><div class="structure-group"><p>Semester</p><button class="mini-button" id="rename-semester">Rename</button><button class="mini-button" id="move-semester-up">↑ Move up</button><button class="mini-button" id="move-semester-down">↓ Move down</button><button class="mini-button" id="add-semester">＋ New semester</button><button class="mini-button danger" id="delete-semester">Delete semester</button></div>`:""}<div class="structure-group"><p>Subject</p><span class="structure-link"><select id="link-subject"><option value="">Choose existing subject…</option>${linkOptions}</select><button class="mini-button" id="link-subject-button">Link</button></span><button class="mini-button" id="add-subject">＋ ${main?"New subject":"Request new subject"}</button>${subject?`<button class="mini-button danger" id="unlink-subject">Remove from this semester</button>`:""}</div></div></details>`;
     editor.innerHTML = `${main?"":banner}<div class="section-intro resource-intro"><div><h2>Resource editor</h2><p class="muted">Choose a location, add resources, save the batch, then publish it.</p></div><div class="resource-intro-actions"><button class="primary" id="quick-add-resource" ${subject&&subject.units.length?"":"disabled"}>＋ Quick add resource</button>${main?`<button class="quiet-button" id="fill-selected" ${subject?"":"disabled"}>Copy to selected sections…</button><button class="quiet-button global-remove-button" id="remove-resource-everywhere">Remove resource everywhere…</button>`:""}</div></div><div class="workflow-strip" aria-label="Resource publishing workflow"><span><b>1</b> Choose location</span><i>›</i><span><b>2</b> Add resources</span><i>›</i><span><b>3</b> Save draft</span><i>›</i><span><b>4</b> Publish when ready</span></div><section class="panel resource-navigator" aria-label="Choose resource location"><label><span>1 · Branch</span><select id="branch-picker">${branchOptions}</select></label><i aria-hidden="true">›</i><label><span>2 · Semester</span><select id="semester-picker" ${semesters.length?"":"disabled"}>${semesterOptions||'<option>No semesters</option>'}</select></label><i aria-hidden="true">›</i><label><span>3 · Subject</span><select id="subject-picker" ${subjectOptions?"":"disabled"}>${subjectOptions||'<option>No subjects</option>'}</select></label></section>${structureTools}<article class="panel document resource-document" id="resource-document">${renderSubjectDocument(subject)}</article>`;
-    bindResourceTree(); bind($("#resource-document"), subject || {}); bindUnitActions();
+    bindResourceTree(); bind($("#resource-document"), subject || {}); bindUnitActions(); bindYearWisePyqs();
     $("#fill-selected")?.addEventListener("click", openFillSelected);
     $("#remove-resource-everywhere")?.addEventListener("click", openRemoveResourceEverywhere);
     $("#quick-add-resource")?.addEventListener("click", openQuickAddResource);
@@ -677,14 +682,40 @@
 
   function renderSubjectDocument(subject) {
     if (!subject) return `<div class="empty-state">Choose or create a subject to start editing.</div>`;
+    HelpDeskYearPyqs.ensureSubject(subject);
     const branchAdmin=state.role==="branch";const credit=subject.providedBy?`<span class="admin-credit">Provided by ${escape(subject.providedBy)}</span>`:"";
     const subjectBooks=Array.isArray(subject.books)?subject.books:[];
-    return `<div class="doc-head"><div><p class="eyebrow">Now editing</p><h2>${escape(subject.name)}</h2><p>${escape(subject.description || "Add subject details and resources.")}</p>${credit}</div>${branchAdmin?"":`<button class="danger-button" id="delete-subject">${state.role==="main"?"Delete subject":"Request removal"}</button>`}</div><details class="subject-settings"><summary><span><strong>Subject settings</strong><small>Name, description, colour and shared links</small></span><span>⌄</span></summary><div class="grid subject-settings-body"><label class="field"><span>Subject ID</span><input data-subject-id type="text" value="${escape(subject.id)}" ${branchAdmin?"disabled":""}><small>${branchAdmin?"Structural IDs are managed by main admins.":"Changing this updates every linked semester."}</small><small class="field-state"></small></label>${input("Subject name","name",subject.name,{required:true})}${input("Accent","accent",subject.accent||"")}${input("Description","description",subject.description||"",{type:"textarea",full:true})}${urlInput("Shared lecture URL","lectureUrl",subject.lectureUrl)}${urlInput("Shared notes URL","notesUrl",subject.notesUrl)}</div></details>${renderBooksEditor(subjectBooks,"books","Subject-wide recommended books",null)}<div class="unit-list"><div class="data-group-head unit-list-head"><div><h3>Units & sections</h3><p class="muted">Open one item to add lectures, notes, PYQs, books or lab files.</p></div><span class="role-pill">${subject.units.length} items</span></div>${subject.units.map((unit,index)=>renderUnit(subject,unit,index)).join("")}${branchAdmin?"":`<button class="add-card" id="add-unit">＋ ${state.role==="main"?"Add":"Request new"} unit or special section</button>`}</div>`;
+    return `<div class="doc-head"><div><p class="eyebrow">Now editing</p><h2>${escape(subject.name)}</h2><p>${escape(subject.description || "Add subject details and resources.")}</p>${credit}</div>${branchAdmin?"":`<button class="danger-button" id="delete-subject">${state.role==="main"?"Delete subject":"Request removal"}</button>`}</div><details class="subject-settings"><summary><span><strong>Subject settings</strong><small>Name, description, colour and shared links</small></span><span>⌄</span></summary><div class="grid subject-settings-body"><label class="field"><span>Subject ID</span><input data-subject-id type="text" value="${escape(subject.id)}" ${branchAdmin?"disabled":""}><small>${branchAdmin?"Structural IDs are managed by main admins.":"Changing this updates every linked semester."}</small><small class="field-state"></small></label>${input("Subject name","name",subject.name,{required:true})}${input("Accent","accent",subject.accent||"")}${input("Description","description",subject.description||"",{type:"textarea",full:true})}${urlInput("Shared lecture URL","lectureUrl",subject.lectureUrl)}${urlInput("Shared notes URL","notesUrl",subject.notesUrl)}</div></details>${renderBooksEditor(subjectBooks,"books","Subject-wide recommended books",null)}${renderYearWisePyqsEditor(subject)}<div class="unit-list"><div class="data-group-head unit-list-head"><div><h3>Units & sections</h3><p class="muted">Open one item to add lectures, notes, PYQs, books or lab files.</p></div><span class="role-pill">${subject.units.length} items</span></div>${subject.units.map((unit,index)=>renderUnit(subject,unit,index)).join("")}${branchAdmin?"":`<button class="add-card" id="add-unit">＋ ${state.role==="main"?"Add":"Request new"} unit or special section</button>`}</div>`;
   }
 
   function resourceTotal(subject, unit) {
     const urls = [unit.lectureUrl, unit.handwrittenNotesUrl, unit.masterNotesUrl, unit.notesUrl, unit.pyqUrl, unit.practiceKey, unit.bookUrl, unit.workshopFileUrl, unit.classNotesUrl, unit.labManualUrl, unit.vivaQuestionsUrl, unit.endSemesterQuestionsUrl, unit.experimentVideosUrl];
     return urls.filter(Boolean).length + (unit.lectureItems || []).filter((item)=>item.url).length + (unit.books || []).filter((item)=>item.url).length;
+  }
+
+  function renderYearWisePyqsEditor(subject) {
+    return `<section class="editor-resource-block year-pyqs-editor"><div class="resource-block-head"><div><p class="resource-kicker">Previous year papers</p><h3>Year-Wise-PYQs</h3><span>Open a year and paste its Google Drive links. Empty papers appear as Coming soon. Save your draft, then publish when ready.</span></div></div>
+      ${subject.yearWisePyqs.map((year, index) => `<details class="unit-card" ${state.selection.yearPyqId === year.id ? "open" : ""}><summary class="unit-summary"><strong>${escape(year.year)}</strong><span class="resource-total">${HelpDeskYearPyqs.papers.filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length} / 3 ready</span></summary><div class="unit-body"><div class="grid">${input("Year", `yearWisePyqs.${index}.year`, year.year, {type:"number", required:true})}${HelpDeskYearPyqs.papers.map(([field, label]) => input(label + " · Google Drive link", `yearWisePyqs.${index}.${field}`, year[field] || "", {type:"url",full:true,help:"Leave blank for Coming soon."})).join("")}</div><button type="button" class="mini-button danger" data-remove-pyq-year="${index}">Remove year</button></div></details>`).join("")}
+      <div class="year-pyq-add"><label class="field"><span>Add another year</span><input id="new-pyq-year" type="number" min="1900" max="9999" placeholder="e.g. 2026"></label><button type="button" class="quiet-button" id="add-pyq-year">＋ Add year</button></div></section>`;
+  }
+
+  function bindYearWisePyqs() {
+    $("#add-pyq-year")?.addEventListener("click", () => {
+      const subject = selectedSubject();
+      const value = $("#new-pyq-year").value.trim();
+      if (!/^\d{4}$/.test(value) || Number(value) < 1900) return toast("Enter a four-digit year from 1900 onwards.");
+      if (subject.yearWisePyqs.some(entry => String(entry.year) === value)) return toast("That year already exists. Open it to edit its papers.");
+      const entry = HelpDeskYearPyqs.createYear(value, uniqueId("year-" + value, subject.yearWisePyqs));
+      subject.yearWisePyqs.push(entry);
+      state.selection.yearPyqId = entry.id;
+      markDirty(); renderResources();
+      $(".year-pyqs-editor")?.scrollIntoView({block:"nearest"});
+    });
+    $$("[data-remove-pyq-year]").forEach(button => button.addEventListener("click", () => {
+      const subject = selectedSubject(); const index = Number(button.dataset.removePyqYear);
+      if (!confirm(`Remove ${subject.yearWisePyqs[index].year} and its three paper links from this subject's draft?`)) return;
+      subject.yearWisePyqs.splice(index, 1); markDirty(); renderResources();
+    }));
   }
 
   function sectionType(unit) {

@@ -32,3 +32,9 @@ html[data-theme="dark"] .resource-navigator select,html[data-theme="dark"] .stru
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}html[data-theme="dark"] .sidebar nav button,html[data-theme="dark"] .sidebar-foot button,html[data-theme="dark"] .sidebar-foot a{color:var(--muted)}html[data-theme="dark"] .sidebar nav button:hover,html[data-theme="dark"] .sidebar nav button.active,html[data-theme="dark"] .sidebar-foot button:hover,html[data-theme="dark"] .sidebar-foot a:hover{background:#262628;color:var(--ink)}html[data-theme="dark"] .semester-row button.semester-name.active{color:var(--ink)}html[data-theme="dark"] .login-card input:focus,html[data-theme="dark"] .field input:focus,html[data-theme="dark"] .field select:focus,html[data-theme="dark"] .field textarea:focus{border-color:#6e6e73;box-shadow:0 0 0 3px rgba(255,255,255,.1)}html[data-theme="dark"] .login-tabs button.active{background:#353537}html[data-theme="dark"] .login-theme-toggle{background:#2c2c2e}html[data-theme="dark"] .danger-button{background:#3a201e;color:#ff9d95}html[data-theme="dark"] .form-error{background:#3a201e;color:#ffaaa3}
 @media(max-width:920px){.top-actions .admin-theme-toggle{display:inline-flex}.top-actions .admin-theme-toggle [data-theme-label]{display:none}.community-settings{grid-template-columns:1fr}}
 @media(max-width:520px){.login-theme-toggle [data-theme-label]{display:none}.login-theme-toggle{right:16px;top:16px}}
+
+.year-pyqs-editor { margin-block: 24px; }
+.year-pyqs-editor .unit-card { margin-block: 12px; }
+.year-pyq-add { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.year-pyq-add .field { flex: 1 1 180px; margin: 0; }
+.year-pyq-add button { min-height: 48px; }

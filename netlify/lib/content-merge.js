@@ -94,6 +94,11 @@ function mergeValue(base, incoming, current, path, conflicts) {
 }
 
 function mergeContent(base, incoming, current) {
+  // Legacy snapshots must share the same empty year slots before three-way merging.
+  const normalize = require("../../public/year-wise-pyqs").normalize;
+  base = normalize(clone(base));
+  incoming = normalize(clone(incoming));
+  current = normalize(clone(current));
   const conflicts = [];
   const merged = mergeValue(base, incoming, current, "", conflicts);
   if (conflicts.length) throw new MergeConflictError(conflicts);

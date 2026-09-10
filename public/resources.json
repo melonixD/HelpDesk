@@ -608,6 +608,36 @@
           "bookUrl": null,
           "pyqUrl": null
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -651,6 +681,36 @@
           "lectureMessage": "Study from notes",
           "masterNotesUrl": "/resources/notes/basic-electronics/Basic_Electronics_Unit_5_Master_Notes.pdf",
           "pyqUrl": "/resources/pyqs/basic-electronics/Basic_Electronics_Unit_5_PYQs.pdf"
+        }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
         }
       ]
     },
@@ -726,6 +786,36 @@
           "masterNotesUrl": "/resources/notes/engineering-mechanics/Engineering_Mechanics_Unit_5_Master_Notes.pdf",
           "pyqUrl": "/resources/pyqs/engineering-mechanics/Engineering_Mechanics_Unit_5_PYQs.pdf"
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -761,6 +851,36 @@
           "title": "Value-based Text Reading",
           "pyqUrl": "/resources/pyqs/professional-communication/Professional_Communication_Unit_5_PYQs.pdf"
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -795,6 +915,36 @@
           "number": 5,
           "title": "Unit 5 Resources",
           "pyqUrl": null
+        }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
         }
       ]
     },
@@ -856,6 +1006,36 @@
           "credit": "Notes provided by Aarush Shrivastava ❤️",
           "classNotesUrl": "/resources/workshop/class-notes/Central_Workshop_Class_Notes.pdf"
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -864,7 +1044,37 @@
       "description": "Faculty material, notes, exam papers and recommended reading.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "biochemical-core",
@@ -872,7 +1082,37 @@
       "description": "Branch-specific Semester 1 material for Biochemical Engineering.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "biotechnology-core",
@@ -880,7 +1120,37 @@
       "description": "Branch-specific Semester 1 material for Biotechnology.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "chemical-core",
@@ -888,7 +1158,37 @@
       "description": "Branch-specific Semester 1 material for Chemical Engineering.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "leather-core",
@@ -896,7 +1196,37 @@
       "description": "Branch-specific Semester 1 material for Leather Technology.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "oil-core",
@@ -904,7 +1234,37 @@
       "description": "Branch-specific Semester 1 material for Oil Technology.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "paint-core",
@@ -912,7 +1272,37 @@
       "description": "Branch-specific Semester 1 material for Paint Technology.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "plastic-core",
@@ -920,7 +1310,37 @@
       "description": "Branch-specific Semester 1 material for Plastic Technology.",
       "accent": "teal",
       "layout": "core-resources",
-      "units": []
+      "units": [],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
+      ]
     },
     {
       "id": "maths-1",
@@ -971,6 +1391,36 @@
             }
           ]
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -1015,6 +1465,36 @@
           "lectureUrl": "https://youtube.com/playlist?list=PL8nVklgTzYNTJbHU9c2k8o9qb255QQMeF&si=iqlfgzcUXaaz4dl6",
           "pyqUrl": null,
           "masterNotesUrl": "/uploads/pdf-f0e2027d33ff50db21f42755.pdf"
+        }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
         }
       ]
     },
@@ -1062,6 +1542,36 @@
           "title": "Unit 5 Resources",
           "lectureUrl": "https://youtube.com/playlist?list=PLWv6RLxuaVQwedgeDeEkWKh3FFKpeZkaJ&si=Z8SNca4CrZ3eiDgN",
           "pyqUrl": null
+        }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
         }
       ]
     },
@@ -1114,6 +1624,36 @@
           "endSemesterQuestionsUrl": null,
           "pyqUrl": null
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -1148,6 +1688,36 @@
           "number": 5,
           "title": "Unit 5 Resources",
           "pyqUrl": null
+        }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
         }
       ]
     },
@@ -1184,6 +1754,36 @@
           "title": "Unit 5 Resources",
           "pyqUrl": null
         }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        }
       ]
     },
     {
@@ -1218,6 +1818,36 @@
           "number": 5,
           "title": "Unit 5 Resources",
           "pyqUrl": null
+        }
+      ],
+      "yearWisePyqs": [
+        {
+          "id": "year-2025",
+          "year": 2025,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2024",
+          "year": 2024,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2023",
+          "year": 2023,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
+        },
+        {
+          "id": "year-2022",
+          "year": 2022,
+          "midSem1Url": "",
+          "midSem2Url": "",
+          "endSemUrl": ""
         }
       ]
     }

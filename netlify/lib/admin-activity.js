@@ -102,6 +102,15 @@ function resourceMap(data) {
     });
   };
   collections.forEach((subject) => {
+    (subject.yearWisePyqs || []).forEach(year => {
+      require("../../public/year-wise-pyqs").papers.forEach(([field, label]) => {
+        if (!year[field]) return;
+        result.set(`${subject.id}|year:${year.id}|${field}`, {
+          value: year[field], label, location: `${subject.name} · Year-Wise-PYQs · ${year.year}`,
+          restore: { subjectId: subject.id, year: { id: year.id, year: year.year }, field, value: year[field] },
+        });
+      });
+    });
     Object.keys(URL_FIELDS).forEach((field) => addScalar(subject, null, field, subject[field], 0));
     addItems(subject, null, "books", subject.books, 0); addItems(subject, null, "lectureItems", subject.lectureItems, 0);
     (subject.units || []).forEach((unit, unitIndex) => {
@@ -166,7 +175,17 @@ function restoreInto(data, change) {
   if (descriptor.subject) return require("./subject-recovery").restoreSubject(data, descriptor);
   const subject = (next.unitCollections || []).find((item) => item.id === descriptor.subjectId);
   if (!subject) throw Object.assign(new Error("The original subject no longer exists."), { statusCode: 409 });
-  const target = findUnit(subject, descriptor.unit);
+  let target;
+  if (descriptor.year) {
+    const yearPyqs = require("../../public/year-wise-pyqs");
+    yearPyqs.ensureSubject(subject);
+    target = subject.yearWisePyqs.find(year => year.id === descriptor.year.id)
+      || subject.yearWisePyqs.find(year => String(year.year) === String(descriptor.year.year));
+    if (!target) {
+      target = yearPyqs.createYear(descriptor.year.year, descriptor.year.id);
+      subject.yearWisePyqs.push(target);
+    }
+  } else target = findUnit(subject, descriptor.unit);
   if (!target) throw Object.assign(new Error("The original section no longer exists."), { statusCode: 409 });
   if (descriptor.item) {
     target[descriptor.field] = Array.isArray(target[descriptor.field]) ? target[descriptor.field] : [];

@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const yearPyqs = require("../../public/year-wise-pyqs");
 
 const ROOT = path.resolve(__dirname, "../..");
 const TARGETS = {
@@ -91,6 +92,23 @@ function validateResources(value) {
   const collections = array(data.unitCollections, "resources.unitCollections");
   const collectionIds = uniqueIds(collections, "resources.unitCollections");
   collections.forEach((collection, collectionIndex) => {
+    yearPyqs.ensureSubject(collection);
+    const years = array(collection.yearWisePyqs, `${collection.id}.yearWisePyqs`);
+    uniqueIds(years, `${collection.id}.yearWisePyqs`);
+    const seenYears = new Set();
+    years.forEach((entry) => {
+      if (!/^\d{4}$/.test(String(entry.year)) || Number(entry.year) < 1900 || Number(entry.year) > 9999) {
+        throw new ValidationError("PYQ year must be a four-digit year from 1900 onwards.");
+      }
+      if (seenYears.has(String(entry.year))) throw new ValidationError(`Duplicate PYQ year ${entry.year} in ${collection.name}.`);
+      seenYears.add(String(entry.year));
+      yearPyqs.papers.forEach(([field, label]) => {
+        optionalText(entry[field], `${collection.id}.${entry.year}.${field}`, 4000);
+        if (entry[field] && entry[field].trim() && !yearPyqs.paperUrl(entry[field])) {
+          throw new ValidationError(`${entry.year} ${label}: use an HTTPS Google Drive or Google Docs link, or leave it empty for Coming soon.`);
+        }
+      });
+    });
     text(collection.name, `resources.unitCollections[${collectionIndex}].name`, { maximum: 160 });
     text(collection.description, `resources.unitCollections[${collectionIndex}].description`, { maximum: 1000 });
     optionalText(collection.accent, `resources.unitCollections[${collectionIndex}].accent`, 40);
@@ -282,7 +300,8 @@ function validateTarget(target, value) {
 function readJson(target) {
   const file = TARGETS[target];
   if (!file) throw new ValidationError("Unknown content target.");
-  return JSON.parse(fs.readFileSync(path.join(ROOT, file), "utf8"));
+  const data = JSON.parse(fs.readFileSync(path.join(ROOT, file), "utf8"));
+  return target === "resources" ? yearPyqs.normalize(data) : data;
 }
 
 module.exports = {

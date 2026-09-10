@@ -62,15 +62,19 @@ async function saveLocal(value) {
 }
 
 async function loadDraft(target, draftId) {
+  const prepare = record => {
+    if (record && target === "resources") require("../../public/year-wise-pyqs").normalize(record.data);
+    return record;
+  };
   if (!TARGETS[target]) return null;
   if (isNetlifyRuntime()) {
     const versioned = await readVersionedDraft(target, draftId);
-    if (versioned || draftId) return versioned && !versioned.deleted ? versioned : null;
+    if (versioned || draftId) return versioned && !versioned.deleted ? prepare(versioned) : null;
     const result = await (await blobStore()).getWithMetadata(`draft:${target}`, { type: "json" });
-    return result && result.data && result.data.data ? result.data : null;
+    return result && result.data && result.data.data ? prepare(result.data) : null;
   }
   const drafts = await loadLocal();
-  return drafts[target] || null;
+  return prepare(drafts[target] || null);
 }
 
 async function saveDraft(target, data, author) {

@@ -562,9 +562,9 @@ function renderBrowser(changeType) {
   const pdfCount = countPdfs(subject);
   elements["course-status"].textContent = collectionCountLabel(subject) + (pdfCount ? " · " + pdfCount + " PYQ sets" : "");
   renderSubjectSyllabus(branch, subject);
-  elements["unit-list"].innerHTML = subject.layout === "core-resources"
+  elements["unit-list"].innerHTML = (subject.layout === "core-resources"
     ? renderCoreResources(subject)
-    : subject.units.map((unit, index) => renderUnit(subject, unit, index)).join("");
+    : subject.units.map((unit, index) => renderUnit(subject, unit, index)).join("")) + renderYearWisePyqs(subject);
 
   elements["unit-list"].querySelectorAll(".unit-row").forEach((details) => {
     details.addEventListener("toggle", () => {
@@ -889,6 +889,24 @@ function renderWorkshopSection(unit, index) {
     '<span class="unit-count">' + (url ? "1 file" : "Coming soon") + '</span>' +
     '<span class="chevron" aria-hidden="true"></span></summary>' +
     '<div class="material-list workshop-material-list">' + renderMaterial(material) + '</div></details>';
+}
+
+function renderYearWisePyqs(subject) {
+  HelpDeskYearPyqs.ensureSubject(subject);
+  const years = [...subject.yearWisePyqs].sort((a, b) => Number(b.year) - Number(a.year));
+  const available = years.reduce((count, year) => count + HelpDeskYearPyqs.papers.filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length, 0);
+  const folders = years.map(year => {
+    const count = HelpDeskYearPyqs.papers.filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length;
+    return renderMaterialFolder({ type: "pyq", title: String(year.year), description: count ? count + " papers available" : "Coming soon",
+      children: HelpDeskYearPyqs.papers.map(([field, title]) => ({ type: "pyq", title,
+        description: HelpDeskYearPyqs.paperUrl(year[field]) ? year.year + " question paper" : "Coming soon",
+        url: HelpDeskYearPyqs.paperUrl(year[field]) })) });
+  }).join("");
+  return '<details class="unit-row year-pyqs-row"><summary><span class="unit-index">PYQ</span>' +
+    '<span class="unit-title"><strong>Year-Wise-PYQs</strong><small>Previous papers by year and examination</small></span>' +
+    '<span class="unit-count">' + (available ? available + " available" : "Coming soon") + '</span>' +
+    '<span class="chevron" aria-hidden="true"></span></summary><div class="material-list">' +
+    (folders || '<p class="muted">Coming soon</p>') + '</div></details>';
 }
 
 function contributorCredit(item) {

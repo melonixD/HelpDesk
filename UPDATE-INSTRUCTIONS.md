@@ -1,4 +1,14 @@
-# Holiday list, Creator photos and Mathematics recovery update
+# Year-Wise-PYQs update
+
+Every subject now includes **Year-Wise-PYQs**, alongside its existing units, labs or core sections. Starting years are **2025, 2024, 2023 and 2022**, each containing **Mid-sem 1, Mid-sem 2 and End-sem**. Empty paper links show **Coming soon**. Existing live Blob content and existing drafts receive these empty folders automatically; their current units and links are preserved.
+
+Open **Admin → Resources → Branch → Semester → Subject → Year-Wise-PYQs**. Expand a year to paste Google Drive links, rename its year or remove it. Use **Add another year** to add future or older years. Make the Drive files viewable by anyone with the link. Use **Save draft → Publish changes** to make the papers live. Main admins retain full access; branch and regular admins retain their existing scope and approval restrictions. As with other subject resources, edits to a shared subject appear wherever that subject is linked.
+
+Year-wise paper links are included in resource activity history and Remove resource everywhere. Removed paper links can be restored from activity history, including when their year was removed. Concurrent changes to different papers merge; conflicting edits to the same paper are rejected for review.
+
+This ZIP needs one code deployment before the feature appears on the live site. Subsequent paper-link changes use the existing Netlify Blobs publish flow and do not trigger a deployment. The local build and 16 focused tests passed, covering default folders, validation, merging, restoration, draft/publish behavior, public rendering and the earlier Mathematics/photo fixes. Live Netlify deployment has not been performed for this ZIP.
+
+## Included earlier updates
 
 Copy the contents of this folder into your existing HelpDesk GitHub checkout, replacing matching files. Do not delete your existing repository. Commit and push once, then allow Netlify to deploy.
 
