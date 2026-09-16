@@ -170,7 +170,7 @@ async function loadResourceData(allowFallback = true) {
       if (!Array.isArray(data.branches) || !Array.isArray(data.unitCollections)) {
         throw new Error(source + " returned incomplete data");
       }
-      return data;
+      return HelpDeskSyllabus.ensure(data);
     } catch (error) {
       lastError = error;
     }
@@ -291,7 +291,6 @@ function formatWhatsapp(value) {
 }
 
 const contactIcons = {
-  whatsapp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5Z"/><path d="M8.3 7.7c.3-.3.7-.2.9.1l1 1.7c.1.3.1.6-.1.8l-.7.7c.5 1.2 1.5 2.2 2.7 2.7l.7-.7c.2-.2.5-.2.8-.1l1.7 1c.3.2.4.6.1.9-.6.8-1.5 1.2-2.5 1-3.3-.7-5.9-3.3-6.6-6.6-.2-1 .2-1.9 1-2.5Z"/></svg>',
   instagram: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.4" cy="6.8" r="1" class="social-icon-dot"/></svg>',
   linkedin: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7.3v.2M11.5 17v-7M11.5 13.1c.8-2 4.5-2.2 4.5 1.1V17"/></svg>',
 };
@@ -303,6 +302,12 @@ function safeHttpsUrl(value) {
   } catch { return ""; }
 }
 
+function whatsappLogoMarkup() {
+  const configured = state.data && state.data.meta && String(state.data.meta.whatsappLogoUrl || "").trim();
+  const source = openableResourceUrl(configured || "/images/whatsapp-logo.png?v=20260911-clean-logo");
+  return '<img src="' + escapeHtml(source) + '" alt="" width="256" height="256" loading="lazy" decoding="async">';
+}
+
 function initialiseContacts() {
   const creators = Array.isArray(state.data.creators) ? state.data.creators : [];
   if (elements["contact-grid"]) {
@@ -312,8 +317,8 @@ function initialiseContacts() {
       const instagram = safeHttpsUrl(creator.instagramUrl);
       const linkedin = safeHttpsUrl(creator.linkedinUrl);
       const whatsapp = digits
-        ? '<a class="contact-method contact-whatsapp" href="https://wa.me/' + escapeHtml(digits) + '" target="_blank" rel="noopener noreferrer"><span class="contact-method-label"><span class="social-icon whatsapp">' + contactIcons.whatsapp + '</span><em>WhatsApp</em></span><span class="contact-method-value">' + escapeHtml(formatWhatsapp(digits)) + ' <i>↗</i></span></a>'
-        : '<div class="contact-method contact-whatsapp"><span class="contact-method-label"><span class="social-icon whatsapp">' + contactIcons.whatsapp + '</span><em>WhatsApp</em></span><span class="contact-method-value">Not added</span></div>';
+        ? '<a class="contact-method contact-whatsapp" href="https://wa.me/' + escapeHtml(digits) + '" target="_blank" rel="noopener noreferrer"><span class="contact-method-label"><span class="social-icon whatsapp">' + whatsappLogoMarkup() + '</span><em>WhatsApp</em></span><span class="contact-method-value">' + escapeHtml(formatWhatsapp(digits)) + ' <i>↗</i></span></a>'
+        : '<div class="contact-method contact-whatsapp"><span class="contact-method-label"><span class="social-icon whatsapp">' + whatsappLogoMarkup() + '</span><em>WhatsApp</em></span><span class="contact-method-value">Not added</span></div>';
       const socials = [
         instagram && '<a class="creator-social-link instagram" href="' + escapeHtml(instagram) + '" target="_blank" rel="noopener noreferrer"><span class="social-icon">' + contactIcons.instagram + '</span><span>Instagram</span><i>↗</i></a>',
         linkedin && '<a class="creator-social-link linkedin" href="' + escapeHtml(linkedin) + '" target="_blank" rel="noopener noreferrer"><span class="social-icon">' + contactIcons.linkedin + '</span><span>LinkedIn</span><i>↗</i></a>',
@@ -355,7 +360,7 @@ function initialiseWhatsappGroup() {
   const action = url
     ? '<a class="whatsapp-group-action" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer"><span>Join group</span><i>↗</i></a>'
     : '<span class="whatsapp-group-status">WhatsApp group<br><strong>Coming soon</strong></span>';
-  card.innerHTML = '<span class="whatsapp-group-logo" aria-hidden="true">' + contactIcons.whatsapp + '</span>' +
+  card.innerHTML = '<span class="whatsapp-group-logo" aria-hidden="true">' + whatsappLogoMarkup() + '</span>' +
     '<div><p class="overline">WHATSAPP COMMUNITY</p><h2 id="whatsapp-group-title">Join the HelpDesk WhatsApp group</h2>' +
     '<p>Get resource updates, important notices and HelpDesk announcements in one place.</p></div>' + action;
 }
@@ -894,11 +899,12 @@ function renderWorkshopSection(unit, index) {
 function renderYearWisePyqs(subject) {
   HelpDeskYearPyqs.ensureSubject(subject);
   const years = [...subject.yearWisePyqs].sort((a, b) => Number(b.year) - Number(a.year));
-  const available = years.reduce((count, year) => count + HelpDeskYearPyqs.papers.filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length, 0);
+  const available = years.reduce((count, year) => count + HelpDeskYearPyqs.activePapers(year).filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length, 0);
   const folders = years.map(year => {
-    const count = HelpDeskYearPyqs.papers.filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length;
+    const activePapers = HelpDeskYearPyqs.activePapers(year);
+    const count = activePapers.filter(([field]) => HelpDeskYearPyqs.paperUrl(year[field])).length;
     return renderMaterialFolder({ type: "pyq", title: String(year.year), description: count ? count + " papers available" : "Coming soon",
-      children: HelpDeskYearPyqs.papers.map(([field, title]) => ({ type: "pyq", title,
+      children: activePapers.map(([field, title]) => ({ type: "pyq", title,
         description: HelpDeskYearPyqs.paperUrl(year[field]) ? year.year + " question paper" : "Coming soon",
         url: HelpDeskYearPyqs.paperUrl(year[field]) })) });
   }).join("");
@@ -967,11 +973,13 @@ function renderSyllabi() {
     const semesters = group.semesters.map((semester, semesterIndex) => {
       return renderSyllabusSemester(semester, group.title, semesterIndex);
     }).join("");
+    const folderCount = group.semesters.length;
+    const folderLabel = folderCount + (folderCount === 1 ? " section" : " sections");
 
     return '<details class="syllabus-group">' +
       '<summary class="group-summary"><span class="group-index">' + twoDigits(groupIndex + 1) + '</span>' +
       '<span class="group-copy"><strong>' + escapeHtml(group.title) + '</strong><small>' +
-      escapeHtml(group.subtitle) + ' · 2 semester folders</small></span><span class="group-count">' +
+      escapeHtml(group.subtitle) + ' · ' + folderLabel + '</small></span><span class="group-count">' +
       countLabel + '</span><span class="group-chevron" aria-hidden="true"></span></summary>' +
       '<div class="group-contents">' + semesters + '</div></details>';
   }).join("");
@@ -996,18 +1004,19 @@ function renderSyllabusSemester(folder, groupTitle, folderIndex) {
   return '<details class="syllabus-folder">' +
     '<summary><span class="folder-index">' + twoDigits(folderIndex + 1) + '</span>' +
     '<span class="folder-copy"><strong>' + escapeHtml(folder.title) + '</strong><small>' +
-    escapeHtml(groupTitle) + ' branches</small></span><span class="folder-count">' + countLabel +
+    escapeHtml(folder.subtitle || (groupTitle + " branches")) + '</small></span><span class="folder-count">' + countLabel +
     '</span><span class="folder-chevron" aria-hidden="true"></span></summary>' +
     '<div class="folder-contents">' + contents + '</div></details>';
 }
 
 function renderSyllabusItem(item, index) {
+  const isAvailable = Boolean(item.available && item.url);
   const content = '<span class="syllabus-index">' + twoDigits(index + 1) + '</span>' +
     '<span><strong>' + escapeHtml(item.title) + '</strong><small>' +
-    (item.available ? "Official syllabus" : "Coming soon") + '</small></span>' +
-    '<i aria-hidden="true">' + (item.available ? "↗" : "—") + '</i>';
-  return item.available
-    ? '<a class="syllabus-item" href="' + escapeHtml(item.url) +
+    (isAvailable ? "Official syllabus" : "Coming soon") + '</small></span>' +
+    '<i aria-hidden="true">' + (isAvailable ? "↗" : "—") + '</i>';
+  return isAvailable
+    ? '<a class="syllabus-item" href="' + escapeHtml(openableResourceUrl(item.url)) +
       '" target="_blank" rel="noopener noreferrer">' + content + '</a>'
     : '<div class="syllabus-item unavailable">' + content + '</div>';
 }

@@ -187,6 +187,13 @@ function restoreInto(data, change) {
     }
   } else target = findUnit(subject, descriptor.unit);
   if (!target) throw Object.assign(new Error("The original section no longer exists."), { statusCode: 409 });
+  if (descriptor.year) {
+    const yearPyqs = require("../../public/year-wise-pyqs");
+    yearPyqs.ensureYear(target);
+    if (yearPyqs.paperFields.includes(descriptor.field) && !target.enabledPapers.includes(descriptor.field)) {
+      target.enabledPapers.push(descriptor.field);
+    }
+  }
   if (descriptor.item) {
     target[descriptor.field] = Array.isArray(target[descriptor.field]) ? target[descriptor.field] : [];
     if (!target[descriptor.field].some((item) => item && item.url === descriptor.item.url)) target[descriptor.field].push(clone(descriptor.item));

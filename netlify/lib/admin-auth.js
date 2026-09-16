@@ -4,6 +4,7 @@ const { findMainPasswordOverride, findRegularAdmin } = require("./admin-state");
 
 const COOKIE_NAME = "helpdesk_admin";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
+const REMEMBERED_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_LIMIT = 5;
 const loginAttempts = new Map();
@@ -62,7 +63,7 @@ function constantTimeEqual(left, right) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function issueSession(identity) {
+function issueSession(identity, rememberMe = false) {
   const signingSecret = secret();
   if (!signingSecret) throw new Error("Admin session is not configured.");
   const now = Math.floor(Date.now() / 1000);
@@ -72,7 +73,7 @@ function issueSession(identity) {
     role: identity.role,
     adminId: identity.id || null,
     iat: now,
-    exp: now + SESSION_TTL_SECONDS,
+    exp: now + (rememberMe ? REMEMBERED_SESSION_TTL_SECONDS : SESSION_TTL_SECONDS),
     csrf: crypto.randomBytes(24).toString("base64url"),
   };
   const encoded = encode(payload);
@@ -115,15 +116,16 @@ function isSecureRequest(event) {
   return !local;
 }
 
-function sessionCookie(token, event) {
-  return [
+function sessionCookie(token, event, rememberMe = false) {
+  const parts = [
     `${COOKIE_NAME}=${encodeURIComponent(token)}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Strict",
-    `Max-Age=${SESSION_TTL_SECONDS}`,
     isSecureRequest(event) ? "Secure" : "",
-  ].filter(Boolean).join("; ");
+  ];
+  if (rememberMe) parts.push(`Max-Age=${REMEMBERED_SESSION_TTL_SECONDS}`);
+  return parts.filter(Boolean).join("; ");
 }
 
 function clearCookie(event) {
@@ -226,7 +228,8 @@ async function authenticate(event) {
     return json(401, { error: "Invalid username or password." });
   }
   loginAttempts.delete(ip);
-  const session = issueSession(identity);
+  const rememberMe = body.rememberMe === true;
+  const session = issueSession(identity, rememberMe);
   return json(200, {
     authenticated: true,
     username: identity.username,
@@ -234,7 +237,7 @@ async function authenticate(event) {
     role: identity.role,
     csrfToken: session.payload.csrf,
     expiresAt: session.payload.exp,
-  }, { "Set-Cookie": sessionCookie(session.token, event) });
+  }, { "Set-Cookie": sessionCookie(session.token, event, rememberMe) });
 }
 
 function configuredMainAdmins() {

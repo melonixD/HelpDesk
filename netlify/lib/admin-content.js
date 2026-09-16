@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const yearPyqs = require("../../public/year-wise-pyqs");
+const syllabusCore = require("../../public/syllabus-core");
 
 const ROOT = path.resolve(__dirname, "../..");
 const TARGETS = {
@@ -58,11 +59,27 @@ function uniqueIds(items, label) {
 
 function validateResources(value) {
   const data = object(value, "resources");
+  syllabusCore.ensure(data);
   const meta = object(data.meta, "resources.meta");
   text(meta.title, "resources.meta.title", { maximum: 100 });
   text(meta.institution, "resources.meta.institution", { maximum: 100 });
   text(meta.description, "resources.meta.description", { maximum: 500 });
   optionalText(meta.whatsappGroupUrl, "resources.meta.whatsappGroupUrl", 2000);
+  optionalText(meta.whatsappLogoUrl, "resources.meta.whatsappLogoUrl", 2000);
+  if (meta.syllabusSchemaVersion !== undefined && (!Number.isInteger(meta.syllabusSchemaVersion) || meta.syllabusSchemaVersion < 1)) {
+    throw new ValidationError("resources.meta.syllabusSchemaVersion must be a positive integer.");
+  }
+  if (meta.whatsappLogoUrl && meta.whatsappLogoUrl.trim()) {
+    const logo = meta.whatsappLogoUrl.trim();
+    let valid = /^\/(?:images|uploads)\/[a-z0-9._/-]+(?:\?[a-z0-9._=&-]+)?$/i.test(logo);
+    if (!valid) {
+      try {
+        const url = new URL(logo);
+        valid = url.protocol === "https:" && !url.username && !url.password;
+      } catch {}
+    }
+    if (!valid) throw new ValidationError("WhatsApp logo must be an uploaded image, a bundled image path or an HTTPS image URL.");
+  }
   optionalText(meta.holidayListUrl, "resources.meta.holidayListUrl", 2000);
   if (meta.holidayListUrl && meta.holidayListUrl.trim()) {
     let valid = false;
@@ -97,6 +114,13 @@ function validateResources(value) {
     uniqueIds(years, `${collection.id}.yearWisePyqs`);
     const seenYears = new Set();
     years.forEach((entry) => {
+      yearPyqs.ensureYear(entry);
+      array(entry.enabledPapers, `${collection.id}.${entry.year}.enabledPapers`);
+      const invalidPaper = entry.enabledPapers.find(field => !yearPyqs.paperFields.includes(field));
+      if (invalidPaper) throw new ValidationError(`${collection.name} ${entry.year} contains an unsupported paper section.`);
+      if (new Set(entry.enabledPapers).size !== entry.enabledPapers.length) {
+        throw new ValidationError(`${collection.name} ${entry.year} contains a duplicate paper section.`);
+      }
       if (!/^\d{4}$/.test(String(entry.year)) || Number(entry.year) < 1900 || Number(entry.year) > 9999) {
         throw new ValidationError("PYQ year must be a four-digit year from 1900 onwards.");
       }
@@ -213,6 +237,7 @@ function validateResources(value) {
     uniqueIds(folders, `resources.syllabusGroups[${groupIndex}].semesters`);
     folders.forEach((folder, folderIndex) => {
       text(folder.title, `Syllabus semester title at ${group.id}[${folderIndex}]`, { maximum: 100 });
+      optionalText(folder.subtitle, `Syllabus section subtitle at ${group.id}[${folderIndex}]`, 200);
       array(folder.syllabusIds, `Syllabus ids at ${group.id}[${folderIndex}]`).forEach((id) => {
         if (!syllabusIds.has(id)) throw new ValidationError(`Syllabus folder ${folder.id} references missing file "${id}".`);
       });

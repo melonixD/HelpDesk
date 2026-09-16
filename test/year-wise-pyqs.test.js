@@ -40,6 +40,12 @@ test("new years validate and duplicate years or unsafe links are rejected", () =
   const rows = data.unitCollections[0].yearWisePyqs;
   rows.push(years.createYear(2026)); rows[0].midSem1Url = url;
   validateResources(data);
+  rows[0].enabledPapers = ["midSem1Url", "endSemUrl"];
+  validateResources(data);
+  assert.deepEqual(years.activePapers(rows[0]).map(([field]) => field), ["midSem1Url", "endSemUrl"]);
+  rows[0].enabledPapers.push("unknownPaper");
+  assert.throws(() => validateResources(data), /unsupported paper section/);
+  rows[0].enabledPapers.pop();
   rows[0].midSem1Url = "javascript:alert(1)";
   assert.throws(() => validateResources(data), /HTTPS Google Drive/);
   rows[0].midSem1Url = url; rows.push(years.createYear(2026, "another-id"));
@@ -66,6 +72,21 @@ test("deleting a year's papers records activity and restores the missing year", 
   assert.match(removed.location, /Year-Wise-PYQs/);
   const restored = restoreInto(after, removed);
   assert.equal(restored.unitCollections[0].yearWisePyqs.find(year => year.year === 2025).midSem1Url, url);
+});
+
+test("restoring a removed paper link also restores its exam section", () => {
+  const before = years.normalize(fresh());
+  const year = before.unitCollections[0].yearWisePyqs[0];
+  year.midSem2Url = url;
+  const after = structuredClone(before);
+  const changedYear = after.unitCollections[0].yearWisePyqs[0];
+  changedYear.enabledPapers = changedYear.enabledPapers.filter(field => field !== "midSem2Url");
+  changedYear.midSem2Url = "";
+  const removed = resourceChanges(before, after).find(change => change.restore && change.restore.field === "midSem2Url");
+  const restored = restoreInto(after, removed);
+  const restoredYear = restored.unitCollections[0].yearWisePyqs[0];
+  assert.equal(restoredYear.midSem2Url, url);
+  assert.ok(restoredYear.enabledPapers.includes("midSem2Url"));
 });
 
 test("saved paper links stay private until publish, then survive a later publication", async () => {
@@ -99,5 +120,19 @@ test("public renderer shows nested years and Coming soon for all layouts", () =>
     assert.ok(!html.includes("<a "));
     subject.yearWisePyqs[0].midSem1Url = url;
     assert.ok(context.renderYearWisePyqs(subject).includes(`href="${url}"`));
+    subject.yearWisePyqs.forEach(year => { year.enabledPapers = ["midSem1Url", "endSemUrl"]; });
+    const withoutMid2 = context.renderYearWisePyqs(subject);
+    assert.ok(!withoutMid2.includes("Mid-sem 2"));
+    assert.ok(withoutMid2.includes("Mid-sem 1"));
   }
+});
+
+test("admin offers per-paper removal and re-adding controls", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../public/admin/admin.js"), "utf8");
+  const login = fs.readFileSync(path.join(__dirname, "../public/admin/index.html"), "utf8");
+  assert.match(source, /data-remove-pyq-paper/);
+  assert.match(source, /data-add-pyq-paper/);
+  assert.match(source, /year\.enabledPapers = year\.enabledPapers\.filter/);
+  assert.match(login, /id="login-remember"/);
+  assert.match(source, /rememberMe: \$\("#login-remember"\)\.checked/);
 });

@@ -1463,8 +1463,8 @@ button.material-item {
 
 .social-icon.whatsapp,
 .whatsapp-group-logo {
-  background: #25d366;
-  color: #ffffff;
+  overflow: hidden;
+  background: transparent;
 }
 
 .social-icon svg,
@@ -1476,6 +1476,18 @@ button.material-item {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.social-icon.whatsapp img,
+.whatsapp-group-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.social-icon.whatsapp {
+  border-radius: 50%;
 }
 
 .creator-social-links {
@@ -1528,12 +1540,7 @@ button.material-item {
   width: 76px;
   height: 76px;
   place-items: center;
-  border-radius: 22px;
-}
-
-.whatsapp-group-logo svg {
-  width: 44px;
-  height: 44px;
+  border-radius: 50%;
 }
 
 .whatsapp-group-card .overline {
@@ -1594,12 +1601,7 @@ button.material-item {
   .whatsapp-group-logo {
     width: 56px;
     height: 56px;
-    border-radius: 17px;
-  }
-
-  .whatsapp-group-logo svg {
-    width: 32px;
-    height: 32px;
+    border-radius: 50%;
   }
 
   .whatsapp-group-status,

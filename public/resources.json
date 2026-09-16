@@ -3,6 +3,8 @@
     "title": "HelpDesk",
     "institution": "HBTU",
     "description": "One organised place for first-year syllabi, lectures, notes and previous-year questions.",
+    "whatsappLogoUrl": "/images/whatsapp-logo.png",
+    "syllabusSchemaVersion": 2,
     "creators": [
       "Akshat Shukla",
       "Priyanshu Dixit"
@@ -360,8 +362,7 @@
             "bet",
             "pc",
             "ees",
-            "workshop",
-            "food-tech"
+            "workshop"
           ]
         },
         {
@@ -1882,8 +1883,7 @@
             "bem",
             "ees",
             "bet",
-            "workshop",
-            "food-tech"
+            "workshop"
           ]
         }
       ]
@@ -1919,6 +1919,21 @@
             "uhv",
             "pps",
             "etw"
+          ]
+        },
+        {
+          "id": "technology-core",
+          "title": "Core",
+          "subtitle": "Branch-specific technology core syllabi",
+          "syllabusIds": [
+            "biochemical-core",
+            "biotechnology-core",
+            "chemical-core",
+            "food-tech",
+            "leather-core",
+            "oil-core",
+            "paint-core",
+            "plastic-core"
           ]
         }
       ]
@@ -1966,6 +1981,48 @@
       "title": "Food Technology Core",
       "available": true,
       "url": "https://drive.google.com/file/d/1BpGbZsCugaMlFYwwagkOjrB5Cuxs1PH-/view?usp=drive_link"
+    },
+    {
+      "id": "biochemical-core",
+      "title": "Biochemical Engineering Core",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "biotechnology-core",
+      "title": "Biotechnology Core",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "chemical-core",
+      "title": "Chemical Engineering Core",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "leather-core",
+      "title": "Leather Technology Core",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "oil-core",
+      "title": "Oil Technology Core",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "paint-core",
+      "title": "Paint Technology Core",
+      "available": false,
+      "url": null
+    },
+    {
+      "id": "plastic-core",
+      "title": "Plastic Technology Core",
+      "available": false,
+      "url": null
     },
     {
       "id": "maths-1",
