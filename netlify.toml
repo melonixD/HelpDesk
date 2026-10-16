@@ -35,6 +35,18 @@
   force = true
 
 [[redirects]]
+  from = "/api/practice/report"
+  to = "/.netlify/functions/practice-report"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/practice/questions"
+  to = "/.netlify/functions/practice-questions"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/practice/generate"
   to = "/.netlify/functions/practice-generate"
   status = 200
@@ -191,6 +203,21 @@
   for = "/*.json"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/practice-answers/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/practice-assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/resources/pyqs/*"

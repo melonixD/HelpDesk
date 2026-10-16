@@ -16,9 +16,9 @@ exports.handler = async (event) => {
     const contributor = context.admin;
     const drafts = main ? await draftDirectory() : {};
     const resourceDraft = await loadDraft("resources");
-    const [placementDraft, noticeDraft, scholarshipDraft] = main
-      ? await Promise.all(["placements", "notices", "scholarships"].map(loadDraft))
-      : [null, null, null];
+    const [placementDraft, noticeDraft, scholarshipDraft, practiceDraft] = main
+      ? await Promise.all(["placements", "notices", "scholarships", "practice"].map(loadDraft))
+      : [null, null, null, null];
     const resources = resourceDraft
       ? require("../lib/subject-recovery").recoverMaths(resourceDraft.data, resourceDraft.updatedAt)
       : liveResources;
@@ -29,6 +29,8 @@ exports.handler = async (event) => {
         basePublishedVersion: published.resources ? published.resources.version : (liveResourceRecord ? liveResourceRecord.version : null),
       },
       ...(main ? {
+        practice: { baseDraftId: practiceDraft ? practiceDraft.draftId : null,
+          basePublishedVersion: published.practice ? published.practice.version : null },
         placements: { baseDraftId: placementDraft ? placementDraft.draftId : null,
           basePublishedVersion: published.placements ? published.placements.version : null },
         notices: { baseDraftId: noticeDraft ? noticeDraft.draftId : null,
@@ -48,6 +50,7 @@ exports.handler = async (event) => {
       placements: main ? (placementDraft ? placementDraft.data : await loadPublished("placements")) : null,
       notices: main ? (noticeDraft ? noticeDraft.data : await loadPublished("notices")) : null,
       scholarships: main ? (scholarshipDraft ? scholarshipDraft.data : await loadPublished("scholarships")) : null,
+      practice: main ? (practiceDraft ? practiceDraft.data : await loadPublished("practice")) : null,
       drafts,
       published,
       baselines,

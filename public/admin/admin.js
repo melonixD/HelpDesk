@@ -48,6 +48,7 @@
     resources: ["Content", "Resources"], syllabus: ["Academics", "Syllabus Citadel"], meta: ["Website", "Site details"], creators: ["People", "Creators"],
     placements: ["Outcomes", "Placements"], notices: ["Updates", "Notices"], scholarships: ["Funding", "Scholarships"], management: ["Security", "Access & approvals"],
     community: ["Community", "Contributor leaderboard"], profile: ["Account", "My profile"], activity: ["Safety", "Admin activity"],
+    practice: ["Academics", "Practice question bank"],
   };
 
   function roleLabel(role) {
@@ -116,7 +117,7 @@
 
   async function loadDashboard() {
     const payload = await request("/api/admin/data", { method: "GET" });
-    state.data = { resources: HelpDeskSyllabus.ensure(payload.resources), placements: payload.placements, notices: payload.notices, scholarships: payload.scholarships };
+    state.data = { resources: HelpDeskSyllabus.ensure(payload.resources), placements: payload.placements, notices: payload.notices, scholarships: payload.scholarships, practice: payload.practice };
     state.role = payload.role; state.user = payload.user; state.permissions = payload.permissions || [];
     state.profile = payload.profile || { photoUrl: "" }; state.community = payload.community || []; state.coins = payload.coins || 0;
     state.history = payload.history || {}; state.drafts = payload.drafts || {}; state.published = payload.published || {}; state.baselines = payload.baselines || {}; state.activity = null; state.csrf = payload.csrfToken || state.csrf;
@@ -329,6 +330,7 @@
     else if (state.section === "creators") renderCreators();
     else if (state.section === "placements") renderPlacements();
     else if (state.section === "scholarships") renderScholarships();
+    else if (state.section === "practice") renderQuestionBank();
     else if (state.section === "management") renderManagement();
     else if (state.section === "activity") renderActivity();
     else if (state.section === "community") renderCommunity();
@@ -906,6 +908,66 @@
 
   function scholarshipFields(item, base) {
     return `${input("Title",`${base}.title`,item.title,{full:true})}${input("Organization",`${base}.organization`,item.organization)}${input("Category",`${base}.category`,item.category)}${input("Description",`${base}.description`,item.description,{type:"textarea",full:true})}${input("Deadline guidance",`${base}.deadline`,item.deadline,{full:true})}${urlInput("Official URL",`${base}.url`,item.url)}<label class="field"><span>Mark as new</span><select data-scholarship-new="${escape(base)}"><option value="true" ${item.isNew?"selected":""}>Yes</option><option value="false" ${!item.isNew?"selected":""}>No</option></select></label>`;
+  }
+
+  function renderQuestionBank() {
+    const bank = state.data.practice;
+    const subjects = HelpDeskBankModel.practiceResources(bank,state.data.resources).unitCollections;
+    const search = state.bankSearch || "";
+    const matches = bank.questions.filter(q => (q.question+" "+q.chapter+" "+q.subjectId).toLowerCase().includes(search.toLowerCase()));
+    const page = Math.min(state.bankPage || 0, Math.max(0,Math.ceil(matches.length/25)-1));state.bankPage=page;
+    const subjectNames=new Map(subjects.map(s=>[s.id,s.name]));
+    editor.innerHTML=`<div class="section-intro"><div><h2>Practice question bank</h2><p class="muted">Add real questions, reviewed answers and chapter tags. Save draft, then Publish changes—no production deployment. AI Practice remains separate.</p></div><button class="primary" id="bank-admin-add">＋ Add question</button></div>
+      <section class="panel form-section"><h3>Student issue reports</h3><p class="muted">Reports come to HelpDesk, not to the source website. Review a reported question before changing its answer.</p><button class="quiet-button" id="bank-admin-reports">Load reports</button><div id="bank-report-list"></div></section>
+      <section class="panel form-section"><h3>Import a question bank</h3><p class="muted">Imports add to your current draft and skip duplicates. Existing questions are never replaced. If an older question bank is already live, add the bundled question collection here, then Save draft and Publish.</p><button class="quiet-button" id="bank-import-bundled">Add bundled questions to draft</button>
+      <label class="field"><span><input type="checkbox" id="bank-import-rights"> I have permission to reuse the questions and written solutions in this file.</span></label><div class="management-actions"><input id="bank-import-file" type="file" accept=".json,application/json" aria-label="Question bank JSON"><button class="quiet-button" id="bank-admin-example">Download import template</button></div><p id="bank-import-report" class="muted" role="status"></p></section>
+      <section class="panel form-section"><label class="field"><span>Find a question (${bank.questions.length} in the bank)</span><input id="bank-admin-search" type="search" value="${escape(search)}" placeholder="Search a question, subject ID or chapter"></label><p class="muted">${matches.length} matches · page ${page+1} of ${Math.max(1,Math.ceil(matches.length/25))}</p>
+      ${matches.slice(page*25,page*25+25).map(q=>`<div class="entry-card"><div class="entry-head"><div><strong>${escape(subjectNames.get(q.subjectId)||q.subjectId)} · ${escape(q.chapter)}</strong><small>${escape(q.id)} · ${q.year||"Year unknown"} · ${escape(q.exam)}</small></div><div class="management-actions"><button class="mini-button" data-bank-edit="${escape(q.id)}">Edit</button><button class="mini-button danger" data-bank-delete="${escape(q.id)}">Remove</button></div></div><p style="white-space:pre-wrap;overflow-wrap:anywhere">${escape(q.question)}</p></div>`).join("")||'<p class="muted">No questions found.</p>'}
+      <div class="management-actions"><button class="quiet-button" id="bank-admin-prev" ${page===0?"disabled":""}>← Previous</button><button class="quiet-button" id="bank-admin-next" ${(page+1)*25>=matches.length?"disabled":""}>Next →</button></div></section>`;
+    $("#bank-admin-add").addEventListener("click",()=>editQuestion());
+    $("#bank-import-bundled").addEventListener("click",async()=>{
+      if(!confirm("Add the authorized question bank bundled with this ZIP to your current draft? Existing questions will remain. Nothing becomes live until Save draft and Publish changes."))return;
+      try{const response=await fetch("/practice.json",{cache:"no-store"});if(!response.ok)throw new Error("Bundled bank could not load.");const incoming=HelpDeskBankModel.validate(await response.json());const imported=HelpDeskBankModel.mergeImport(bank,incoming);if(new TextEncoder().encode(JSON.stringify(imported.bank)).length>2*1024*1024)throw new Error("The combined bank exceeds the 2 MB metadata limit.");state.data.practice=imported.bank;markDirty();renderQuestionBank();$("#bank-import-report").textContent=`${imported.added} bundled questions added; ${imported.skipped} already present. Save draft, then Publish changes.`;}catch(error){toast(error.message);}
+    });
+    $("#bank-admin-reports").addEventListener("click",async()=>{const target=$("#bank-report-list");try{const data=await request("/api/practice/report");target.innerHTML=(data.reports||[]).filter(r=>!r.resolvedAt).map(r=>`<div class="entry-card"><strong>${escape(r.questionId)}</strong><p>${escape(r.message)}</p><small>${escape(r.createdAt)}</small><div class="management-actions"><button class="mini-button" data-edit-report-question="${escape(r.questionId)}">Edit question</button><button class="mini-button" data-resolve-report="${escape(r.id)}">Resolve</button></div></div>`).join("")||'<p class="muted">No unresolved reports.</p>';$$('[data-edit-report-question]',target).forEach(b=>b.addEventListener("click",()=>editQuestion(b.dataset.editReportQuestion)));$$('[data-resolve-report]',target).forEach(b=>b.addEventListener("click",async()=>{try{await request("/api/practice/report",{method:"POST",body:JSON.stringify({action:"resolve",reportId:b.dataset.resolveReport})});b.closest(".entry-card").remove();}catch(error){toast(error.message);}}));}catch(error){target.textContent=error.message;}});
+    $("#bank-admin-search").addEventListener("input",event=>{state.bankSearch=event.target.value;state.bankPage=0;clearTimeout(state.bankTimer);state.bankTimer=setTimeout(()=>{renderQuestionBank();const input=$("#bank-admin-search");input.focus();input.setSelectionRange(input.value.length,input.value.length);},250);});
+    $("#bank-admin-prev").addEventListener("click",()=>{state.bankPage--;renderQuestionBank();});
+    $("#bank-admin-next").addEventListener("click",()=>{state.bankPage++;renderQuestionBank();});
+    $$('[data-bank-edit]').forEach(button=>button.addEventListener("click",()=>editQuestion(button.dataset.bankEdit)));
+    $$('[data-bank-delete]').forEach(button=>button.addEventListener("click",()=>{if(!confirm("Remove this question from the draft? The live bank will stay unchanged until you publish."))return;bank.questions=bank.questions.filter(q=>q.id!==button.dataset.bankDelete);markDirty();renderQuestionBank();}));
+    $("#bank-admin-example").addEventListener("click",()=>{
+      const example={schemaVersion:1,questions:[{id:"q-your-unique-id",subjectId:subjects[0]?.id||"chemistry",unitNumber:"1",chapter:"Your exact chapter or topic",question:"Replace this with a question you have permission to use.",answer:"Add a reviewed solution, or leave empty.",year:2025,exam:"end-sem",marks:5,branchIds:[],sourceTitle:"Your authorized source",sourceUrl:""}]};
+      const url=URL.createObjectURL(new Blob([JSON.stringify(example,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="helpdesk-question-import.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+    $("#bank-import-file").addEventListener("change",async event=>{
+      const file=event.target.files[0],report=$("#bank-import-report");if(!file)return;
+      try {
+        if(!$("#bank-import-rights").checked)throw new Error("Confirm permission to reuse this bank before importing.");
+        if(file.size>2*1024*1024)throw new Error("Import JSON must be under 2 MB; split a larger bank into batches.");
+        const incoming=HelpDeskBankModel.validate(JSON.parse(await file.text()));
+        const imported=HelpDeskBankModel.mergeImport(bank,incoming);
+        const catalogue=HelpDeskBankModel.practiceResources(imported.bank,state.data.resources);const subjectIds=new Set(catalogue.unitCollections.map(s=>s.id));const branchIds=new Set(catalogue.branches.map(b=>b.id));
+        for(const q of incoming.questions){if(!subjectIds.has(q.subjectId))throw new Error(q.id+": unknown HelpDesk subjectId "+q.subjectId);if(q.branchIds.some(id=>!branchIds.has(id)))throw new Error(q.id+": unknown branch ID.");}
+        if(new TextEncoder().encode(JSON.stringify(imported.bank)).length>2*1024*1024)throw new Error("The combined question bank exceeds the current 2 MB document limit.");
+        state.data.practice=imported.bank;markDirty();renderQuestionBank();$("#bank-import-report").textContent=`${imported.added} added, ${imported.skipped} duplicates skipped. Review, Save draft, then Publish changes.`;
+      }catch(error){report.textContent=error.message;event.target.value="";}
+    });
+  }
+
+  async function editQuestion(id) {
+    const bank=state.data.practice,original=bank.questions.find(q=>q.id===id),subjects=HelpDeskBankModel.practiceResources(bank,state.data.resources).unitCollections;
+    if(id&&!original)return toast("This question no longer exists in the current draft.");
+    const q=original?JSON.parse(JSON.stringify(original)):{id:"q-"+crypto.randomUUID().replace(/-/g,""),subjectId:subjects[0]?.id||"chemistry",unitNumber:"1",chapter:"",question:"",answer:"",year:null,exam:"unknown",marks:null,branchIds:[],sourceTitle:"",sourceUrl:""};
+    const source=HelpDeskBankModel.sourceDetails(q);q.sourceTitle=source.title;q.sourceUrl=source.url;
+    if(q.answerUrl&&!q.answer){try{const response=await fetch(q.answerUrl);if(response.ok){const answer=await response.json();HelpDeskBankModel.validate({schemaVersion:1,questions:[{...q,...answer}]});Object.assign(q,answer);}}catch{toast("Original answer could not load. You can still add a corrected answer.");}}
+    const modal=document.createElement("dialog");modal.className="request-modal-card bank-edit-dialog";
+    const choose=(name,options)=>`<label class="field"><span>${escape(name)}</span><select name="${name}">${options.map(([value,title])=>`<option value="${escape(value)}" ${q[name]===value?"selected":""}>${escape(title)}</option>`).join("")}</select></label>`;
+    modal.innerHTML=`<form><p class="eyebrow">QUESTION BANK · DRAFT ONLY</p><h2>${id?"Edit question":"Add question"}</h2><div class="grid">${choose("subjectId",subjects.map(s=>[s.id,s.name]))}<label class="field"><span>Unit number</span><input name="unitNumber" required maxlength="40" value="${escape(q.unitNumber)}"></label><label class="field full"><span>Chapter / topic</span><input name="chapter" required maxlength="200" value="${escape(q.chapter)}"></label><label class="field full"><span>Question</span><textarea name="question" required maxlength="12000" rows="5">${escape(q.question)}</textarea></label><label class="field full"><span>Reviewed answer (optional)</span><textarea name="answer" maxlength="30000" rows="6">${escape(q.answer)}</textarea></label><label class="field"><span>Year (leave blank if unknown)</span><input name="year" type="number" min="1900" max="9999" value="${q.year||""}"></label><label class="field"><span>Marks (leave blank if unknown)</span><input name="marks" type="number" min="0" max="200" step="0.5" value="${q.marks??""}"></label>${choose("exam",HelpDeskBankModel.exams.map(v=>[v,v]))}<label class="field full"><span>Source title</span><input name="sourceTitle" maxlength="200" value="${escape(q.sourceTitle)}"></label><label class="field full"><span>Source URL (HTTPS, bundled PDF or uploaded PDF)</span><input name="sourceUrl" maxlength="2000" value="${escape(q.sourceUrl)}"></label><fieldset class="field full"><legend>Restrict to branches (none selected = every branch with this subject)</legend>${state.data.resources.branches.map(b=>`<label><input type="checkbox" name="branchIds" value="${escape(b.id)}" ${q.branchIds.includes(b.id)?"checked":""}> ${escape(b.name)}</label>`).join("")}</fieldset></div><p data-error class="form-error" hidden></p><div class="management-actions"><button class="primary" type="submit">Apply to draft</button><button class="quiet-button" type="button" data-cancel>Cancel</button></div></form>`;
+    document.body.appendChild(modal);modal.showModal();modal.addEventListener("close",()=>modal.remove());$("[data-cancel]",modal).addEventListener("click",()=>modal.close());
+    $("form",modal).addEventListener("submit",event=>{event.preventDefault();try{const form=new FormData(event.currentTarget);for(const key of ["subjectId","unitNumber","chapter","question","answer","exam","sourceTitle","sourceUrl"])q[key]=String(form.get(key)||"").trim();q.year=form.get("year")===""?null:Number(form.get("year"));q.marks=form.get("marks")===""?null:Number(form.get("marks"));q.branchIds=form.getAll("branchIds");HelpDeskBankModel.validate({schemaVersion:1,questions:[q]});
+      if(original&&(q.unitNumber!==original.unitNumber||q.chapter!==original.chapter)){q.unitNumbers=[q.unitNumber];q.topics=[{unitNumber:q.unitNumber,chapter:q.chapter}];}
+      const duplicate=bank.questions.find(other=>other.id!==q.id&&HelpDeskBankModel.fingerprint(other)===HelpDeskBankModel.fingerprint(q));if(duplicate)throw new Error("This question already exists in this unit: "+duplicate.id);
+      if(original)bank.questions[bank.questions.indexOf(original)]=q;else bank.questions.unshift(q);markDirty();modal.close();renderQuestionBank();}catch(error){const notice=$("[data-error]",modal);notice.hidden=false;notice.textContent=error.message;}});
   }
 
   function renderScholarships() {

@@ -21,6 +21,12 @@ validateResources(resources);
 validatePlacements(placements);
 validateNotices(fallbackNotices);
 validateScholarships(fallbackScholarships);
+require("../public/question-bank-model").validate(require("../data/practice.json"));
+fs.copyFileSync(path.join(root,"data/practice.json"),path.join(root,"public/practice.json"));
+const vendor=path.join(root,"public/vendor");fs.mkdirSync(vendor,{recursive:true});
+for(const [from,to] of [["marked/lib/marked.umd.js","marked.js"],["dompurify/dist/purify.min.js","purify.js"],["katex/dist/katex.min.js","katex.js"],["katex/dist/katex.min.css","katex.css"],["katex/dist/contrib/auto-render.min.js","math-render.js"],["mermaid/dist/mermaid.min.js","mermaid.js"]]) fs.copyFileSync(path.join(root,"node_modules",from),path.join(vendor,to));
+fs.cpSync(path.join(root,"node_modules/katex/dist/fonts"),path.join(vendor,"fonts"),{recursive:true});
+for(const pkg of ["marked","dompurify","katex","mermaid"]){const dir=path.join(root,"node_modules",pkg);const license=fs.readdirSync(dir).find(name=>/^license(?:\.md|\.txt)?$/i.test(name));if(license)fs.copyFileSync(path.join(dir,license),path.join(vendor,pkg+"-LICENSE.txt"));}
 const units = resources.unitCollections.flatMap((subject) => subject.units);
 const pyqUrls = units.map((unit) => unit.pyqUrl).filter(Boolean);
 const practiceKeys = units.map((unit) => unit.practiceKey || unit.pyqUrl).filter(Boolean);

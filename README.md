@@ -1,5 +1,7 @@
 # HelpDesk V20 · Blob-backed live content
 
+This ZIP includes the owner-authorized first-year Backpaper Practice Mode update. Read [PRACTICE-MODE-UPDATE.md](PRACTICE-MODE-UPDATE.md) for the 821-question dataset, local answers/figures, mobile reader, installation instructions and verification limits. It has not been deployed.
+
 HelpDesk is the same branch-first HBTU resource library, prepared for Netlify. The frontend, calculator, focus tools, mobile layout, Syllabus Citadel, PDFs, contacts and resource hierarchy are preserved. The Gemini-powered Unlimited Practice API runs as Netlify Functions, so the API key never reaches the browser.
 
 ## Included

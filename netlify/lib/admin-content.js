@@ -9,6 +9,7 @@ const TARGETS = {
   placements: "data/placements.json",
   notices: "data/notices-fallback.json",
   scholarships: "data/scholarships-fallback.json",
+  practice: "data/practice.json",
 };
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
@@ -319,6 +320,10 @@ function validateTarget(target, value) {
   if (target === "resources") return validateResources(value);
   if (target === "placements") return validatePlacements(value);
   if (target === "notices") return validateNotices(value);
+  if (target === "practice") {
+    try { return require("../../public/question-bank-model").validate(value); }
+    catch (error) { throw new ValidationError(error.message); }
+  }
   return validateScholarships(value);
 }
 

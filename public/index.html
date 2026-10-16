@@ -8,10 +8,13 @@
     <title>HelpDesk · HBTU</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/premium.css?v=20260911-clean-whatsapp-logo" />
+    <link rel="stylesheet" href="/question-bank.css?v=20261014b" />
     <script src="/asset-url.js?v=20260908-photos" defer></script>
     <script src="/year-wise-pyqs.js?v=20260911-pyq-controls" defer></script>
     <script src="/syllabus-core.js?v=20260916-technology-core" defer></script>
     <script src="/app.js?v=20260916-technology-core" defer></script>
+    <script src="/question-bank-model.js?v=20261014b" defer></script>
+    <script src="/question-bank.js?v=20261014b" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#resources">Skip to resources</a>
@@ -26,6 +29,7 @@
         <div class="nav-links">
           <a href="#resources">Library</a>
           <a href="#syllabus">Syllabus</a>
+          <a href="#practice-mode">Practice</a>
           <a href="#help">Help</a>
         </div>
 
@@ -50,6 +54,7 @@
       <nav class="drawer-nav" aria-label="Menu links">
         <a href="#resources">Library <span>↗</span></a>
         <a href="#syllabus">Syllabus <span>↗</span></a>
+        <a href="#practice-mode">Practice Mode <span>↗</span></a>
         <button class="drawer-nav-button" id="practice-open" type="button">Unlimited Practice <span>✨</span></button>
         <button class="drawer-nav-button" id="calc-open" type="button">SGPA &amp; CGPA Calculator <span>Σ</span></button>
         <button class="drawer-nav-button" id="placements-open" type="button">Placements <span>↗</span></button>
@@ -186,6 +191,15 @@
         </div>
       </section>
 
+      <section class="bank-launch shell" id="practice-mode" aria-labelledby="bank-launch-title">
+        <div class="bank-launch-card">
+          <div><p class="overline">YOUR NEXT STUDY SESSION</p><h2 id="bank-launch-title">Practice Mode</h2><p>All your PYQs, one study space. Choose a branch, find a chapter, and work through real exam questions.</p>
+            <div class="bank-launch-tags"><span>Chapter-wise practice</span><span>Year & exam filters</span><span>Saved questions</span></div>
+          </div>
+          <button class="primary-button" type="button" data-bank-open>Explore questions <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+
       <section class="help-section shell" id="help">
         <header class="section-header help-heading">
           <div>
@@ -241,6 +255,16 @@
       </section>
 
     </main>
+
+    <dialog id="bank-dialog" class="bank-dialog" aria-labelledby="bank-title">
+      <header class="bank-header"><div><p class="overline">HELPDESK · QUESTION BANK</p><h2 id="bank-title">Practice Mode</h2></div><button id="bank-close" class="secondary-button" type="button" aria-label="Close practice mode">Close ×</button></header>
+      <div class="bank-body"><form id="bank-filters" class="bank-filters" aria-label="Filter questions"></form>
+        <div class="bank-toolbar"><p id="bank-count" role="status">Choose your study filters.</p><div class="bank-view-tabs" aria-label="Question view"><button type="button" data-bank-view="browse" aria-pressed="true">Browse PYQs</button><button type="button" data-bank-view="session" aria-pressed="false">Practice one by one</button></div></div>
+        <div id="bank-results" class="bank-results" aria-live="polite"></div>
+        <button id="bank-more" type="button" class="secondary-button" hidden>Load more questions</button>
+        <p class="bank-footnote">Original PYQs and AI practice are separate. Missing years, marks and solutions are shown as unknown—not guessed. Saved and completed questions stay on this device.</p>
+      </div>
+    </dialog>
 
     <section class="practice-hub" id="practice-hub" role="dialog" aria-modal="true" aria-labelledby="practice-hub-heading">
       <header class="practice-hub-header">

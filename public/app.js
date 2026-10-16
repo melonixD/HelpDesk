@@ -768,7 +768,7 @@ function renderUnit(subject, unit, index) {
       '<span class="unit-title"><strong>' + escapeHtml(labName) + '</strong><small>' + escapeHtml(unit.title) + '</small>' + contributorCredit(unit) + '</span>' +
       '<span class="unit-count">' + (ready ? ready + ' available' : 'Coming soon') + '</span>' +
       '<span class="chevron" aria-hidden="true"></span></summary>' +
-      '<div class="material-list">' + labMaterials.map((material) => material.children ? renderMaterialFolder(material) : renderMaterial(material)).join("") + '</div></details>';
+      '<div class="material-list">' + labMaterials.map((material) => material.children ? renderMaterialFolder(material) : renderMaterial(material)).join("") + renderChapterPractice(subject, unit) + '</div></details>';
   }
 
   const materials = [
@@ -805,7 +805,7 @@ function renderUnit(subject, unit, index) {
     },
     {
       type: "practice",
-      title: "Practice Mode",
+      title: "AI Practice",
       description: practiceKey ? "AI-generated questions from this unit's PYQs" : "Needs PYQs first",
       url: practiceKey,
       subject: subject.name,
@@ -821,7 +821,11 @@ function renderUnit(subject, unit, index) {
     '<span class="unit-count">' + ready + ' available</span><span class="chevron" aria-hidden="true"></span></summary>' +
     '<div class="material-list">' + materials.map((material) =>
       material.children ? renderMaterialFolder(material) : renderMaterial(material)
-    ).join("") + '</div></details>';
+    ).join("") + renderChapterPractice(subject, unit) + '</div></details>';
+}
+
+function renderChapterPractice(subject, unit) {
+  return '<button type="button" class="material-item chapter-practice-trigger" data-bank-subject="' + escapeHtml(subject.id) + '" data-bank-unit="' + escapeHtml(unit.number) + '"><span class="material-icon">' + materialIcons.pyq + '</span><span class="material-copy"><strong>Practice this chapter</strong><small>Browse real PYQs · save questions · track your revision</small></span><span class="material-action">Practice →</span></button>';
 }
 
 function renderCoreResources(subject) {

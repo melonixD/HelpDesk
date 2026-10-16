@@ -9,7 +9,7 @@ const LOCAL_PATH = process.env.ADMIN_STATE_PATH || path.resolve(__dirname, "../.
 let localQueue = Promise.resolve();
 
 function emptyState() {
-  return { version: 3, registrations: [], regularAdmins: [], changeRequests: [], profiles: [], mainPasswordOverrides: [] };
+  return { version: 3, registrations: [], regularAdmins: [], changeRequests: [], profiles: [], mainPasswordOverrides: [], practiceReports: [] };
 }
 
 function normalize(value) {
@@ -21,6 +21,7 @@ function normalize(value) {
     changeRequests: Array.isArray(state.changeRequests) ? state.changeRequests : [],
     profiles: Array.isArray(state.profiles) ? state.profiles : [],
     mainPasswordOverrides: Array.isArray(state.mainPasswordOverrides) ? state.mainPasswordOverrides : [],
+    practiceReports: Array.isArray(state.practiceReports) ? state.practiceReports : [],
   };
 }
 

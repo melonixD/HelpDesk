@@ -1,0 +1,150 @@
+{
+  "collectedAt": "2026-10-14T17:03:03.177Z",
+  "source": "https://www.backpaper.in/",
+  "scope": "All public catalog branches, semesters 1 and 2 only",
+  "coverage": [
+    {
+      "branch": "CE",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "CE",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "CHE",
+      "semester": 1,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "CHE",
+      "semester": 2,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "CSE",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "CSE",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "CSE_AI_ML",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "CSE_AI_ML",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "EE",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "EE",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "ET",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "ET",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "IT",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "IT",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "ME",
+      "semester": 1,
+      "total": 416,
+      "received": 416
+    },
+    {
+      "branch": "ME",
+      "semester": 2,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "OTHER",
+      "semester": 1,
+      "total": 405,
+      "received": 405
+    },
+    {
+      "branch": "OTHER",
+      "semester": 2,
+      "total": 416,
+      "received": 416
+    }
+  ],
+  "uniqueQuestions": 821,
+  "subjects": {
+    "pps": 10,
+    "uhv": 5,
+    "etw": 5,
+    "engineering-graphics": 70,
+    "bee": 108,
+    "maths-1": 89,
+    "engineering-physics": 129,
+    "ees": 5,
+    "intro-technology": 126,
+    "chemistry": 88,
+    "bet": 85,
+    "pc": 43,
+    "bem": 58
+  },
+  "answersStored": 821,
+  "missingAnswers": [],
+  "figuresStored": 97,
+  "missingFigures": [
+    {
+      "id": "bp-337e2c6a847357bc41e5b337",
+      "filename": "763020295980-4-(734)-(678)-(508)-(784).jpeg"
+    },
+    {
+      "id": "bp-5a5037b0f32b6059f1a0de33",
+      "filename": "763020295980-3-(37)-(240)-(676)-(258).jpeg"
+    },
+    {
+      "id": "bp-c590623bc2fc633721284b2b",
+      "filename": "763020295980-3-(236)-(218)-(742)-(399).jpeg"
+    }
+  ],
+  "metadataBytes": 683504,
+  "note": "Source Mid-Sem labels are not guessed as Mid-sem 1 or 2. AI/source solutions are not independently verified. Practice-only Intro Technology subject does not alter Resources."
+}

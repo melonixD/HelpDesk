@@ -20,6 +20,8 @@ const adminChangeRequest = require("./netlify/functions/admin-change-request").h
 const adminScopedSave = require("./netlify/functions/admin-scoped-save").handler;
 const adminProfile = require("./netlify/functions/admin-profile").handler;
 const adminPassword = require("./netlify/functions/admin-password").handler;
+const practiceQuestions = require("./netlify/functions/practice-questions").handler;
+const practiceReport = require("./netlify/functions/practice-report").handler;
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
@@ -174,6 +176,16 @@ async function handleRequest(req, res) {
       isBase64Encoded: false,
     });
     return relayFunctionResponse(res, result);
+  }
+
+  if (url.pathname === "/api/practice/questions") {
+    const body=req.method==="POST"?await readBody(req):"";
+    return relayFunctionResponse(res, await practiceQuestions({ httpMethod: req.method, body, queryStringParameters: Object.fromEntries(url.searchParams) }));
+  }
+
+  if(url.pathname==="/api/practice/report") {
+    const body=req.method==="POST"?await readBody(req):"";
+    return relayFunctionResponse(res,await practiceReport({httpMethod:req.method,headers:req.headers,body}));
   }
 
   if (url.pathname === "/api/notices") {
