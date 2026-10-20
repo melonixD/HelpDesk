@@ -330,7 +330,7 @@ test("spa fallback serves the website", async () => {
   const response = await fetch(`${baseUrl}/any-page`);
   const html = await response.text();
   assert.equal(response.status, 200);
-  assert.match(html, /<title>HelpDesk · HBTU<\/title>/);
+  assert.match(html, /<title>HBTU PYQs, Notes &amp; Lectures \| HelpDesk<\/title>/);
   assert.match(html, /class="resource-browser"/);
   assert.match(html, /id="branch-list"/);
   assert.match(html, /id="semester-list"/);

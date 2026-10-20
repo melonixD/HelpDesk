@@ -251,7 +251,7 @@ function applySiteMeta() {
   const creatorNames = Array.isArray(meta.creators) && meta.creators.length
     ? meta.creators
     : (state.data.creators || []).map((creator) => creator.name);
-  document.title = title + " · " + institution;
+  document.title = institution + " PYQs, Notes & Lectures | " + title;
   if (elements["brand-name"]) elements["brand-name"].textContent = title;
   if (elements["hero-institution"]) elements["hero-institution"].textContent = institution + " KANPUR";
   if (elements["hero-copy"] && meta.description) elements["hero-copy"].textContent = meta.description;
@@ -1132,7 +1132,7 @@ function updateTimer() {
   const institution = state.data && state.data.meta ? state.data.meta.institution || "HBTU" : "HBTU";
   document.title = timerInterval
     ? elements["timer-value"].textContent + " · " + title
-    : title + " · " + institution;
+    : institution + " PYQs, Notes & Lectures | " + title;
 }
 
 /* ---------- Unlimited Practice Hub ---------- */

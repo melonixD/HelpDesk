@@ -129,10 +129,10 @@
     more.hidden=view!=="browse"||!hasMore;
     renderMath();
   }
-  async function open(subjectId,unitNumber) {
+  async function open(subjectId,unitNumber,allBranches=false) {
     returnFocus=document.activeElement;dialog.showModal();results.innerHTML='<p class="bank-loading">Opening your study space…</p>';form.innerHTML="";
     try {
-      [resources]=await Promise.all([ensureResourceData(),ensureRenderer()]);try{const response=await fetch("/api/practice/questions?catalog=1",{cache:"no-store"});if(!response.ok)throw new Error("Catalogue unavailable");const data=await response.json();if(!Array.isArray(data.catalog?.branches)||!Array.isArray(data.catalog?.unitCollections))throw new Error("Invalid catalogue");resources={...resources,...data.catalog};}catch{const response=await fetch("/practice.json",{cache:"no-store"});if(response.ok){fallback=HelpDeskBankModel.validate(await response.json());resources=HelpDeskBankModel.practiceResources(fallback,resources);}}if(!dialog.open)return;filter={branch:state.branch||"all",semester:state.semester||"all",subject:subjectId||"all",unit:unitNumber||"all",chapter:"all",year:"all",exam:"all",marks:"all",q:"",status:"all"};
+      [resources]=await Promise.all([ensureResourceData(),ensureRenderer()]);try{const response=await fetch("/api/practice/questions?catalog=1",{cache:"no-store"});if(!response.ok)throw new Error("Catalogue unavailable");const data=await response.json();if(!Array.isArray(data.catalog?.branches)||!Array.isArray(data.catalog?.unitCollections))throw new Error("Invalid catalogue");resources={...resources,...data.catalog};}catch{const response=await fetch("/practice.json",{cache:"no-store"});if(response.ok){fallback=HelpDeskBankModel.validate(await response.json());resources=HelpDeskBankModel.practiceResources(fallback,resources);}}if(!dialog.open)return;filter={branch:allBranches?"all":(state.branch||"all"),semester:allBranches?"all":(state.semester||"all"),subject:subjectId||"all",unit:unitNumber||"all",chapter:"all",year:"all",exam:"all",marks:"all",q:"",status:"all"};
       view=subjectId?"session":"browse";seed=String(Date.now());fallback=null;renderFilters();await load();
     }catch{results.innerHTML='<div class="bank-empty"><h3>The library could not load</h3><p>Close this panel and refresh the page.</p></div>';}
   }
@@ -141,6 +141,10 @@
     if(generic||chapter){event.preventDefault();if(!dialog.open)open(chapter?.dataset.bankSubject,chapter?.dataset.bankUnit);}
   });
   document.getElementById("bank-close").addEventListener("click",()=>dialog.close());
+  document.addEventListener("DOMContentLoaded",()=>{
+    const subject=new URLSearchParams(location.search).get('practice');
+    if(subject && /^[a-z0-9][a-z0-9-]{0,79}$/.test(subject) && !dialog.open)open(subject==='all'?null:subject,null,true);
+  });
   dialog.addEventListener("close",()=>{controller?.abort();clearTimeout(searchTimer);returnFocus?.focus();});
   form.addEventListener("submit",e=>e.preventDefault());
   form.addEventListener("toggle",event=>{if(event.target.classList?.contains("bank-advanced"))advancedOpen=event.target.open;},true);

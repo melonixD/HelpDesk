@@ -42,7 +42,7 @@ const missingPdfs = localPracticeSources.filter((url) => !fs.existsSync(publicPa
 const missingNotes = noteUrls.filter((url) => !fs.existsSync(publicPath(url)));
 const missingWorkshopFiles = workshopUrls.filter((url) => !fs.existsSync(publicPath(url)));
 
-if (!index.includes("<title>HelpDesk · HBTU</title>")) {
+if (!index.includes("HBTU PYQs, Notes &amp; Lectures | HelpDesk</title>")) {
   throw new Error("public/index.html is missing the HelpDesk page title.");
 }
 if (!Array.isArray(resources.branches) || !resources.branches.length) {
@@ -72,6 +72,7 @@ fs.copyFileSync(placementsPath, path.join(root, "public", "placements.json"));
 fs.copyFileSync(fallbackNoticesPath, path.join(root, "public", "notices-fallback.json"));
 fs.copyFileSync(fallbackScholarshipsPath, path.join(root, "public", "scholarships-fallback.json"));
 const externalPyqCount = pyqUrls.filter((url) => /^https?:\/\//.test(url)).length;
+require('./prepare-seo').prepareSeo();
 console.log(
   `HelpDesk Netlify build ready: ${resources.branches.length} branches, ` +
   `${practiceKeys.length} practice units, ${externalPyqCount} external PYQ links.`

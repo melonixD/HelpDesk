@@ -17,6 +17,24 @@
   schedule = "30 18 * * *"
 
 [[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/search-pages?kind=sitemap"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/hbtu-pyqs/"
+  to = "/.netlify/functions/search-pages?kind=hub"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/hbtu-pyqs/*"
+  to = "/.netlify/functions/search-pages?subject=:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/health"
   to = "/.netlify/functions/health"
   status = 200
@@ -188,6 +206,16 @@
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate"
     X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/practice-answers/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
 
 [[headers]]
   for = "/*.js"

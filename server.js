@@ -22,6 +22,7 @@ const adminProfile = require("./netlify/functions/admin-profile").handler;
 const adminPassword = require("./netlify/functions/admin-password").handler;
 const practiceQuestions = require("./netlify/functions/practice-questions").handler;
 const practiceReport = require("./netlify/functions/practice-report").handler;
+const searchPages = require("./netlify/functions/search-pages").handler;
 
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
@@ -32,6 +33,7 @@ const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
   ".pdf": "application/pdf",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -147,6 +149,10 @@ function sendFile(req, res, filePath) {
 async function handleRequest(req, res) {
   setSecurityHeaders(res);
   const url = new URL(req.url, "http://localhost");
+  if (url.pathname === '/sitemap.xml' || url.pathname === '/hbtu-pyqs' || url.pathname.startsWith('/hbtu-pyqs/')) {
+    if (url.pathname === '/hbtu-pyqs') { res.writeHead(301,{Location:'/hbtu-pyqs/'});return res.end(); }
+    return relayFunctionResponse(res,await searchPages({httpMethod:req.method,queryStringParameters:url.pathname === '/sitemap.xml' ? {kind:'sitemap'} : {subject:url.pathname.slice('/hbtu-pyqs/'.length)}}));
+  }
 
   if (url.pathname === "/api/health") {
     if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed." }, { Allow: "GET" });
