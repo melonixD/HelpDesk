@@ -73,6 +73,27 @@ test('local HTTP routes serve text robots, XML sitemap and HTML subject pages',a
     assert.equal((await fetch(base+'/hbtu-pyqs/not-a-subject/')).status,404);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
+test('Netlify rewrites work without injected query parameters',async()=>{
+  const sitemapHandler=require('../netlify/functions/search-sitemap').handler;
+  for(const event of [
+    {path:'/sitemap.xml'},
+    {path:'/.netlify/functions/search-pages',rawUrl:'https://helpdeskhbtu.netlify.app/sitemap.xml'},
+  ]){
+    const result=await handler({httpMethod:'GET',...event});
+    assert.match(result.headers['Content-Type'],/application\/xml/);assert.match(result.body,/<urlset/);
+  }
+  const direct=await sitemapHandler({httpMethod:'GET',path:'/.netlify/functions/search-sitemap'});
+  assert.match(direct.headers['Content-Type'],/application\/xml/);
+  for(const event of [
+    {path:'/hbtu-pyqs/chemistry/'},
+    {path:'/.netlify/functions/search-pages/chemistry/'},
+    {path:'/.netlify/functions/search-pages',rawUrl:'https://helpdeskhbtu.netlify.app/hbtu-pyqs/chemistry/'},
+  ]){
+    const result=await handler({httpMethod:'GET',...event});
+    assert.equal(result.statusCode,200);assert.match(result.body,/<h1>HBTU Engineering Chemistry PYQs<\/h1>/);
+  }
+  assert.equal((await handler({httpMethod:'GET',path:'/hbtu-pyqs/no-such-subject/'})).statusCode,404);
+});
 test('production origin and Search Console token are configurable and validated',()=>{
   const oldUrl=process.env.HELPDESK_PUBLIC_URL,oldToken=process.env.GOOGLE_SITE_VERIFICATION;
   try{

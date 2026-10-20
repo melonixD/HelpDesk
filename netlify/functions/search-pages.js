@@ -8,8 +8,13 @@ exports.handler = async event => {
   try {
     connectNetlifyBlobs(event);
     const [resources,bank] = await Promise.all([loadPublished('resources'),loadPublished('practice')]);
-    const params = event.queryStringParameters || {}, isSitemap = params.kind === 'sitemap';
-    const id = params.subject ? String(params.subject).replace(/\/$/,'') : '';
+    const params = event.queryStringParameters || {};
+    // Netlify does not reliably expose query parameters injected by rewrites.
+    // Resolve the original URL or function path as well as explicit parameters.
+    const pathname = event.rawUrl ? new URL(event.rawUrl).pathname : event.path || '';
+    const route = pathname.match(/^\/(?:hbtu-pyqs|\.netlify\/functions\/search-pages)\/(.*)$/);
+    const isSitemap = pathname === '/sitemap.xml' || params.kind === 'sitemap';
+    const id = String(route ? route[1] : params.subject || '').replace(/\/$/,'');
     if (id && !/^[a-z0-9][a-z0-9-]{0,79}$/.test(id)) return {statusCode:404,headers:{...headers,'X-Robots-Tag':'noindex'},body:'Subject not found.'};
     const body = isSitemap ? seo.sitemap(resources,bank) : seo.render(resources,bank,id);
     if (body === null) return {statusCode:404,headers:{...headers,'X-Robots-Tag':'noindex'},body:'Subject not found. <a href="/hbtu-pyqs/">Browse HBTU PYQs</a>'};

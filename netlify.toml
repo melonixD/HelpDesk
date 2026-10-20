@@ -18,19 +18,19 @@
 
 [[redirects]]
   from = "/sitemap.xml"
-  to = "/.netlify/functions/search-pages?kind=sitemap"
+  to = "/.netlify/functions/search-sitemap"
   status = 200
   force = true
 
 [[redirects]]
   from = "/hbtu-pyqs/"
-  to = "/.netlify/functions/search-pages?kind=hub"
+  to = "/.netlify/functions/search-pages"
   status = 200
   force = true
 
 [[redirects]]
   from = "/hbtu-pyqs/*"
-  to = "/.netlify/functions/search-pages?subject=:splat"
+  to = "/.netlify/functions/search-pages/:splat"
   status = 200
   force = true
 
