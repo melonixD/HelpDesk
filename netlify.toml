@@ -17,12 +17,6 @@
   schedule = "30 18 * * *"
 
 [[redirects]]
-  from = "/*"
-  to = "https://helpdesk4all.in/:splat"
-  status = 301
-  force = true
-
-[[redirects]]
   from = "/sitemap.xml"
   to = "/.netlify/functions/search-sitemap"
   status = 200
